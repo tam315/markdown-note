@@ -1,14 +1,10 @@
 module.exports = {
   lang: 'ja-JP', // this will be set as the lang attribute on <html>
   title: 'Yuuniworks Notes',
-  description: '📝個人的なメモ帳です✍🏻',
+  description: '📋個人的なメモ帳です✍🏻',
   themeConfig: {
     sidebarDepth: 2,
-    nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Study', link: '/study/react-native' },
-    ],
-    sidebar: ['/study/gatsby', '/study/react-native'],
+    sidebar: 'auto',
     docsRepo: 'junkboy0315/markdown-notes',
     docsBranch: 'master',
     editLinks: true,
