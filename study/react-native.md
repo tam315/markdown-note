@@ -223,50 +223,49 @@ const store = createStore(reducer, composeEnhancers());
 
 ### 手動でインストールする場合の典型的な手順（iPhone）
 
-・npm でライブラリをインストール
-・Xcode で ios/\*\*\*.xcodeprpj を開く
+1. npm でライブラリをインストール
+1. Xcode で ios/\*\*\*.xcodeprpj を開く
+1. ライブラリをプロジェクトに追加する
+   - Libraries フォルダを右クリックし、`add libraries to PROJECT_NAME`をクリックする
+   - node_modules 内のライブラリのフォルダから、\*\*\*.xcodeproj ファイルを探して選択する。（ios というフォルダもしくはルートフォルダにあることが多い）
+1. ライブラリをビルドプロセスに追加する
+   - Xcode でルートフォルダをクリックし、「Build Phases」タブを選択する
+   - Link Binary with Libraries を開いて＋ボタンをクリックする
+   - ライブラリ名を検索して追加する
+1. Github のドキュメントを確認し、ライブラリ固有の作業を行う。
 
-（ライブラリをプロジェクトに追加する）
-・Libraries フォルダを右クリックし、`add libraries to PROJECT_NAME`をクリックする
-・node_modules 内のライブラリのフォルダから、\*\*\*.xcodeproj ファイルを探して選択する。（ios というフォルダもしくはルートフォルダにあることが多い）
+### 手動でインストールする場合の典型的な手順（Android）
 
-（ライブラリをビルドプロセスに追加する）
-・Xcode でルートフォルダをクリックし、「Build Phases」タブを選択する
-・Link Binary with Libraries を開いて＋ボタンをクリックする
-・ライブラリ名を検索して追加する
+1. npm でライブラリをインストール
 
-・Github のドキュメントを確認し、ライブラリ固有の作業を行う。
-手動でインストールする場合の典型的な手順（Android）
-・npm でライブラリをインストール
+1. settings.gradle に下記の行を追加する。どのライブラリでも記述はおおむね同じ。
 
-settings.gradle に下記の行を追加する。どのライブラリでも記述はおおむね同じ。
+   ```js
+   include ':react-native-vector-icons'
+   project(':react-native-vector-icons').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-vector-icons/android')
+   ```
 
-```js
-include ':react-native-vector-icons'
-project(':react-native-vector-icons').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-vector-icons/android')
-```
+1. app/build.gradle に下記の行を追加する
 
-app/build.gradle に下記の行を追加する
+   ```js
+   implementation project(':react-native-vector-icons')
+   ```
 
-```js
-implementation project(':react-native-vector-icons')
-```
+1. MainApplication.java に下記の行を追加する
 
-MainApplication.java に下記の行を追加する
+   ```java
+   import com.oblador.vectoricons.VectorIconsPackage;
 
-```java
-import com.oblador.vectoricons.VectorIconsPackage;
+   @Override
+   protected List<ReactPackage> getPackages() {
+     return Arrays.<ReactPackage>asList(
+       new MainReactPackage(),
+       new VectorIconsPackage()
+     );
+   }
+   ```
 
-@Override
-protected List<ReactPackage> getPackages() {
-  return Arrays.<ReactPackage>asList(
-    new MainReactPackage(),
-    new VectorIconsPackage()
-  );
-}
-```
-
-・Github のドキュメントを確認し、ライブラリ固有の作業を行う。
+1. Github のドキュメントを確認し、ライブラリ固有の作業を行う。
 
 ## ナビゲーション
 
@@ -274,18 +273,22 @@ protected List<ReactPackage> getPackages() {
 代わりに、タブやスタックを用いたナビゲーションを行う。
 https://facebook.github.io/react-native/docs/navigation
 
-react-navigation（バグが多い）
-native-navigation（Airbnb が作っている）
-react-native-navigation.（Wix が作っている、これがおすすめ）
+- react-navigation（バグが多い）
+- native-navigation（Airbnb が作っている）
+- react-native-navigation.（Wix が作っている、これがおすすめ）
 
 ### react-native-navigation のインストール
 
-iOS
+#### iOS
+
 https://wix.github.io/react-native-navigation/#/installation-ios
+
 お決まりの手順に加え、2 つほど作業が必要。
 
-Android
+#### Android
+
 https://wix.github.io/react-native-navigation/#/installation-android
+
 お決まりの手順に加え、いくつかの作業が必要。
 
 ### ナビゲーションの基本
