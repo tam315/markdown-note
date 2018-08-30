@@ -518,6 +518,13 @@ NativeBase などを使うとよいかも。
 
 画面サイズを取得したり、ローテーションの検知をしたりする際に使用する
 
+- Dimenstion API
+  - **get()** current dimentions
+    - window（※ android ではメニューバーを含まない）
+    - screen（※ android ではメニューバーを含む）
+  - **listen** to Dimention Changes
+    - addEventListener('change')
+
 画面の高さや幅によってスタイルを変更する
 画面の高さによって State を更新するイベントリスナーを、Dimensions に登録する。
 
