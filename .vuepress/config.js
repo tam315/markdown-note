@@ -21,4 +21,5 @@ module.exports = {
       md.use(require('markdown-it-imsize'));
     },
   },
+  ga: 'UA-116967778-5',
 };
