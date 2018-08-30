@@ -1,0 +1,26 @@
+/**
+ * このファイルはVSCodeでのMarkdownプレビューにも使われている。
+ * 不用意に消さないこと。
+ */
+
+h1 {
+  border: none;
+}
+
+h2 {
+  border-bottom: 1px solid #666;
+  border-left: 10px solid #666;
+  margin-top: 32px;
+  padding: 5px 20px;
+}
+
+h3 {
+  border-bottom: 1px dotted #aaa;
+  margin-top: 32px;
+  padding-bottom: 4px;
+}
+
+/* <pre />の外にある単品の<code />のフォントカラー（濃くした） */
+:not(pre):not(.hljs) > code {
+  color: #f5871f;
+}
