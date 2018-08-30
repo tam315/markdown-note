@@ -8,7 +8,7 @@ module.exports = {
       { text: 'Home', link: '/' },
       { text: 'Study', link: '/study/react-native' },
     ],
-    sidebar: ['/study/react-native'],
+    sidebar: ['/study/gatsby', '/study/react-native'],
     docsRepo: 'junkboy0315/markdown-notes',
     docsBranch: 'master',
     editLinks: true,
