@@ -1,3 +1,7 @@
+---
+pageClass: study-notes-class
+---
+
 # React Native
 
 ## 基本・セットアップ
