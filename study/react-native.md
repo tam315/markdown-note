@@ -52,7 +52,7 @@ https://facebook.github.io/react-native/docs/javascript-environment
 
 https://github.com/Microsoft/TypeScript-React-Native-Starter
 
-## 作成
+## 基本的なコンポーネントの作成
 
 ### StyleSheet
 
@@ -173,7 +173,7 @@ https://facebook.github.io/react-native/docs/modal
 
 ### Redux
 
-実装の方法は Web アプリとほぼ同じ。ただし、react-native-navigation など、ナビゲーションのライブラリを使う場合はライブラリ独自の方法で設定する必要がある。
+Redux 及びその Middleware の実装方法は、Web アプリを作るときと同じ。ただし、react-native-navigation など、ナビゲーションの外部ライブラリを使う場合はライブラリ独自の方法で設定する必要がある。
 
 ## デバッグ
 
@@ -674,6 +674,10 @@ const width = fadeAnim.interpolate({
   outputRange: [100, 200],
 }),
 ```
+
+## HTTP リクエスト
+
+fetch と XMR のどちらも使うことができる。
 
 ## React Native Maps
 
