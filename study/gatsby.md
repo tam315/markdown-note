@@ -1,7 +1,3 @@
----
-pageClass: study-notes-class
----
-
 # Gatsby
 
 ## 基本
