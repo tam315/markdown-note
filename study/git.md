@@ -1,5 +1,7 @@
 # Git
 
+[[toc]]
+
 ## NOTE
 
 \[ \] means that it can be omitted.

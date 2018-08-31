@@ -3,7 +3,6 @@ module.exports = {
   title: 'Yuuniworks Notes',
   description: '📋個人的なメモ帳です✍🏻',
   themeConfig: {
-    sidebarDepth: 2,
     sidebar: 'auto',
     docsRepo: 'junkboy0315/markdown-notes',
     docsBranch: 'master',
@@ -11,9 +10,8 @@ module.exports = {
     editLinkText: 'Help me improve this page!',
   },
   markdown: {
-    toc: { includeLevel: [1, 2] },
+    toc: { includeLevel: [2] },
     config: md => {
-      // use more markdown-it plugins!
       md.use(require('markdown-it-imsize'));
     },
   },

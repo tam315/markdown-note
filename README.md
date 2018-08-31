@@ -3,6 +3,6 @@ editLink: false
 sidebar: false
 ---
 
-{{this.$site.description}}
+[Yuuniworks](https://www.yuuniworks.com/)の個人的なメモ帳です ✍🏻
 
 <ContentsList />
