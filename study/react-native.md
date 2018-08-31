@@ -42,6 +42,10 @@ https://facebook.github.io/react-native/docs/javascript-environment
 
 - 必要になったときにレクチャー２１，２２を参照すること
 
+### ビルドに失敗したとき
+
+`/android/app/build`をまるごと消して、もう一度 sync してみるとうまくいくかも
+
 ### Typescript 環境のセットアップ
 
 下記を参考にやったらできた。
@@ -605,6 +609,23 @@ Keyboard が画面上にかぶさるのではなく、Keyboard の高さを除�
 <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
 ```
 
+### 親にフィットさせる Tips
+
+`StyleSheet.absoluteFill`もしくは`StyleSheet.absoluteFillObject`を使う。
+
+どちらも、top/right/bottom/left を 0 に、Position を Absolute に設定してくれる。
+前者は Registerd Style(実際にはただの number)を返すのに対し、後者はオブジェクトを返す。
+
+```jsx
+<View style={StyleSheet.absoluteFill} />;
+
+const styles = StyleSheet.create({
+  container: {
+    ...StyleSheet.absoluteFillObject,
+  },
+});
+```
+
 ## アニメーション
 
 ### 基本設定
@@ -659,14 +680,14 @@ const width = fadeAnim.interpolate({
 ### インストール
 
 - SDK Manager から Google Play Service をインストールする。
-- com.google.android.gms:play-services-base|maps のダウンロードに失敗するので、ルートレベルの build.grade の、allProjects.repositories に’google()’を追加しておく。
+- `com.google.android.gms:play-services-base|maps` のダウンロードに失敗するので、ルートレベルの build.grade の、`allProjects.repositories` に`google()`を追加しておく。
 - play-services のバージョンは下記を参考にする。10.2.6 以上では動かなかった。
   https://developers.google.com/android/guides/releases
 - 公式サイトを参考にインストールする。react-native link は使えない。
 
 ### 使い方
 
-公式サイトに全て書いてある。
+[公式サイト](https://github.com/react-community/react-native-maps)に全て書いてある。
 
 ### ズーム（Delta）の設定
 
@@ -684,14 +705,13 @@ const region = {
 
 ### メソッド
 
-下記のようにしたうえで、this.map.\*\*\* の形で呼び出せる。
+下記のようにしたうえで、`this.map.***` の形で呼び出せる。
 
 ```jsx
 <MapView ref={ref => (this.map = ref)} />
 ```
 
-MapView のメソッド例：
-https://github.com/react-community/react-native-maps/blob/master/docs/mapview.md#methods
+[MapView のメソッド例](https://github.com/react-community/react-native-maps/blob/master/docs/mapview.md#methods)
 
 ### 位置情報の取得
 
@@ -707,6 +727,35 @@ https://github.com/react-community/react-native-maps/blob/master/docs/mapview.md
 
 Info.plist => add row => Privacy – Location Usage Descriptor を追加する。値には、位置情報取得時にユーザに表示するメッセージを入力しておく。
 
+---
+
 その後、navigator オブジェクトを使って位置を取得する。web と同じ navigator オブジェクトが使えるのは、ReactNative がエミュレートしているから。
 
-`navigator.geolocation.getCurrentPosition`
+`navigator.geolocation.getCurrentPosition()`
+
+## React Native Image Picker
+
+### インストール方法・使い方
+
+公式サイトに沿って設定すれば特につまずく部分はない。
+
+- [インストール方法](https://github.com/react-community/react-native-image-picker#install)
+- [使い方](https://github.com/react-community/react-native-image-picker#usage)
+
+### サムネイルの表示
+
+uri が自動的に生成されるので、そのまま Image コンポーネントに流し込めばよい。
+
+```jsx
+ImagePicker.showImagePicker(options, (response: any) => {
+  let pickedImage = { uri: response.uri };
+  this.setState({
+    pickedImage,
+  });
+
+  // なお、base64データを取得したい場合は下記のようにする
+  const base64Image = response.data;
+});
+
+<Image source={this.state.pickedImage} />;
+```
