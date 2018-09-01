@@ -12,9 +12,9 @@ https://www.udemy.com/react-native-the-practical-guide/learn/v4/t/lecture/856784
 
 UI コンポーネントは、Native コンポーネントにコンパイルされる。
 ロジックは独自のスレッドで JS のママで実行される。
-JS の実行には Safari の JavascriptCore や Chrome の V8 が使われる。
+JS の実行には Safari の JavaScriptCore や Chrome の V8 が使われる。
 
-使用できる Javascript の構文については下記を参照すること。
+使用できる JavaScript の構文については下記を参照すること。
 https://facebook.github.io/react-native/docs/javascript-environment
 
 ### Android で動かす
