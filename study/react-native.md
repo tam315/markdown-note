@@ -2,7 +2,7 @@
 
 [[toc]]
 
-## 基本・セットアップ
+## セットアップ
 
 ### ドキュメント
 
@@ -52,129 +52,6 @@ https://facebook.github.io/react-native/docs/javascript-environment
 
 https://github.com/Microsoft/TypeScript-React-Native-Starter
 
-## 基本的なコンポーネントの作成
-
-### StyleSheet
-
-TextInput 等にはスタイルの設定項目が少ない。スタイルを設定するときは、View や ScrollView で囲んで設定する。
-
-```jsx
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  input: {
-    width: 300,
-    borderColor: 'gray',
-    borderWidth: 0,
-  },
-});
-```
-
-- [Stylesheet API](https://facebook.github.io/react-native/docs/stylesheet)
-
-- [スタイリングチートシート](https://github.com/vhpoet/react-native-styling-cheat-sheet)
-
-- [Flexbox](https://facebook.github.io/react-native/docs/flexbox)
-
-  flex:1 を指定すると、利用可能なすべての範囲を埋め尽くす。指定しなければ、最小限の範囲を占有する。
-
-- 複数のスタイル
-
-  style 属性には複数のスタイルを配列で指定できる
-
-  ```jsx
-  <View style={[someStyleObject, { width: 100 }]} />
-  ```
-
-### 画面幅の取得
-
-Dimention を使う。
-
-```js
-const style = { width: Dimensions.get('window') * 0.7 };
-```
-
-### タッチイベント
-
-DOM と異なり、例えば View などのオブジェクトは、デフォルトではタッチできない。タッチできるようにするには`Touchable****`コンポーネントで囲む。タッチ時の反応ごとにいくつかの種類がある。
-
-- **TouchableHighlight** 　タッチ時に暗くする
-- **TouchableNativeFeedback** 　タッチ時にネイティブエフェクトをかける（リップルなど）
-- **TouchableOpacity** 　タッチ時に明るくする
-- **TouchableWithoutFeedback** 　タッチ時に何もしない
-
-```jsx
-<TouchableNativeFeedback onPress={props.onPress}>
-  <View style={styles.listItem}>some contents</View>
-</TouchableNativeFeedback>
-```
-
-### スクロールビュー
-
-スクロールが必要な場合は View の替わりに ScrollView コンポーネントを使用する。
-ただし、大量のデータを表示する場合は、より効率的な FlatList や SectionList を使うこと。
-
-### FlatList の使い方
-
-- 配列を data に渡す。配列は、key というプロパティを持ったオブジェクトの配列であること。
-- renderItem に表示内容を記述する。info.item で個々のオブジェクトにアクセスできる。
-
-```jsx
-<FlatList
-  style={styles.container}
-  data={props.places}
-  renderItem={info => (
-    <ListItem
-      placeName={info.item.name}
-      onPress={() => props.onItemDeleted(info.item.key)}
-    />
-  )}
-/>
-```
-
-### スタティック画像
-
-jpg 画像等を import 文でインポートする。
-すると、ImageURISource というインターフェースを持つオブジェクトが自動的に生成される。
-これを Image コンポーネントに渡す。
-
-```jsx
-<Image source={importedImage} />
-```
-
-表示方法はデフォルトで Cover になっている。
-
-https://facebook.github.io/react-native/docs/image#resizemode
-
-### ダイナミック画像
-
-ネット上の画像等の場合は、下記のように ImageURISource を手動で作成し、Image コンポーネントに渡す。
-ダイナミック画像の場合は、`height` と `width` を指定しないと表示されないので注意すること。
-
-```js
-{
-  uri: 'https://images.fineartamerica.com/some.jpg';
-}
-```
-
-### Modal
-
-特に特記事項なし。モーダルを表示した状態でリロードすると仮想端末がハングするバグがあるので注意。
-
-https://facebook.github.io/react-native/docs/modal
-
-```jsx
-<Modal onRequestClose={() => onClose()} animationType="slide" />
-```
-
-### Redux
-
-Redux 及びその Middleware の実装方法は、Web アプリを作るときと同じ。ただし、react-native-navigation など、ナビゲーションの外部ライブラリを使う場合はライブラリ独自の方法で設定する必要がある。
-
 ## デバッグ
 
 ### ショートカット
@@ -213,6 +90,344 @@ if (__DEV__) {
 }
 const store = createStore(reducer, composeEnhancers());
 ```
+
+## コンポーネントの作成
+
+### タッチイベント
+
+DOM と異なり、例えば View などのオブジェクトは、デフォルトではタッチできない。タッチできるようにするには`Touchable****`コンポーネントで囲む。タッチ時の反応ごとにいくつかの種類がある。
+
+- **TouchableHighlight** 　タッチ時に暗くする
+- **TouchableNativeFeedback** 　タッチ時にネイティブエフェクトをかける（リップルなど）
+- **TouchableOpacity** 　タッチ時に明るくする
+- **TouchableWithoutFeedback** 　タッチ時に何もしない
+
+```jsx
+<TouchableNativeFeedback onPress={props.onPress}>
+  <View style={styles.listItem}>some contents</View>
+</TouchableNativeFeedback>
+```
+
+### ScrollView
+
+スクロールが必要な場合は View の替わりに ScrollView コンポーネントを使用する。
+ただし、大量のデータを表示する場合は、より効率的な FlatList や SectionList を使うこと。
+
+### FlatList
+
+- 配列を data に渡す。配列は、key というプロパティを持ったオブジェクトの配列であること。
+- renderItem に表示内容を記述する。info.item で個々のオブジェクトにアクセスできる。
+
+```jsx
+<FlatList
+  style={styles.container}
+  data={props.places}
+  renderItem={info => (
+    <ListItem
+      placeName={info.item.name}
+      onPress={() => props.onItemDeleted(info.item.key)}
+    />
+  )}
+/>
+```
+
+### スタティック画像
+
+jpg 画像等の静的画像を表示する方法。
+
+1. import 文で画像をインポートする。
+2. すると、ImageURISource というインターフェースを持つオブジェクトが自動的に生成される。
+3. これを Image コンポーネントに渡す。
+
+```jsx
+<Image source={importedImage} />
+```
+
+表示方法はデフォルトで Cover になっている。
+
+https://facebook.github.io/react-native/docs/image#resizemode
+
+### ダイナミック画像
+
+オンライン上の画像等の場合は、下記のように ImageURISource を手動で作成し、Image コンポーネントに渡す。
+ダイナミック画像の場合は、`height` と `width` を指定しないと表示されないので注意すること。
+
+```js
+{
+  uri: 'https://images.fineartamerica.com/some.jpg';
+}
+```
+
+### Modal
+
+特に特記事項なし。モーダルを表示した状態でリロードすると仮想端末がハングするバグがあるので注意。
+
+https://facebook.github.io/react-native/docs/modal
+
+```jsx
+<Modal onRequestClose={() => onClose()} animationType="slide" />
+```
+
+## スタイリング
+
+### StyleSheet
+
+```jsx
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  input: {
+    width: 300,
+    borderColor: 'gray',
+    borderWidth: 0,
+  },
+});
+```
+
+- [Stylesheet API](https://facebook.github.io/react-native/docs/stylesheet)
+
+- [スタイリングチートシート](https://github.com/vhpoet/react-native-styling-cheat-sheet)
+
+- [Flexbox](https://facebook.github.io/react-native/docs/flexbox)
+
+  flex:1 を指定すると、利用可能なすべての範囲を埋め尽くす。指定しなければ、最小限の範囲を占有する。
+
+- TextInput 等にはスタイルの設定項目が少ない。スタイルを設定するときは、View や ScrollView で囲んで設定する。
+
+- 複数のスタイル
+
+  style 属性には複数のスタイルを配列で指定できる
+
+  ```jsx
+  <View style={[someStyleObject, { width: 100 }]} />
+  ```
+
+### Stylesheet.create を使う意味
+
+- Validation が行われる
+- 効率的なネイティブコードに変換される
+
+### スタイルを適用できるコンポーネント
+
+Image、ScrollView、Text、View の４つだけ
+
+### 再利用可能性の高い width の指定
+
+内部コンテンツは width100%にして、container(View など)に width80%などを指定すると、移植が楽になる。
+
+### カスタムコンポーネントとスタイルの継承
+
+よく使うコンポーネントはカスタムコンポーネントとして用意しておくと良い(components/UI フォルダを参照)。下記は、あらかじめスタイルが設定された TextInput を作成する場合の例。
+
+```jsx
+const DefaultInput = (props: TextInputProps) => {
+  return (
+    <TextInput
+      {...props}
+      style={[
+        styles.input,
+        // コンポーネントの外側から一部のスタイルを変更できるようにする
+        props.style,
+      ]}
+      underlineColorAndroid="transparent"
+    />
+  );
+};
+
+const styles = StyleSheet.create({
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#eee',
+    padding: 4,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+});
+```
+
+### Text コンポーネントのスタイル継承
+
+Text コンポーネントを入れ子にすると、上位の Text のスタイルが配下の全ての Text に継承される。
+たとえば BlackText というコンポーネントを作っておけば、これで囲むだけで配下の全ての Text が黒になる。
+
+### 背景に画像を表示する
+
+ImageBackground を使う。
+
+https://facebook.github.io/react-native/docs/images#background-image-via-nesting
+
+### カスタムボタン
+
+Touchable,View,Text を組み合わせて作る。
+
+```jsx
+<TouchableOpacity onPress={props.onPress}>
+  <View {...props} style={[styles.button, { backgroundColor: props.color }]}>
+    <Text>{props.children}</Text>
+  </View>
+</TouchableOpacity>
+```
+
+### Platform API
+
+OS の種類等によって描写を変更する際に使用する。
+
+```jsx
+if (Platform.OS === 'ios') {
+  return (
+    <TouchableOpacity onPress={props.onPress}>{content} </TouchableOpacity>
+  );
+}
+return (
+  <TouchableNativeFeedback onPress={props.onPress}>
+    {content}
+  </TouchableNativeFeedback>
+);
+```
+
+### クロスプラットフォームな UI ライブラリ
+
+NativeBase などを使うとよいかも。
+
+### Dimensions API
+
+画面サイズを取得したり、ローテーションの検知をしたりする際に使用する
+
+- Dimenstion API
+  - **get()** current dimentions
+    - window（※ android ではメニューバーを含まない）
+    - screen（※ android ではメニューバーを含む）
+  - **listen** to Dimention Changes
+    - addEventListener('change')
+
+画面の高さや幅によってスタイルを変更する
+画面の高さによって State を更新するイベントリスナーを、Dimensions に登録する。
+
+```jsx
+componentDidMount = () => {
+  this.checkWindowHeight();
+  Dimensions.addEventListener('change', this.checkWindowHeight);
+};
+
+componentWillUnmount = () => {
+  Dimensions.removeEventListener('change', this.checkWindowHeight);
+};
+
+checkWindowHeight = () => {
+  if (Dimensions.get('window').height > 500) {
+    this.setState({ hasEnoughHeight: true });
+  } else {
+    this.setState({ hasEnoughHeight: false });
+  }
+};
+```
+
+コンポーネントのスタイルは、render メソッドの中で、State の状態によって動的に変更する。
+
+```jsx
+const passwordsContainerStyle = {
+  flexDirection: hasEnoughHeight ? 'column' : 'row',
+};
+```
+
+### TextInput の諸設定
+
+TextInput の挙動については、autoCapitalize, autoCorrect, keyboardType, secureTextEntry など、便利な設定項目がいろいろあるので、ドキュメントをよく参照すること。
+
+https://facebook.github.io/react-native/docs/textinput
+
+### KeyboardAvoidingView
+
+View の代わりに KeyboardAvoidingView を使うと、キーボードで要素が隠れることがなくなる。
+Keyboard が画面上にかぶさるのではなく、Keyboard の高さを除外した範囲で View がレンダリングされる。ScrollView に対しては基本的に使う必要がない。
+
+### Keyboard API
+
+キーボードを消したいなど、キーボードを操作したいときは Keyboard API を使う。
+例えば、下記のコードで要素を囲めば、要素の範囲外をタップした時にキーボードが自動的に隠されるようになる。
+
+```jsx
+<TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+```
+
+### 親にフィットさせる
+
+`StyleSheet.absoluteFill`もしくは`StyleSheet.absoluteFillObject`を使う。
+
+どちらも、top/right/bottom/left を 0 に、Position を Absolute に設定してくれる。
+前者は Registerd Style(実際にはただの number)を返すのに対し、後者はオブジェクトを返す。
+
+```jsx
+<View style={StyleSheet.absoluteFill} />;
+
+const styles = StyleSheet.create({
+  container: {
+    ...StyleSheet.absoluteFillObject,
+  },
+});
+```
+
+## アニメーション
+
+### 基本設定
+
+詳細はドキュメントを読むこと。
+
+https://facebook.github.io/react-native/docs/animations
+
+1. アニメーションしたい要素を Animated.View で囲む。
+2. Animated.View の style に state を設定する。
+
+   ```jsx
+   <Animated.View
+   style={{
+       opacity: this.state.fadeAnim,
+     }}
+   >
+   ```
+
+3. state は、`new Animated.Value()`で設定する。これが初期値になる。
+
+   ```js
+   state = {
+     fadeAnim: new Animated.Value(1),
+   };
+   ```
+
+4. アニメーションを開始したいタイミングで、`Animated.timing().start()`などを発火する。state の値はアニメーション終了後も維持される。
+
+   ```js
+   Animated.timing(this.state.fadeAnim, {
+     toValue: 0, // この値はアニメーション終了後も保持される
+     duration: 200,
+     useNativeDriver: true, // for performance
+   }).start();
+   ```
+
+### Interpolation
+
+Animated.value の値を、別の形に変更したいときは、interpolate を使う。
+下記の例では、value が 0 のときに 100、1 の時に 200 を出力する。
+
+```js
+const width = fadeAnim.interpolate({
+  inputRange: [0, 1],
+  outputRange: [100, 200],
+}),
+```
+
+## HTTP リクエスト
+
+fetch と XMR のどちらも使うことができる。
+
+## Redux
+
+Redux 及びその Middleware の実装方法は、Web アプリを作るときと同じ。ただし、react-native-navigation など、ナビゲーションの外部ライブラリを使う場合はライブラリ独自の方法で設定する必要がある。
 
 ## サードパーティライブラリ
 
@@ -269,7 +484,7 @@ const store = createStore(reducer, composeEnhancers());
 
 1. Github のドキュメントを確認し、ライブラリ固有の作業を行う。
 
-## ナビゲーション
+## react-native-navigation
 
 ネイティブアプリでは URL によるルーティングは行えない。
 代わりに、タブやスタックを用いたナビゲーションを行う。
@@ -426,138 +641,7 @@ handleNavigatorEvent = (e: NavigatorEvent) => {
 };
 ```
 
-## スタイリング
-
-### Stylesheet.create を使う意味
-
-- Validation が行われる
-- 効率的なネイティブコードに変換される
-
-### スタイルを適用できるコンポーネント
-
-Image、ScrollView、Text、View の４つだけ
-
-### 再利用可能性の高い width の指定
-
-内部コンテンツは width100%にして、container(View など)に width80%などを指定すると、移植が楽になる。
-
-### カスタムコンポーネントとスタイルの継承
-
-よく使うコンポーネントはカスタムコンポーネントとして用意しておくと良い(components/UI フォルダを参照)。下記は、あらかじめスタイルが設定された TextInput を作成する場合の例。
-
-```jsx
-const DefaultInput = (props: TextInputProps) => {
-  return (
-    <TextInput
-      {...props}
-      style={[
-        styles.input,
-        // コンポーネントの外側から一部のスタイルを変更できるようにする
-        props.style,
-      ]}
-      underlineColorAndroid="transparent"
-    />
-  );
-};
-
-const styles = StyleSheet.create({
-  input: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#eee',
-    padding: 4,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-});
-```
-
-### Text コンポーネントのスタイル継承
-
-Text コンポーネントを入れ子にすると、上位の Text のスタイルが配下の全ての Text に継承される。
-たとえば BlackText というコンポーネントを作っておけば、これで囲むだけで配下の全ての Text が黒になる。
-
-### 背景に画像を表示する
-
-ImageBackground を使う。
-
-https://facebook.github.io/react-native/docs/images#background-image-via-nesting
-
-### カスタムボタン
-
-Touchable,View,Text を組み合わせて作る。
-
-```jsx
-<TouchableOpacity onPress={props.onPress}>
-  <View {...props} style={[styles.button, { backgroundColor: props.color }]}>
-    <Text>{props.children}</Text>
-  </View>
-</TouchableOpacity>
-```
-
-### Platform API
-
-OS の種類等によって描写を変更する際に使用する。
-
-```jsx
-if (Platform.OS === 'ios') {
-  return (
-    <TouchableOpacity onPress={props.onPress}>{content} </TouchableOpacity>
-  );
-}
-return (
-  <TouchableNativeFeedback onPress={props.onPress}>
-    {content}
-  </TouchableNativeFeedback>
-);
-```
-
-### クロスプラットフォームな UI ライブラリ
-
-NativeBase などを使うとよいかも。
-
-### Dimensions API
-
-画面サイズを取得したり、ローテーションの検知をしたりする際に使用する
-
-- Dimenstion API
-  - **get()** current dimentions
-    - window（※ android ではメニューバーを含まない）
-    - screen（※ android ではメニューバーを含む）
-  - **listen** to Dimention Changes
-    - addEventListener('change')
-
-画面の高さや幅によってスタイルを変更する
-画面の高さによって State を更新するイベントリスナーを、Dimensions に登録する。
-
-```jsx
-componentDidMount = () => {
-  this.checkWindowHeight();
-  Dimensions.addEventListener('change', this.checkWindowHeight);
-};
-
-componentWillUnmount = () => {
-  Dimensions.removeEventListener('change', this.checkWindowHeight);
-};
-
-checkWindowHeight = () => {
-  if (Dimensions.get('window').height > 500) {
-    this.setState({ hasEnoughHeight: true });
-  } else {
-    this.setState({ hasEnoughHeight: false });
-  }
-};
-```
-
-コンポーネントのスタイルは、render メソッドの中で、State の状態によって動的に変更する。
-
-```jsx
-const passwordsContainerStyle = {
-  flexDirection: hasEnoughHeight ? 'column' : 'row',
-};
-```
-
-### react-native-navigation のタブのスタイル
+### タブのスタイル
 
 startTabBasedApp で設定する
 
@@ -575,7 +659,7 @@ Navigation.startTabBasedApp({
 });
 ```
 
-### react-native-navigation のナビゲーションのスタイル
+### ナビゲーションのスタイル
 
 各スクリーンで static navigatorStyle を定義して行う。
 
@@ -589,97 +673,7 @@ class FindPlaceScreen extends React.Component<Props> {
 }
 ```
 
-### TextInput の諸設定
-
-TextInput の挙動については、autoCapitalize, autoCorrect, keyboardType, secureTextEntry など、便利な設定項目がいろいろあるので、ドキュメントをよく参照すること。
-
-https://facebook.github.io/react-native/docs/textinput
-
-### KeyboardAvoidingView
-
-View の代わりに KeyboardAvoidingView を使うと、キーボードで要素が隠れることがなくなる。
-Keyboard が画面上にかぶさるのではなく、Keyboard の高さを除外した範囲で View がレンダリングされる。ScrollView に対しては基本的に使う必要がない。
-
-### Keyboard API
-
-キーボードを消したいなど、キーボードを操作したいときは Keyboard API を使う。
-例えば、下記のコードで要素を囲めば、要素の範囲外をタップした時にキーボードが自動的に隠されるようになる。
-
-```jsx
-<TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-```
-
-### 親にフィットさせる Tips
-
-`StyleSheet.absoluteFill`もしくは`StyleSheet.absoluteFillObject`を使う。
-
-どちらも、top/right/bottom/left を 0 に、Position を Absolute に設定してくれる。
-前者は Registerd Style(実際にはただの number)を返すのに対し、後者はオブジェクトを返す。
-
-```jsx
-<View style={StyleSheet.absoluteFill} />;
-
-const styles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
-  },
-});
-```
-
-## アニメーション
-
-### 基本設定
-
-詳細はドキュメントを読むこと。
-
-https://facebook.github.io/react-native/docs/animations
-
-1. アニメーションしたい要素を Animated.View で囲む。
-2. Animated.View の style に state を設定する。
-
-   ```jsx
-   <Animated.View
-   style={{
-       opacity: this.state.fadeAnim,
-     }}
-   >
-   ```
-
-3. state は、`new Animated.Value()`で設定する。これが初期値になる。
-
-   ```js
-   state = {
-     fadeAnim: new Animated.Value(1),
-   };
-   ```
-
-4. アニメーションを開始したいタイミングで、`Animated.timing().start()`などを発火する。state の値はアニメーション終了後も維持される。
-
-   ```js
-   Animated.timing(this.state.fadeAnim, {
-     toValue: 0, // この値はアニメーション終了後も保持される
-     duration: 200,
-     useNativeDriver: true, // for performance
-   }).start();
-   ```
-
-### Interpolation
-
-Animated.value の値を、別の形に変更したいときは、interpolate を使う。
-下記の例では、value が 0 のときに 100、1 の時に 200 を出力する。
-
-```js
-const width = fadeAnim.interpolate({
-  inputRange: [0, 1],
-  outputRange: [100, 200],
-}),
-```
-
-## HTTP リクエスト
-
-fetch と XMR のどちらも使うことができる。
-
-## React Native Maps
+## react-native-maps
 
 ### インストール
 
@@ -737,7 +731,7 @@ Info.plist => add row => Privacy – Location Usage Descriptor を追加する�
 
 `navigator.geolocation.getCurrentPosition()`
 
-## React Native Image Picker
+## react-native-image-picker
 
 ### インストール方法・使い方
 
