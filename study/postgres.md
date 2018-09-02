@@ -9,7 +9,7 @@
 `psql` は下記のコマンドで起動する。デフォルトでは、オペレーティングシステムのユーザと同名のユーザと DB が使われる。例えば、windows のユーザ名が test の場合、`psql`コマンドは下記と同じ意味になる。
 
 ```
-psql -U travelr -d test
+psql -U test -d test
 ```
 
 ### コマンド
