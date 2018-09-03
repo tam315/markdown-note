@@ -37,6 +37,7 @@ var app = new Vue({
 
 ```html
 <a v-bind:href="someUrl" />
+<a :href="someUrl" />
 ```
 
 ```jsx
@@ -87,9 +88,8 @@ new Vue({
 
 ```html
 {{message}}
-<button v-on:click="onButtonClick">
-  Press Me
-</button>
+<button v-on:click="onButtonClick" />
+<button @click="onButtonClick" />
 ```
 
 ```js
