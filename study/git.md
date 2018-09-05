@@ -302,13 +302,18 @@ git reset 357vef9 # back to this reflog
 ## submodule
 
 - 親リポジトリ内で、別のリポジトリを子として管理するときに使う
-- `.gitmodules`に、submodule の一覧とコミットハッシュ（時点）のみが記録される
-- 親リポジトリを`checkout`して`.gitmodules`の内容が変わったときは、submodule を手動でアップデートする必要がある。
+- `.gitmodules`に、submodule の一覧が記録される
+- submodule のバージョンはコミットハッシュ（特定のバージョン）で管理されている。
+- 親リポジトリを`checkout`した際など submodule の参照先コミットハッシュが変わったときは、submodule を手動でアップデートする必要がある。
 
 ```bash
 git submodule add ${REPO_URL} ${TARGET_DIR}
 
-# .gitmoduleの内容が変わったときは手動でsubmoduleを更新すること
+# submoduleが参照しているコミットハッシュの一覧を表示する
+git submodule
+
+# submoduleが参照しているコミットハッシュが変わったときは
+# 手動でsubmoduleを更新する必要がある
 git submodule update
 ```
 
