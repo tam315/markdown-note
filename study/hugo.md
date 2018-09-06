@@ -92,14 +92,14 @@ hugo
 開発用のサーバを`http://localhsot:1313`で立ち上げる。
 
 ```bash
-hugo server
+hugo server -D
 ```
 
 ## Directory Structure
 
 ### archetypes
 
-`hugo new post/***`を実行した際にの雛形を管理する。
+`hugo new post/***`を実行した際の Front Matter の雛形を管理する。
 
 ### assets
 
@@ -147,19 +147,12 @@ images, CSS, Javascript といった静的コンテンツを管理する。
 
 ### Resouces とは
 
-![structure](https://d33wubrfki0l68.cloudfront.net/4c06428897df426b60d300c8f6de175b37d7fdde/637cb/images/hugo-content-bundles.png =300x)
-
 - `content`フォルダ内の全てのファイルは`Resources`になる。Hugo が MIME type を認識できる限り。
 - `content`フォルダ直下が`section`になる
-- 赤い枠は上から順に
-  - home page
-  - section page
-  - article with a folder
-  - regular standalone pages(`posts`フォルダ)
 
 ### 全ての Resources を一覧表示
 
-```jsx
+```html
 {{ range .Resources }}
 <li><a href="{{ .RelPermalink }}">{{ .ResourceType }}</a></li>
 {{ end }}
@@ -171,32 +164,34 @@ images, CSS, Javascript といった静的コンテンツを管理する。
 
 タイプ名は、ページの場合は`page`、その他の場合は `image`や`json`などの MIME タイプで指定する。
 
-```jsx
+```html
 {{ range .Resources.ByType "image" }}
   {{ .ResourceType }}
 {{ end }}
 ```
 
-### 特定の条件にあてはまる Resouces を一覧表示
+### 特定の条件にあてはまる Resouces を表示
 
-例：ファイル名が`logo`で始まるリソースの一覧を表示する
+例：ファイル名が`logo`で始まるリソースを表示する
 
-```jsx
-{{ $logo := .Resources.GetByPrefix "logo" }}
-{{ with $logo }}
+```html
+<!-- 当てはまるもの全てを取得 -->
+{{ range .Resources.GetMatch "logo*" }}
+  {{ . }}
 {{ end }}
+
+<!-- 当てはまる最初の一つのみを取得 -->
+{{ $logo = .Resources.Match "logo*" }}
+{{ $logo.ResourceType }}
 ```
 
-### Page Resources のコンテンツを表示
+### コンテンツを表示
 
 Page Resources = カレントページから見た他の page, images, pdfs, etc...
 
-```jsx
-{{ with .Resources.ByType "page" }}
-{{ range . }}
-<h3>{{ .Title }}</h3>
-{{ .Content }}
-{{ end }}
+```html
+{{ range .Resources.ByType "image" }}
+  {{ .Content }}
 {{ end }}
 ```
 
@@ -243,16 +238,16 @@ Page Resources を管理する方法のこと。下記の赤い枠が Page Bundl
 #### Leaf Bundle
 
 - `content`フォルダ内の`index.md`を含むフォルダのこと
-- `single`レイアウトになる
+- `single`レイアウトが使用される
 - ネストできない
 - レイアウトファイルにおいて、page, non-page(images, PDFs, etc...) のどちらもリソースとして使用できる。
 
 #### Branch Bundle
 
 - `content`フォルダ内の`_index.md`を含むフォルダのこと
-- `list`レイアウトになる
+- `list`レイアウトが使用される
 - 他のコンテンツを列挙したい時に使う
-- レイアウトファイルにおいて、pageはリソースとして使用できない。
+- レイアウトファイルにおいて、page はリソースとして使用できない。
 
 ### Front Matter
 
@@ -268,7 +263,7 @@ Page Resources を管理する方法のこと。下記の赤い枠が Page Bundl
 
 ### Page Resources
 
-カレントページから利用できる、画像、他のページ、PDF等ドキュメントのこと。
+カレントページから利用できる、画像、他のページ、PDF 等ドキュメントのこと。
 `.Resources`でリソースの配列を取得できる。
 
 #### Properties
@@ -278,11 +273,13 @@ Page Resources を管理する方法のこと。下記の赤い枠が Page Bundl
 - Title
 - Permalink
 - RelPermalink
+- Content
 
 #### Methods
 
 - ByType
 - Match
+- GetMatch(`match`と同じだが、最初のひとつだけを取得する点が異なる)
 
 ### Image Processing
 
@@ -290,7 +287,7 @@ Page Resources を管理する方法のこと。下記の赤い枠が Page Bundl
 
 #### Resize
 
-```jsx
+```html
 {{ $logo.Resize "200x" }} // アスペクト比は維持される
 {{ $logo.Resize "200x100" }} // アスペクト比は変更される
 ```
@@ -299,7 +296,7 @@ Page Resources を管理する方法のこと。下記の赤い枠が Page Bundl
 
 指定したサイズで、かつサイズ内に収まるように画像を縮小する。アスペクト比は維持される。
 
-```jsx
+```html
 {{ $logo.Fit "200x100" }}
 ```
 
@@ -307,10 +304,16 @@ Page Resources を管理する方法のこと。下記の赤い枠が Page Bundl
 
 指定したサイズで、かつサイズ全体が埋まるように画像を切り出す。アスペクト比は維持される。
 
-```jsx
+```html
 {{ $logo.Fill "200x100" }} // 真ん中を基準にして切り出し
 {{ $logo.Fill "200x100 right" }} // 右端を基準にして切り出し
 {{ $logo.Fill "200x100 left" }} // 左端を基準にして切り出し
+```
+
+#### 画像の表示
+
+```html
+<img src="{{$logo.RelPermalink }}" />
 ```
 
 #### 処理後の画像の取扱い
@@ -320,7 +323,7 @@ Hugo のパフォーマンスが向上するため、このフォルダは、git
 
 ### Shortcode
 
-Markdownの中で使えるスニペット。2つの呼び出し方がある。
+Markdown の中で使えるスニペット。2 つの呼び出し方がある。
 
 ```html
 <!-- 中のコンテンツがMarkdownの場合 -->
@@ -342,3 +345,96 @@ Markdownの中で使えるスニペット。2つの呼び出し方がある。
 - tweet
 - vimeo
 - youtube
+
+### Sections
+
+- `content`フォルダ内のフォルダが section になる
+- 第一階層のフォルダが **root sections** になる
+- section は branch bundles である必要があるため、フォルダ内に`_index.md`を作成すること。`index.md`を作成した場合は、leaf bundles になる。
+- section は、入れ子にできる。この際、最下層の section は必ず`_index.md`を持たなければならない。
+- section は、front matter で上書きできない
+
+#### Section Page で使える Variables
+
+- `.CurrentSection` 現在のページのカレントセクションを取得する。現在のページがセクションページやホームページだった場合、自分自身を返す。
+- `.InSection $anogherPage` あるページが現在のセクションに属するか判定する
+- `.IsAncestor $anotherPage` あるページが現在のセクションの祖先に当たるか判定する
+- `.IsDescendant $anotherPage` 現在のページが有るページの子孫に当たるか判定する
+- `.Parent` 現在のページが属する root section を取得する
+- `.Sections` 現在のセクションに属する子セクションを取得する
+
+### Content Type
+
+#### どのように決まるか
+
+デフォルトでは、セクション名が自動的に Content Type として設定される。
+例えば、posts セクションの Content Type は`posts`になる。
+front matter で上書きすることもできる。
+
+#### Type が使われる場面（archetypes）
+
+Content Type は archetype の判定に使用されている。
+例えば、`hugo new posts/my-first-post.md`を実行したとき、archetype は下記の順で使用される。
+
+- archetypes/posts.md
+- archetypes/default.md
+- themes/my-theme/archetypes/posts.md
+- themes/my-theme/archetypes/default.md
+
+#### Type が使われる場面（レイアウト）
+
+Content Type により、使用されるレイアウトファイルが決まる。
+例えば、`content/events/my-first-event.md`で使われるレイアウトは下記の順で決定される。
+
+- layouts/event/single.html (singular name が優先される)
+- layouts/events/single.html
+- layouts/\_default/single.html
+
+### Taxonomies
+
+デフォルトで、`tags`,`categories`による分類ができるようになっている。
+Taxonomies の指定は、front matter で行う。
+
+```yaml
+tags:
+  - nginx
+  - kubernetes
+categories:
+  - development
+```
+
+カスタム Taxonomies を追加する場合は、下記のように config を設定する。
+左側は単数形で記載すること。
+
+```toml
+[taxonomies]
+  category = "categories"
+  tag = "tags"
+  mytag = "mytags"
+```
+
+taxonomy templates が存在する場合、Hugo は下記のページを生成する。例えば、categories の場合。
+
+- `example.com/categories/` カテゴリの一覧
+- `example.com/categories/nginx` 特定カテゴリに該当する記事の一覧
+
+### Content Summaries
+
+`.Summary`でページの要約を取得できる。記事の最初の 70 ワードが要約として作成される。
+日本語で使う場合は`hasCJKLanguage`オプションを有効にすること。
+
+[カスタマイズ](https://gohugo.io/content-management/summaries/#user-defined-manual-summary-splitting)も可能。
+
+```html
+{{ range first 10 .Pages }}
+  <div>{{ .Summary }}</div>
+
+  {{ if .Truncated }}
+    <div>Read More…</div>
+  {{ end }}
+{{ end }}
+```
+
+- `.Pages` ページの一覧を取得
+- `.Summary` 要約を取得
+- `.Truncated` 続きがあるか
