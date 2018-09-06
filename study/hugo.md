@@ -438,3 +438,137 @@ taxonomy templates が存在する場合、Hugo は下記のページを生成�
 - `.Pages` ページの一覧を取得
 - `.Summary` 要約を取得
 - `.Truncated` 続きがあるか
+
+### Links
+
+`ref`又は`relref`というショートコードを使うことで、Markdown ファイル内でリンクを作成できる。
+
+```md
+{{< ref "document.md#anchor" >}}
+{{< relref "document.md#anchor" >}}
+
+<!-- 他言語バージョンへのリンク -->
+
+{{< relref path="document.md" lang="jp" >}}
+
+<!-- 出力形式の指定 -->
+
+{{< relref path="document.md" outputFormat="rss" >}}
+```
+
+### URL
+
+#### Permalinks
+
+Permalink の形式を帰る場合は、Config に下記の通り記載する。
+section 又は taxonomies ごとに指定する。
+
+```toml
+[permalinks]
+  post = "/:year/:month/:title/"
+```
+
+[使用できる変数の一覧](https://gohugo.io/content-management/urls/#permalink-configuration-values)
+
+#### Aliases
+
+古いページから新しいページにリダイレクトさせたいときに使う。
+新しいページ側の front matter に下記の通り記述する。
+
+```yaml
+# /posts/post2に下記の通り記載すると、post1=>post2にリダイレクトされる
+aliases:
+  - /posts/post1
+```
+
+#### Pretty URL & Ugly URL
+
+URL の形式を config や front matter で設定できる。
+
+```txt
+# Pretty
+example.com/posts/
+example.com/posts/post-1/
+
+# Ugly
+example.com/posts.html
+example.com/posts/post-1.html
+```
+
+### Menu
+
+- `.Site.Menu`でアクセスできる。
+- メニューの定義は front matter もしくは Config に記載する。
+- Menu Templates の定義も必要となる。
+- 入れ子にしたい場合は`parent`フィールドで親を指定する。
+
+```toml
+[menu]
+
+  [[menu.main]]
+    identifier = "about"
+    name = "about hugo"
+    pre = "<i class='fa fa-heart'></i>"
+    url = "/about/"
+    weight = -110
+
+  [[menu.main]]
+    name = "getting started"
+    pre = "<i class='fa fa-road'></i>"
+    url = "/getting-started/"
+    weight = -100
+```
+
+### Multilingual Mode
+
+#### 多言語環境のセットアップ
+
+多言語対応を有効にする、もしくは言語ごとに Config の設定を変えたいときには、Config に`languages`セクションを記載する。
+
+```yaml
+DefaultContentLanguage: en
+languages:
+  en:
+    params:
+      linkedin: https://linkedin.com/whoever
+    title: My blog
+    weight: 1
+  fr:
+    params:
+      linkedin: https://linkedin.com/fr/whoever
+      navigation:
+        help: Aide
+    title: Mon blogue
+    weight: 2
+params:
+  navigation:
+    help: Help
+```
+
+`languages`ブロックに記載のないものは、グローバルの値にフォールバックされる。
+デフォルト言語のパスは`/posts/post-1`、その他の言語のパスは`/ja/posts/post-1/`のようにマップされる。
+
+言語ごとのコンテンツの作成方法は、ファイルで分ける方法とフォルダで分ける方法がある。
+対応言語が 2 言語くらいなら、ファイルで分けたほうが楽でよい。
+この方法は、マークダウン以外にも、画像ファイルや PDF ファイルにも適用できる。
+
+- `/content/about.en.md` => `example.com/about/`
+- `/content/about.ja.md` => `example.com/about/ja/`
+
+#### 特定の単語の翻訳
+
+プロジェクトのルートに`i18n`フォルダを作り、`en.toml`, `ja.toml`などのファイルを作る。
+
+```toml
+[home]
+  other = "Home"
+[wordCount]
+  other = "This article has {{ .WordCount }} words."
+```
+
+テンプレートの中で、下記のようにして使う。
+
+```html
+{{ i18n "home" }}
+{{ i18n "wordcount" . }} <!-- コンテキスト「.」を渡している点に注目 -->
+```
