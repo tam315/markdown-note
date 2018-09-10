@@ -1228,3 +1228,16 @@ paginatePath: page # デフォルト　post/1/ など
 - [Shortcode](https://gohugo.io/variables/shortcodes/)
 - [Taxonomy](https://gohugo.io/variables/taxonomy/)
 - [Menu](https://gohugo.io/variables/menus/)
+
+## トラブルシューティング
+
+### baseof.html が適用されない
+
+子テンプレートのトップレベルは、`{{ define "main" }}`のみであること。余計なものがあると baseof が適用されない。
+
+```html
+<!-- たとえばここに余計なコメントが有ると適用されない -->
+{{ define "main" }}
+  <h1>hello from lista page</h1>
+{{ end }}
+```
