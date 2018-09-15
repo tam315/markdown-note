@@ -196,23 +196,3 @@ firebase storage のダウンロードリンクを作成する際によく使う
 encodeURIComponent('post/filename.jpg');
 // => "post%2Ffilename.jpg"
 ```
-
-## Regexp
-
-- global match
-
-  ```javascript
-  /,/  // マッチする最初のカンマ
-  /,/g // マッチする全てのカンマ
-  ```
-
-- multi line
-
-  - マルチラインモードでは`.*`とすると行をまたげない(`.`は改行以外の任意の一文字のため)。
-    行をまたぐには、`[\s\S]*`とする必要がある。
-  - なお、下記の例では`*`を`*?`とすることで、lazy(non-greedy)モードで検索している。
-    この場合、マッチする最短の文字列が選ばれる。
-
-  ```javascript
-  /<br>[\s\S]*?<br>/m;
-  ```
