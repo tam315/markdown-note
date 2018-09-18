@@ -146,3 +146,58 @@ new Vue({
   },
 });
 ```
+
+## Vue Instance
+
+Vue のインスタンスに渡せるオプションについて。
+
+```js
+const vm = new Vue(options); // root Vue instance
+Vue.component('some-component', options); // other Vue instances
+```
+
+### data
+
+- data プロパティに渡したオブジェクトは、Vue の Reactivity System に組み込まれる。
+- インスタンスからの変更、元データの変更は、双方向に反映される。
+- data の変更は自動的に View に反映される。
+- data に後からプロパティを追加することはできない。
+
+```js
+var data = { a: 1 };
+
+var vm = new Vue({
+  data: data,
+});
+
+vm.a === data.a; // => true
+
+vm.a = 2;
+data.a; // => 2
+
+data.a = 3;
+vm.a; // => 3
+```
+
+### 規定のプロパティ・メソッド
+
+インスタンスには、名前が`$`で始まる、規定のプロパティとメソッドがある。
+
+[参考](https://vuejs.org/v2/api/#Instance-Properties)
+
+```js
+vm.$data === data; // => true
+vm.$el === document.getElementById('example'); // => true
+
+vm.$watch('a', function(newValue, oldValue) {
+  // This callback will be called when `vm.a` changes
+});
+```
+
+### Lifecycle Hooks
+
+- いくつかのライフサイクルメソッドがある。
+- ライフサイクルメソッドの中の`this`は、常に Vue インスタンスを指す。
+- アロー関数は使えないので注意する。
+
+![lifecycle](https://vuejs.org/images/lifecycle.png =500x)
