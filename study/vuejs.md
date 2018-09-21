@@ -810,6 +810,30 @@ Vue.component('blog-post', {
 <custom-input v-model="searchText" />
 ```
 
+なお、標準では、v-model は、`value`props と`input`event を使うので、
+checkbox などを使うときは、下記のような工夫が必要。
+
+```js
+Vue.component('base-checkbox', {
+  model: {
+    // v-modelに、valueの代わりに`checked`を見ろ、と伝える
+    prop: 'checked',
+    // v-modelに、inputの代わりに`change`イベントを見ろ、と伝える
+    event: 'change',
+  },
+  props: {
+    checked: Boolean,
+  },
+  template: `
+    <input
+      type="checkbox"
+      v-bind:checked="checked"
+      v-on:change="$emit('change', $event.target.checked)"
+    >
+  `,
+});
+```
+
 ### Slot
 
 React での children と同じ。
@@ -912,3 +936,200 @@ export default {
 
 - 頻繁に使用するコンポーネントは Base Component として作成しておくと良い。
 - [Base コンポーネントを自動的にグローバル登録する方法](https://vuejs.org/v2/guide/components-registration.html#Automatic-Global-Registration-of-Base-Components)もある
+
+## Props
+
+### camel vs kebab
+
+props の名前を camelCase にした場合は、props を渡す時に kebab-case にする必要がある。
+ただし、string templates の中ではこの制約は該当しない。
+
+```js
+Vue.component('blog-post', {
+  props: ['postTitle'],
+  template: '<h3>{{ postTitle }}</h3>',
+});
+```
+
+```html
+<!-- DOMテンプレート -->
+<blog-post post-title="hello!"></blog-post>
+<!-- string templateの中では下記でもOK -->
+<blog-post postTitle="hello!"></blog-post>
+```
+
+### Prop Types & Validation
+
+Prop Types を使いたいときは、配列ではなく、オブジェクトで指定する。
+
+```js
+Vue.component('my-component', {
+  props: {
+    // Basic type check (`null` matches any type)
+    propA: Number,
+    // Multiple possible types
+    propB: [String, Number],
+    // Required string
+    propC: {
+      type: String,
+      required: true,
+    },
+    // Number with a default value
+    propD: {
+      type: Number,
+      default: 100,
+    },
+    // Object with a default value
+    propE: {
+      type: Object,
+      // Object or array defaults must be returned from
+      // a factory function
+      default: function() {
+        return { message: 'hello' };
+      },
+    },
+    // Custom validator function
+    propF: {
+      validator: function(value) {
+        // The value must match one of these strings
+        return ['success', 'warning', 'danger'].indexOf(value) !== -1;
+      },
+    },
+  },
+});
+```
+
+Type として使えるもの
+
+- String
+- Number
+- Boolean
+- Array
+- Object
+- Date
+- Function
+- Symbol
+- コンストラクタ関数(instanceof でチェックされる)
+
+### props に様々な種類のデータを渡す
+
+v-bind を使うと、様々な Javascript の値を渡すことができる。
+
+```html
+<!-- 数値として -->
+<blog-post :likes="42"></blog-post>
+
+<!-- オブジェクトの値を渡す -->
+<blog-post :likes="post.likes"></blog-post>
+
+<!-- Booleanとして -->
+<blog-post :is-published="false"></blog-post>
+
+<!-- 配列として -->
+<blog-post :comment-ids="[234, 266, 273]"></blog-post>
+
+<!-- オブジェクトとして -->
+<blog-post :author="{ name: 'Veronica', company: 'Veridian Dynamics' }"></blog-post>
+```
+
+### オブジェクトのプロパティを分解して渡す
+
+`v-bind=`を使うことで全てのプロパティを分解して渡せる。
+
+```js
+post: {
+  id: 1,
+  title: 'My Journey with Vue'
+}
+```
+
+```html
+<blog-post v-bind="post"></blog-post>
+<!-- 上記は下記と等価 -->
+<blog-post
+  v-bind:id="post.id"
+  v-bind:title="post.title"
+></blog-post>
+```
+
+### One-way data flow
+
+いかなる場合でも、props の値は変更するな。
+変えたいなら、あくまで初期値として利用するか、computed を使うなどしろ。
+
+### コンポーネントに対して Props に記載してない属性を渡すとどうなる？
+
+- コンポーネントのルート要素にアタッチされる。
+- その際、class と style についてはマージされる。それ以外はまるごと置換えられるので注意。
+
+この機能を無効にするには：
+
+```js
+Vue.component('my-component', {
+  inheritAttrs: false,
+});
+```
+
+無効にしても、`$attrs`を使うことで属性の取得は行える。これは、Base Component を作る時に特に便利。
+
+```js
+Vue.component('base-input', {
+  inheritAttrs: false,
+  props: ['label', 'value'],
+  template: `
+    <label>
+      {{ label }}
+      <input
+        v-bind="$attrs"
+        :value="value"
+        :input="$emit('input', $event.target.value)"
+      >
+    </label>
+  `,
+});
+```
+
+```html
+<base-input
+  label="something"
+  v-model="username"
+  class="username-input"
+  placeholder="Enter your username"
+></base-input>
+```
+
+## Custom Events
+
+### イベント名
+
+イベント名には常に kebab-case を使え
+
+### ネイティブイベントを補足する
+
+- `.native` modifier を使うと、コンポーネントのルート要素のイベントを捕捉できる。
+- ルート要素以外のイベントを捕捉するには[工夫](https://vuejs.org/v2/guide/components-custom-events.html#Binding-Native-Events-to-Components)が必要。
+
+```html
+<base-input v-on:focus.native="onFocus"></base-input>
+```
+
+### `.sync` modifier
+
+- 親とコンポーネントの間で擬似的な two-way binding を行うためのもの。
+- キモは`update:`の記法と`.sync`がセットになっている
+
+```js
+// コンポーネント側
+this.$emit('update:title', newTitle);
+```
+
+```html
+<!-- 親 -->
+<text-document
+  :title="doc.title"
+  @update:title="doc.title = $event"
+></text-document>
+
+<!-- 上記は下記と等価 -->
+<text-document :title.sync="doc.title"></text-document>
+```
