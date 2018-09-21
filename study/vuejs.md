@@ -215,6 +215,9 @@ vm.$watch('a', function(newValue, oldValue) {
 ```html
 <span>Message: {{ msg }}</span>
 <span v-once>This will never change: {{ msg }}</span> // 最初の1回のみ更新
+
+<!-- 下記は機能しない。代わりにv-modelを使うこと。 -->
+<textarea>{{text}}</textarea>
 ```
 
 #### Raw HTML
@@ -253,12 +256,7 @@ vm.$watch('a', function(newValue, oldValue) {
 
 #### modifier
 
-`v-on`と`v-model`には Modifier という便利なものが用意されている。
-
-```html
-<!-- submit時にevent.preventDefault()してくれる -->
-<form v-on:submit.prevent="onSubmit"> ... </form>
-```
+`v-on`と`v-model`には Modifier という便利なものが用意されている（後述）
 
 ## Computed Properties and Watchers
 
@@ -504,6 +502,7 @@ computed: {
 
 ```html
 <span v-for="n in 10">{{ n }} </span>
+<!-- 1,2,3,,,,,10 -->
 ```
 
 ### 複数の要素を繰り返す
@@ -531,13 +530,385 @@ v-if と同じく、template を使う。
 ></my-component>
 ```
 
-### is Attribute
+## Event Handling
 
-例えば、li 要素に該当する部分をコンポーネントに置き換えるときは、下記のようにする。
-そうしないと、valid な HTML とならないため、なにか問題が起こるかも。
+### イベントを Listen する
 
 ```html
-<li is="todo-item-component"></li>
-<!-- これは下記と等価 -->
-<todo-item-component></todo-item-component>
+<!-- `counter` is the name of a variable -->
+<button v-on:click="counter += 1">Add 1</button>
+
+<!-- `greet` is the name of a method. reactと異なり()をつけてもInvokeされない -->
+<button v-on:click="greet">Greet</button>
+<button v-on:click="greet('hello')">Greet</button>
+
+<!-- イベントを渡したいときは$eventを使う -->
+<button v-on:click="greet('hello', $event)"></button>
 ```
+
+### Event Modifier
+
+- DOM 専用
+  - `.stop` propagation を止める(バブリングフェーズでの外側のイベントの発生を止める)
+  - `.prevent` preventDefault()
+  - `.capture` capture モードにする（キャプチャフェーズで外側のイベントを発生させる）
+  - `.self` ターゲットが自分自身であったときのみイベントを発生させる
+  - `.passive` passive イベントとして設定（preventDefault しないことを宣言。[参考資料](https://blog.jxck.io/entries/2016-06-09/passive-event-listeners.html)）
+- DOM/Component で使用可
+  - `.once` 一度だけ実行
+
+#### 注意点
+
+- 適用順に注意
+  - `v-on:click.prevent.self`
+    - バブリングを含め、全てのクリックで prevent
+    - ターゲットが自分自身であったときのみ、click イベントが発生
+  - `v-on:click.self.prevent`
+    - ターゲットが自分自身であったときのみ prevent かつイベントが発生
+- 当然だが、`prevent`と`passive`は同時に使用できない
+
+### Key Modifier
+
+```html
+<input v-on:keyup.13="submit">
+<!-- same as above -->
+<input v-on:keyup.enter="submit">
+```
+
+エイリアスの一覧
+
+- `.enter`
+- `.tab`
+- `.delete` (captures both “Delete” and “Backspace” keys)
+- `.esc`
+- `.space`
+- `.up`
+- `.down`
+- `.left`
+- `.right`
+
+[KeyboardEvent.key](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values)をケバブケースにしたものも使用可能。
+
+```html
+<input @keyup.page-down="onPageDown">
+```
+
+独自のエイリアス設定も可能
+
+```js
+Vue.config.keyCodes.f1 = 112;
+```
+
+### System Modifier Key
+
+- `.ctrl`
+- `.alt`
+- `.shift`
+- `.meta`
+
+```html
+<!-- Alt + C -->
+<input @keyup.alt.67="clear">
+
+<!-- Ctrl + Click -->
+<div @click.ctrl="doSomething">Do something</div>
+```
+
+### exact Modifier
+
+`exact`を指定すると、指定したキーのみが押されているときのみイベントが発生する。
+
+```html
+<!-- this will fire even if Alt or Shift is also pressed -->
+<button @click.ctrl="onClick">A</button>
+
+<!-- this will only fire when Ctrl and no other keys are pressed -->
+<button @click.ctrl.exact="onCtrlClick">A</button>
+```
+
+### Mouse Button Midifier
+
+- `.left`
+- `.right`
+- `.middle`
+
+## From Input Bindings
+
+### 基本
+
+- `v-model`を使う
+- IME 環境では確定されるまで data は変更されない。確定前の入力を捕捉したい場合は`input`イベントを使って自前で実装すること。
+
+#### Text
+
+```html
+<input v-model="message">
+```
+
+#### Multiline text
+
+```html
+<textarea v-model="message"></textarea>
+```
+
+#### Checkbox
+
+```html
+<!-- checkboxはbooleanになる -->
+<input type="checkbox" id="checkbox" v-model="checked">
+
+<!-- もし、checkboxに特定の文字列を入れたい場合 -->
+<input
+  type="checkbox"
+  v-model="toggle"
+  true-value="yes"
+  false-value="no"
+>
+
+<!-- checkedNamesは、valueの値からなる配列になる -->
+<div>
+  <input type="checkbox" id="jack" value="Jack" v-model="checkedNames">
+  <input type="checkbox" id="john" value="John" v-model="checkedNames">
+  <input type="checkbox" id="mike" value="Mike" v-model="checkedNames">
+  <span>Checked names: {{ checkedNames }}</span>
+</div>
+```
+
+#### Radio
+
+`picked`には value の値が入る。
+
+```html
+<input type="radio" id="one" value="One" v-model="picked">
+<input type="radio" id="two" value="Two" v-model="picked">
+```
+
+#### Select（単一選択）
+
+- `selected`には`option`で囲んだ値が入る
+- iOS で問題が起こるので、1 行目は`disabled`とし、空の value を設定したほうがよい
+
+```html
+<select v-model="selected">
+  <option disabled value="">Please select one</option>
+  <option>A</option>
+  <option>B</option>
+  <option>C</option>
+</select>
+```
+
+#### Select（複数選択）
+
+```html
+<!-- selectedはArrayになる -->
+<select v-model="selected" multiple>
+  <option>A</option>
+  <option>B</option>
+  <option>C</option>
+</select>
+```
+
+#### その他
+
+`value`の値を v-bind することもできる。この場合、string だけでなく、オブジェクトや数値を渡すこともできる。
+
+### Modifier
+
+`.lazy` input イベントではなく change イベント（フォーカスを失った時）の際に data を更新する。
+`.number` 文字列ではなく数値として扱う
+`.trim` 余分な空白等を削る
+
+```html
+<input v-model.lazy="msg" >
+<input v-model.number="age" type="number">
+<input v-model.trim="msg">
+```
+
+## Components Basics
+
+### 基本
+
+コンポーネントは、root Vue とほぼ同じプロパティを持つ。相違点は次のとおり。
+
+- `el`がない
+- `data`はファンクションにする必要がある
+
+### 注意点
+
+- コンポーネントはシングルルート要素でなければならない
+- template リテラルは IE では使えないので注意。使うなら babel でトランスパイルする。
+
+  ```js
+  template = `
+  multiline
+  `;
+  ```
+
+### global と local
+
+global に宣言すると、root Vue instance の中のどこからでも使える。
+
+```js
+Vue.component('my-component-name');
+```
+
+### props
+
+コンポーネントはコンポーネントの外の値にアクセスできない。
+アクセスするには、props を使って明示的に値を渡す必要がある。
+
+```js
+Vue.component('blog-post', {
+  props: ['title'],
+  template: '<h3>{{ title }}</h3>',
+});
+```
+
+### Emitting Event
+
+コンポーネントから親にイベントを渡すには、`$emit`を使う。
+
+```html
+<!-- component -->
+<button v-on:click="$emit('enlarge-text')"></button>
+<button v-on:click="$emit('enlarge-text', 2)"></button>
+
+<!-- parent -->
+<blog-post :enlarge-text="alert()"></blog-post>
+<blog-post :enlarge-text="alert($event)"></blog-post>
+<!-- メソッドの場合は、第一引数に$eventが渡される -->
+<blog-post :enlarge-text="onEnlargeText"></blog-post>
+```
+
+### コンポーネントで v-model を使うには
+
+```html
+<input v-model="searchText">
+<!-- これは下記と等価 -->
+<input
+  v-bind:value="searchText"
+  v-on:input="searchText = $event.target.value"
+>
+```
+
+コンポーネントの場合は、上記を念頭に置き、下記のようにする。
+
+```html
+<!-- parent -->
+<custom-input
+  v-bind:value="searchText"
+  v-on:input="searchText = $event"
+></custom-input>
+
+<!-- component -->
+<input
+  v-bind:value="value"
+  v-on:input="$emit('input', $event.target.value)"
+>
+
+<!-- ここまで来たら、parentは下記の通り書き換えてもOK -->
+<custom-input v-model="searchText" />
+```
+
+### Slot
+
+React での children と同じ。
+
+```html
+<!-- parent -->
+<alert-box>
+  Something bad happened.
+</alert-box>
+
+<!-- component -->
+<div>
+  <slot></slot> <!-- ここに`Something bad happened.`が入る -->
+</div>
+```
+
+### Dynamic Components
+
+- コンポーネントを動的に切り替えたい場合は、`component`要素と`is`属性を使う。
+- `is`の値には次のいずれかを指定する
+  - 登録済みのコンポーネントの名称を入れた変数
+  - コンポーネントを作成するときの`option`に相当するオブジェクト
+
+```html
+<component :is="currentTabComponent"></component>
+```
+
+### DOM テンプレートパース時の警告
+
+- `ul`,`ol`,`table`のようないくつかの HTML 要素には、それらの要素の中でどの要素が現れるかに制限がある。そんなときは`is`属性を使うこと。
+- なお、下記の中であればこの制約は該当しない
+  - `template`の中
+  - `.vue`ファイルの中
+  - `<script type="text/x-template">`中
+
+```html
+<!-- 下記は認められない -->
+<table>
+  <blog-post-row></blog-post-row>
+</table>
+
+<!-- 下記のようにすべし -->
+<table>
+  <tr is="blog-post-row"></tr>
+</table>
+```
+
+## Component Registration
+
+### 名前の付け方
+
+- 全て小文字、必ずハイフンを含める（W3C）
+- PascalCase で宣言すると、ケバブ、パスカルのどちらでもアクセスできる。ただし、DOM の中ではケバブのみが valid である点に留意する
+
+### Global Registration
+
+```js
+Vue.component('component-a', {});
+Vue.component('component-b', {});
+```
+
+component-b から component-a を利用できる。
+
+### Local Registration
+
+```js
+var ComponentA = {};
+var ComponentB = {};
+
+new Vue({
+  components: {
+    'component-a': ComponentA,
+    'component-b': ComponentB,
+  },
+});
+```
+
+component-b から component-a は利用できない。利用するには下記のようにする。
+
+```js
+var ComponentA = {};
+
+var ComponentB = {
+  components: {
+    'component-a': ComponentA,
+  },
+};
+
+// もしくは、webpack等を使っている場合、ComponentB.vueにおいて
+import ComponentA from './ComponentA.vue';
+
+export default {
+  components: {
+    ComponentA,
+  },
+};
+```
+
+### Base Component
+
+- 頻繁に使用するコンポーネントは Base Component として作成しておくと良い。
+- [Base コンポーネントを自動的にグローバル登録する方法](https://vuejs.org/v2/guide/components-registration.html#Automatic-Global-Registration-of-Base-Components)もある
