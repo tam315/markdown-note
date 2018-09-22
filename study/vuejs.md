@@ -551,7 +551,7 @@ v-if と同じく、template を使う。
 - DOM 専用
   - `.stop` propagation を止める(バブリングフェーズでの外側のイベントの発生を止める)
   - `.prevent` preventDefault()
-  - `.capture` capture モードにする（キャプチャフェーズで外側のイベントを発生させる）
+  - `.capture` capture モードにする（キャプチャフェーズでイベントを発生させる）
   - `.self` ターゲットが自分自身であったときのみイベントを発生させる
   - `.passive` passive イベントとして設定（preventDefault しないことを宣言。[参考資料](https://blog.jxck.io/entries/2016-06-09/passive-event-listeners.html)）
 - DOM/Component で使用可
@@ -561,10 +561,10 @@ v-if と同じく、template を使う。
 
 - 適用順に注意
   - `v-on:click.prevent.self`
-    - バブリングを含め、全てのクリックで prevent
-    - ターゲットが自分自身であったときのみ、click イベントが発生
+    - バブリングを含めた全てのフェーズにおいて prevent する
+    - ターゲットが自分自身のフェーズにおいてのみ、click イベントが発生する
   - `v-on:click.self.prevent`
-    - ターゲットが自分自身であったときのみ prevent かつイベントが発生
+    - ターゲットが自分自身のフェーズにおいてのみ click イベントが発生かつ prevent する
 - 当然だが、`prevent`と`passive`は同時に使用できない
 
 ### Key Modifier
@@ -654,10 +654,10 @@ Vue.config.keyCodes.f1 = 112;
 #### Checkbox
 
 ```html
-<!-- checkboxはbooleanになる -->
+<!-- checkedはbooleanになる -->
 <input type="checkbox" id="checkbox" v-model="checked">
 
-<!-- もし、checkboxに特定の文字列を入れたい場合 -->
+<!-- もし、toggleに特定の文字列を入れたい場合 -->
 <input
   type="checkbox"
   v-model="toggle"
@@ -1089,20 +1089,20 @@ Vue.component('base-input', {
 });
 ```
 
-```html
+```jsx
 <base-input
-  label="something"
-  v-model="username"
-  class="username-input"
-  placeholder="Enter your username"
-></base-input>
+  label="something" // `label` propsになる
+  v-model="username" // `value` propsになる。また、inputイベントを受けて値を更新する。
+  class="username-input" // input要素にアタッチされる
+  placeholder="Enter your username" // input要素にアタッチされる
+/>
 ```
 
 ## Custom Events
 
 ### イベント名
 
-イベント名には常に kebab-case を使え
+イベント名には常に kebab-case を使え。例外はない。
 
 ### ネイティブイベントを補足する
 
@@ -1116,7 +1116,7 @@ Vue.component('base-input', {
 ### `.sync` modifier
 
 - 親とコンポーネントの間で擬似的な two-way binding を行うためのもの。
-- キモは`update:`の記法と`.sync`がセットになっている
+- キモは`update:`の記法と`.sync`がセットになっていること。
 
 ```js
 // コンポーネント側
@@ -1133,3 +1133,371 @@ this.$emit('update:title', newTitle);
 <!-- 上記は下記と等価 -->
 <text-document :title.sync="doc.title"></text-document>
 ```
+
+## Slot
+
+### Scope
+
+親テンプレート内の全てのものは親のスコープでコンパイルされ、子テンプレート内の全てものは子のスコープでコンパイルされる
+
+### Named Slot
+
+```html
+<!-- component -->
+<div class="container">
+  <header>
+    <slot name="header">Default Content</slot>
+  </header>
+  <main>
+    <slot>Default Content</slot>
+  </main>
+  <footer>
+    <slot name="footer">Default Content</slot>
+  </footer>
+</div>
+
+<!-- parent -->
+<base-layout>
+  <template slot="header">
+    <h1>Here might be a page title</h1>
+  </template>
+
+  <p>A paragraph for the main content.</p>
+  <p>And another one.</p>
+
+  <template slot="footer">
+    <p>Here's some contact info</p>
+  </template>
+</base-layout>
+```
+
+### Scoped Slots
+
+`slot-scope`属性を指定することで、slot（子）の属性に、外側（親）からアクセスできる。
+
+```html
+<!-- component -->
+<slot :a="1" normalAttr="2"></slot>
+
+<!-- parent -->
+<todo-list>
+  <p slot-scope="slotProps">{{ slotProps }}</p>
+  <!-- { "a": 1, "normalAttr": "2" } -->
+</todo-list>
+```
+
+## Dynamic & Async Components
+
+### Dynamic Component（keep-alive）
+
+- `is`プロパティを使ってコンポーネントを切り替えると、切り替える前のコンポーネントは破棄される。
+  破棄したくない場合は、`keep-alive`要素で囲むこと。
+- この機能は、コンポーネントが name を持っている場合にのみ機能するので注意すること
+
+```html
+<keep-alive>
+  <component v-bind:is="currentTabComponent"></component>
+</keep-alive>
+```
+
+### Async Components
+
+コンポーネントを非同期に作成する方法
+
+```js
+Vue.component('async-example', option);
+
+// 方法1（ファンクションを使う）
+const option = function(resolve, reject) {
+  setTimeout(function() {
+    resolve({
+      template: '<div>I am async!</div>',
+    });
+  }, 1000);
+};
+
+// 方法2（Webpack の code-splitting の機能 を使用）
+const option = function(resolve) {
+  require(['./my-async-component'], resolve);
+};
+
+// 方法3（Promiseを使う方法）
+const option = () => import('./my-async-component');
+```
+
+## Handling Edge Cases
+
+### 親へのアクセス
+
+下記のような便利な変数もあるが、デバッグ目的でのみ使うこと。
+
+- `$root` root instance の値にアクセス
+- `$parent` 親の値にアクセス
+
+### 子へのアクセス
+
+ref を使用することで、要素への参照を取得できる
+
+```html
+<input ref="usernameInput"></input>
+```
+
+```js
+this.$refs.input.focus();
+```
+
+コンポーネントの中の input に focus したい場合は[こちら](https://vuejs.org/v2/guide/components-edge-cases.html#Accessing-Child-Component-Instances-amp-Child-Elements)を参照
+
+### Dependency Injection
+
+React の Context に近い。親コンポーネントのデータを、子・孫コンポーネントで使いたい時に使う。多用厳禁（Vuex を使え）。
+
+```js
+// 親コンポーネント
+provide: function () {
+  return {
+    getMap: this.getMap
+  }
+}
+
+// 子 or 孫コンポーネント
+inject: ['getMap']
+```
+
+### Programatic Event Listener
+
+- `$emit` イベントを発生させる
+- `$on` イベントを Listen する
+- `$once` イベントを一度だけ Listen する
+- `$off` イベントの Listen をやめる
+
+これらをうまく使うとコードをきれいに書ける場合がある。
+
+例：
+
+```js
+mounted: function () {
+  this.attachDatepicker('startDateInput')
+  this.attachDatepicker('endDateInput')
+},
+methods: {
+  attachDatepicker: function (refName) {
+    var picker = new Pikaday({
+      field: this.$refs[refName],
+      format: 'YYYY-MM-DD'
+    })
+
+    this.$once('hook:beforeDestroy', function () {
+      picker.destroy()
+    })
+  }
+}
+```
+
+### 循環参照の解決
+
+循環参照 = 互いに依存するコンポーネント
+
+グローバル登録した場合は Vue が自動的に問題を解消するが、webpack を使っている場合は下記のエラーが出る。
+
+```txt
+Failed to mount component: template or render function not defined.
+```
+
+これを解決するには、親となるコンポーネントで次のようにする（[詳細](https://vuejs.org/v2/guide/components-edge-cases.html#Circular-References-Between-Components)）。
+
+```js
+// $optionsを使う方法
+beforeCreate: function () {
+  this.$options.components.TreeFolderContents = require('./tree-folder-contents.vue').default
+}
+
+// webpackのimportを使う方法
+components: {
+  TreeFolderContents: () => import('./tree-folder-contents.vue')
+}
+```
+
+### テンプレートの作り方（番外編）
+
+どちらも使うな
+
+- Inline Template
+- X-Template
+
+## Transitions & Animation
+
+TODO
+
+## Mixins
+
+mixin = コンポーネント作成時につかう`option`の雛形
+
+```js
+var myMixin = {
+  created: function() {
+    this.hello();
+  },
+  methods: {
+    hello: function() {
+      console.log('hello from mixin!');
+    },
+  },
+};
+
+new Vue({
+  mixins: [mixin],
+  // ...
+}
+```
+
+### マージ戦略
+
+- `data` sharrow merge (1 階層目だけ)
+- `Lifecycle method` 全て保持される(mixin の方が最初に実行される)
+- `methods`, `components`, `directives` 重複した場合はコンポーネントのほうが優先される
+
+マージ戦略のカスタマイズ方法は[こちら](https://vuejs.org/v2/guide/mixins.html#Custom-Option-Merge-Strategies)
+
+### Global Mixin
+
+使うな
+
+```js
+Vue.mixin({
+  /*...*/
+});
+```
+
+## Custom Directives
+
+自分だけの`v-***`を作ることができる。詳細は[こちら](https://vuejs.org/v2/guide/custom-directive.html)。
+
+```js
+// グローバル
+Vue.directive('focus', {
+  inserted: function (el) {
+    el.focus()
+  }
+})
+
+// ローカル（コンポーネントごと）
+directives: {
+  focus: {
+    inserted: function (el) {
+      el.focus()
+    }
+  }
+}
+```
+
+## Render Functions & JSX
+
+TODO
+
+## Plugins
+
+プラグインのタイプ
+
+- グローバルなメソッドとプロパティを追加する
+- グローバルなアセットを追加する（directives/filters/transitions etc）
+- コンポーネントの option を mixin で追加する(e.g. vue-router)
+- Vue instanse メソッドを追加する(Vue.prototype を使う)
+- 上記のいずれかと組み合わせて、API を追加する(e.g. vue-router)
+
+プラグインの使い方
+
+```js
+Vue.use(MyPlugin, options);
+
+new Vue({});
+```
+
+## Filter
+
+Filter は、Mustache 記法の中と、v-bind の中で使える。
+
+```html
+<!-- in mustaches -->
+{{ message | capitalize }}
+
+<!-- in v-bind -->
+<div v-bind:id="rawId | formatId"></div>
+```
+
+宣言方法
+
+```js
+// ローカル
+filters: {
+  capitalize: function (value) {
+    if (!value) return ''
+    value = value.toString()
+    return value.charAt(0).toUpperCase() + value.slice(1)
+  }
+}
+
+// グローバル
+Vue.filter('capitalize', function (value) {
+  if (!value) return ''
+  value = value.toString()
+  return value.charAt(0).toUpperCase() + value.slice(1)
+})
+
+new Vue({})
+```
+
+なお、Filter に引数を渡した場合は、それらは function の第２引数以降に渡される。
+
+```html
+{{ message | filterA('string', someValue) }}
+
+<!-- function (message, arg1, arg2)) -->
+```
+
+## Production Deployment
+
+[参照](https://vuejs.org/v2/guide/deployment.html)
+
+## Single File Components
+
+webpack+`vue-loader`により、シングルファイルコンポーネントを利用することで、次のことが可能になる。
+
+- シンタックスハイライト
+- テンプレートエンジンの利用
+- プリプロセッサの利用
+- scoped CSS の利用　など
+
+![single file component](https://vuejs.org/images/vue-component-with-preprocessors.png =500x)
+
+## Unit Testing
+
+[基本的なテストのやり方](https://vuejs.org/v2/guide/unit-testing.html)
+[vue-test-utils](https://vue-test-utils.vuejs.org/)
+
+## Typescript
+
+### コンポーネントの Type
+
+コンポーネントにタイプをアタッチするには、`Vue.component` or `Vue.extend`でコンポーネントを作ること。
+
+### Class-Style Vue Components
+
+[vue-class-component](https://github.com/vuejs/vue-class-component)を使えば
+Vue コンポーネントをクラスで記載できる。
+
+## Routing
+
+[vue-router](https://router.vuejs.org/)を使え
+
+## State Management
+
+[vuex](https://vuex.vuejs.org/)を使え
+
+vue-devtools を使えばタイムトラベルデバッグもできる
+
+## Server Side Rendering
+
+[Nuxt](https://nuxtjs.org/)を使え
+
+もしくは[こちらのガイド](https://ssr.vuejs.org/)を参照して自前でやれ
