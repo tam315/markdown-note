@@ -1234,7 +1234,7 @@ const option = function(resolve) {
   require(['./my-async-component'], resolve);
 };
 
-// 方法3（Promiseを使う方法）
+// 方法3（Promiseを使う方法。importはPromiseを返す）
 const option = () => import('./my-async-component');
 ```
 
