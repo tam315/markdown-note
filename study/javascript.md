@@ -196,3 +196,22 @@ firebase storage のダウンロードリンクを作成する際によく使う
 encodeURIComponent('post/filename.jpg');
 // => "post%2Ffilename.jpg"
 ```
+
+### Object のクローン
+
+spread(`...`)を使ってオブジェクトをコピーしても、2 階層目以下の変数は依然同じオブジェクトを指し示す。
+これを回避するには lodash の`cloneDeep`などが必要となるが、手っ取り早くやるには下記のようにするとよい。
+
+```js
+var oldObject = {
+  address: {
+    street: 'Station Road',
+    city: 'Pune',
+  },
+};
+var newObject = JSON.parse(JSON.stringify(oldObject));
+
+newObject.address.city = 'Delhi';
+console.log(oldObject); // => Pune
+console.log(newObject); // => Delhi
+```
