@@ -111,12 +111,12 @@ export default {
 };
 ```
 
-ローカルの computed と一緒に使うときは`...`オペレータを使うと良い。
+ローカルの computed と一緒に使う場合は下記のようにする。
 
 ```js
 computed: {
-  localComputed () { /* ... */ },
   ...mapState({})
+  localComputed () { /* ... */ },
 }
 ```
 
@@ -230,7 +230,7 @@ store.commit('increment', {
 
 ### Object-Style Commit
 
-`store.commit()`には、string の他にオブジェクトを渡すこともできる。
+`store.commit()`には、string ではなくオブジェクトを渡すこともできる。
 この場合、このオブジェクトが全て payload として handler に渡される。
 
 ```js
@@ -318,11 +318,12 @@ const store = new Vuex.Store({
 });
 ```
 
-`context`は`store`インスタンスとほぼ同じなので、下記が使える。
+`context`は`store`インスタンスとほぼ同じなので、たとえば下記が使える。
 
 - `context.commit`
 - `context.state`
 - `context.getters`
+- `context.dispatch`　など
 
 下記のように destructur を使うことが多い。
 

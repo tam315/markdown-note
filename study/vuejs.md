@@ -206,7 +206,7 @@ vm.$watch('a', function(newValue, oldValue) {
 - テンプレートは Valid な HTML である。
 - テンプレートを使わずに、JSX と`render`ファンクションを使うこともできる。
 
-### Interpolation(Vue のデータを HTML に展開する)
+### Interpolation(Vue のデータをテンプレートに展開する)
 
 #### Text
 
@@ -446,15 +446,20 @@ data の Array に対して行った、`push()`,`pop()`,`shift()`,`unshift()`,`s
 
 `filter()`や`concat()`等の元データを変更しないメソッドの場合は、元データを書き換えるのを忘れないこと。
 
-#### 注意
-
-下記の操作は Vue が検知できないので注意。対処法は[こちら](https://vuejs.org/v2/guide/list.html#Caveats)。
+また、下記の操作は Vue が検知できないので注意。
 
 ```js
 // インデックスを使用した値の変更
 vm.items[indexOfItem] = newValue;
 // Arrayのlengthの編集
 vm.items.length = newLength;
+```
+
+そんなときは`Vue.set`や`splice`を使うこと
+
+```js
+Vue.set(vm.items, indexOfItem, newValue);
+vm.items.splice(indexOfItem, 1, newValue);
 ```
 
 ### Object の変更検知
@@ -469,8 +474,11 @@ var vm = new Vue({
   },
 });
 vm.b = 2; // `vm.b` is NOT reactive
+```
 
-// ルートレベルでなければ、setを使うことで追加は可能
+ルートレベルでなければ、set を使うことで追加は可能
+
+```js
 Vue.set(vm.userProfile, 'age', 27);
 
 // setではなくObject.Assignなどを使いたいときは、
@@ -538,7 +546,7 @@ v-if と同じく、template を使う。
 <!-- `counter` is the name of a variable -->
 <button v-on:click="counter += 1">Add 1</button>
 
-<!-- `greet` is the name of a method. reactと異なり()をつけてもInvokeされない -->
+<!-- `greet` is the name of a method. JSXと異なり、()をつけてもInvokeされない -->
 <button v-on:click="greet">Greet</button>
 <button v-on:click="greet('hello')">Greet</button>
 
@@ -710,13 +718,13 @@ Vue.config.keyCodes.f1 = 112;
 
 #### その他
 
-`value`の値を v-bind することもできる。この場合、string だけでなく、オブジェクトや数値を渡すこともできる。
+`value`の値は、string 以外にも、v-bind した値を使用することもできる。この場合、string だけでなく、オブジェクトや数値を渡すことができる。
 
 ### Modifier
 
-`.lazy` input イベントではなく change イベント（フォーカスを失った時）の際に data を更新する。
-`.number` 文字列ではなく数値として扱う
-`.trim` 余分な空白等を削る
+- `.lazy` input イベントではなく change イベント（フォーカスを失った時）の際に data を更新する。
+- `.number` 文字列ではなく数値として扱う
+- `.trim` 余分な空白等を削る
 
 ```html
 <input v-model.lazy="msg" >
@@ -774,13 +782,18 @@ Vue.component('blog-post', {
 <button v-on:click="$emit('enlarge-text', 2)"></button>
 
 <!-- parent -->
+<!-- 引数があり、かつメソッドの()を省略した場合、自動的に第一引数に渡される -->
 <blog-post :enlarge-text="alert()"></blog-post>
 <blog-post :enlarge-text="alert($event)"></blog-post>
-<!-- メソッドの場合は、第一引数に$eventが渡される -->
 <blog-post :enlarge-text="onEnlargeText"></blog-post>
 ```
 
 ### コンポーネントで v-model を使うには
+
+v-bind は、内部的には次の 2 つの機能から成り立っている。
+
+- `value`prop へのバインディング
+- `input`イベントによるデータの更新
 
 ```html
 <input v-model="searchText">
@@ -816,9 +829,9 @@ checkbox などを使うときは、下記のような工夫が必要。
 ```js
 Vue.component('base-checkbox', {
   model: {
-    // v-modelに、valueの代わりに`checked`を見ろ、と伝える
+    // v-modelに、valueの代わりに`checked`を使え、と伝える
     prop: 'checked',
-    // v-modelに、inputの代わりに`change`イベントを見ろ、と伝える
+    // v-modelに、inputイベントの代わりに`change`イベントを見ろ、と伝える
     event: 'change',
   },
   props: {
@@ -865,9 +878,9 @@ React での children と同じ。
 
 - `ul`,`ol`,`table`のようないくつかの HTML 要素には、それらの要素の中でどの要素が現れるかに制限がある。そんなときは`is`属性を使うこと。
 - なお、下記の中であればこの制約は該当しない
-  - `template`の中
+  - `template`プロパティの中
   - `.vue`ファイルの中
-  - `<script type="text/x-template">`中
+  - `<script type="text/x-template">`の中
 
 ```html
 <!-- 下記は認められない -->
@@ -1268,8 +1281,8 @@ inject: ['getMap']
 
 - `$emit` イベントを発生させる
 - `$on` イベントを Listen する
-- `$once` イベントを一度だけ Listen する
 - `$off` イベントの Listen をやめる
+- `$once` イベントを一度だけ Listen する（`$off`がいらない？）
 
 これらをうまく使うとコードをきれいに書ける場合がある。
 
@@ -1353,9 +1366,9 @@ new Vue({
 
 ### マージ戦略
 
-- `data` sharrow merge (1 階層目だけ)
-- `Lifecycle method` 全て保持される(mixin の方が最初に実行される)
-- `methods`, `components`, `directives` 重複した場合はコンポーネントのほうが優先される
+- `data` sharrow merge (1 階層目だけ)される。重複時は mixin 側が破棄される
+- `Lifecycle method` Array になる。全て保持される(mixin の方が最初に実行される)
+- `methods`, `components`, `directives` 重複時は mixin 側が破棄される
 
 マージ戦略のカスタマイズ方法は[こちら](https://vuejs.org/v2/guide/mixins.html#Custom-Option-Merge-Strategies)
 
@@ -1374,6 +1387,8 @@ Vue.mixin({
 自分だけの`v-***`を作ることができる。詳細は[こちら](https://vuejs.org/v2/guide/custom-directive.html)。
 
 ```js
+// v-focus を作りたい場合
+
 // グローバル
 Vue.directive('focus', {
   inserted: function (el) {
@@ -1472,8 +1487,8 @@ webpack+`vue-loader`により、シングルファイルコンポーネントを
 
 ## Unit Testing
 
-[基本的なテストのやり方](https://vuejs.org/v2/guide/unit-testing.html)
-[vue-test-utils](https://vue-test-utils.vuejs.org/)
+- [基本的なテストのやり方](https://vuejs.org/v2/guide/unit-testing.html)
+- [vue-test-utils](https://vue-test-utils.vuejs.org/)
 
 ## Typescript
 
