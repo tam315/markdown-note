@@ -298,7 +298,10 @@ export default {
 
 ## Action
 
-構造は Mutation とほぼ同じ。非同期処理を行えるという点において異なる。
+構造は Mutation とほぼ同じであるものの、下記の点が異なる。
+
+- Action は非同期処理を行える
+- Action は Store にアクセスできる。Mutation は state にしかアクセスできない。
 
 ```js
 const store = new Vuex.Store({
@@ -401,3 +404,339 @@ actions: {
   }
 }
 ```
+
+## Modules
+
+Vuex の Store は、モジュール単位に分けることができる。
+
+```js
+const moduleA = {
+  state: { ... },
+  mutations: { ... },
+  actions: { ... },
+  getters: { ... }
+}
+
+const moduleB = {
+  state: { ... },
+  mutations: { ... },
+  actions: { ... }
+}
+
+const store = new Vuex.Store({
+  modules: {
+    a: moduleA,
+    b: moduleB
+  }
+})
+
+store.state.a // -> `moduleA`'s state
+store.state.b // -> `moduleB`'s state
+```
+
+### Module Local State
+
+モジュールの中で、Local State（モジュール自身の State）と Root State（親の State）にアクセスする方法は次の通り。
+
+```js
+const moduleA = {
+  getters: {
+    someGetter(state, getters, rootState, rootGetters) {},
+  },
+  actions: {
+    someAction({ state, getters, rootState, rootGetters }) {},
+  },
+  mutations: {
+    someMutation(state) {}, // mutationsはローカルStateにしかアクセスできない！
+  },
+};
+```
+
+`getters`や`actions`は Root State にアクセスできるものの、`mutations`はローカル State にしかアクセスできない。モジュールの State の変更は、あくまでそのモジュールの Mutation でのみで行う。
+
+### Name Spacing
+
+- デフォルトでは、モジュール内の`getters`,`mutations`,`actions`はグローバルな Namespace にそのまま登録される（他のモジュールから容易にアクセスできる）。一方、`namespaced`キーを true にすると、`モジュール名/ファンクション名`の形で登録される。
+- Namespace が有効なモジュール内の getter と actions は、ローカライズされた`getters`,`dispatch`,`commit`を受け取る。これは、モジュール内の他のアセットに Prefix なしでアクセスできることを意味する。
+
+```js
+const store = new Vuex.Store({
+  modules: {
+    account: {
+      namespaced: true,
+
+      // module assets
+      state: { ... }, // module state is already nested and not affected by namespace option
+      getters: {
+        isAdmin () { ... } // -> getters['account/isAdmin']
+      },
+      actions: {
+        login () { ... } // -> dispatch('account/login')
+      },
+      mutations: {
+        login () { ... } // -> commit('account/login')
+      },
+
+      // nested modules
+      modules: {
+        // inherits the namespace from parent module
+        myPage: {
+          state: { ... },
+          getters: {
+            profile () { ... } // -> getters['account/profile']
+          }
+        },
+
+        // further nest the namespace
+        posts: {
+          namespaced: true,
+
+          state: { ... },
+          getters: {
+            popular () { ... } // -> getters['account/posts/popular']
+          }
+        }
+      }
+    }
+  }
+})
+```
+
+#### Namespaced Modules 内からグローバル Assets にアクセスする
+
+- 親の state と getters にアクセスしたいときは、`rootState`,`rootGetters`を使う。
+- 親の`dispatch`と`commit`を使いたいときは、`{root: true}`オプションを指定する。
+
+```js
+modules: {
+  foo: {
+    namespaced: true,
+
+    getters: {
+      someGetter (state, getters, rootState, rootGetters) {
+        getters.someOtherGetter // -> 'foo/someOtherGetter'
+        rootGetters.someOtherGetter // -> 'someOtherGetter'
+      },
+      someOtherGetter: state => { ... }
+    },
+
+    actions: {
+      someAction ({ state, getters, rootState, rootGetters, dispatch, commit }) {
+        getters.someGetter // -> 'foo/someGetter'
+        rootGetters.someGetter // -> 'someGetter'
+
+        dispatch('someOtherAction') // -> 'foo/someOtherAction'
+        dispatch('someOtherAction', null, { root: true }) // -> 'someOtherAction'
+
+        commit('someMutation') // -> 'foo/someMutation'
+        commit('someMutation', null, { root: true }) // -> 'someMutation'
+      },
+      someOtherAction (ctx, payload) { ... }
+    }
+  }
+}
+```
+
+#### Namespaced モジュール内でグローバルな Action を登録する。
+
+Namespaced 内で Prefix なしのアクションを登録する方法。混乱を招くだけの機能のような気がする。
+
+```js
+modules: {
+  foo: {
+    namespaced: true,
+
+    actions: {
+      someAction: {
+        root: true,
+        handler (namespacedContext, payload) { ... } // -> 'someAction'
+      }
+    }
+  }
+}
+```
+
+#### Namespaced モジュールをコンポーネントにマップする
+
+- `mapState`、`mapActions`の第一引数にモジュール Prefix を与えることで、簡潔に記載できる。
+- 又は`createNamespacedHelpers`を使うことでも同じことが可能。
+
+```js
+computed: {
+  ...mapState({
+    a: state => state.some.nested.module.a,
+    b: state => state.some.nested.module.b
+  }),
+  ...mapState('some/nested/module', {
+    a: state => state.a,
+    b: state => state.b
+  })
+},
+methods: {
+  ...mapActions([
+    'some/nested/module/foo', // -> this['some/nested/module/foo']()
+    'some/nested/module/bar' // -> this['some/nested/module/bar']()
+  ]),
+  ...mapActions('some/nested/module', [
+    'foo', // -> this.foo()
+    'bar' // -> this.bar()
+  ])
+}
+
+// もしくは
+
+const { mapState, mapActions } = createNamespacedHelpers('some/nested/module')
+
+export default {
+  computed: {
+    // look up in `some/nested/module`
+    ...mapState({
+      a: state => state.a,
+      b: state => state.b
+    })
+  },
+  methods: {
+    // look up in `some/nested/module`
+    ...mapActions([
+      'foo',
+      'bar'
+    ])
+  }
+}
+```
+
+### Dynamic Module Registration
+
+store を作成した後に、動的にモジュールを追加・削除できる。
+`vuex-router-sync`など、サードパーティライブラリを使う際に必要となる構文。
+
+```js
+// 登録
+store.registerModule('myModule', {});
+store.registerModule(['nested', 'myModule'], {});
+
+// 以前の状態を保持しておきたい場合？TODO: ちょっと意味が分からない
+store.registerModule('a', module, { preserveState: true });
+
+// 削除
+store.unregisterModule('myModule');
+```
+
+### Module Reuse
+
+モジュールを再利用したい場合は、コンポーネントを作るときと同じように、各プロパティをファンクションとして定義する。
+
+```js
+const MyReusableModule = {
+  state() {
+    return {
+      foo: 'bar',
+    };
+  },
+  // mutations, actions, getters...
+};
+```
+
+## Application Structure
+
+下記のルールさえ守っていれば、アプリケーションの構成に制約はない。
+
+- アプリケーションレベルの State は Store に集約する
+- state を変更する方法は mutations のみ
+- 非同期処理は actions で行う
+
+store ファイルは単一で管理してもいいし、もし大きくなりすぎたら actions や mutations を別ファイルに切り出したら良い。例えば、下記のような構成がおすすめ。
+
+```txt
+├── index.html
+├── main.js
+├── api
+│   └── ... # abstractions for making API requests
+├── components
+│   ├── App.vue
+│   └── ...
+└── store
+    ├── index.js          # where we assemble modules and export the store
+    ├── actions.js        # root actions
+    ├── mutations.js      # root mutations
+    └── modules
+        ├── cart.js       # cart module
+        └── products.js   # products module
+```
+
+## Plugins
+
+### 作り方とセットアップ方法
+
+```js
+const myPlugin = store => {
+  // called when the store is initialized
+
+  store.subscribe((mutation, state) => {
+    // called after every mutation.
+    // The mutation comes in the format of `{ type, payload }`.
+  });
+};
+
+const store = new Vuex.Store({
+  // ...
+  plugins: [myPlugin],
+});
+```
+
+### state のスナップショットを取るプラグイン例
+
+```js
+const myPluginWithSnapshot = store => {
+  let prevState = _.cloneDeep(store.state);
+
+  store.subscribe((mutation, state) => {
+    let nextState = _.cloneDeep(state);
+
+    // compare `prevState` and `nextState`...
+
+    // save state for next mutation
+    prevState = nextState;
+  });
+};
+
+// 開発環境でのみ有効化する方法
+const store = new Vuex.Store({
+  // ...
+  plugins: process.env.NODE_ENV !== 'production' ? [myPluginWithSnapshot] : [],
+});
+```
+
+## Strict Mode
+
+Strict モードを有効にすると、state が mutation 以外で更新された時にエラーを投げるようになる。
+処理が重いのでプロダクション環境では無効にすること
+
+```js
+const store = new Vuex.Store({
+  strict: process.env.NODE_ENV !== 'production',
+});
+```
+
+Strict モードでは、v-model に vuex の state をセットするとエラーになる（直接、値を変更しているから）。これを避けるには下記のような工夫が必要。
+
+```html
+<input v-model="message">
+```
+
+```js
+computed: {
+  message: {
+    get () {
+      return this.$store.state.obj.message
+    },
+    set (value) {
+      this.$store.commit('updateMessage', value)
+    }
+  }
+}
+```
+
+## Testing
+
+[公式に書いてある方法](https://vuex.vuejs.org/guide/testing.html)よりも、Jest を使ったほうがはるかに簡単にできそう。
