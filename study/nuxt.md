@@ -2,6 +2,10 @@
 
 [[toc]]
 
+## API
+
+[https://nuxtjs.org/api](https://nuxtjs.org/api)
+
 ## インストール
 
 ### create-nuxt-app を使う
