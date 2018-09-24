@@ -986,3 +986,164 @@ module.exports = function() {
   });
 };
 ```
+
+## Vuex Store
+
+### セットアップ
+
+store ディレクトリにファイルがあれば、自動的に下記の処理が行われる。
+
+1. Vuex のインポート
+1. Vuex を Vendor Bundle に組み込み
+1. root Vue インスタンスに store オプションを追加（配下の全てのコンポーネントで利用できるように）
+
+Nuxt には 2 つのモードがある。
+
+- **Classic** `store/index.js`が store インスタンスを返すモード
+- **Modules** store フォルダにある各`.js`ファイルが Namespaced Module に変換される
+
+### Classic Mode
+
+ストアを返すファンクションをエクスポートすること。
+
+```js
+// store/index.js
+import Vuex from 'vuex';
+
+const createStore = () => {
+  return new Vuex.Store({
+    state: {
+      counter: 0,
+    },
+    mutations: {
+      increment(state) {
+        state.counter++;
+      },
+    },
+  });
+};
+
+export default createStore;
+```
+
+### Modules Mode
+
+このモードで使いたいときは次のようにする。
+
+- state はファンクションとして名前付きでエクスポート
+- mutations、actions、plugins 等 は Object として名前付きでエクスポート
+
+```js
+// store/index.js
+export const state = () => ({
+  counter: 0,
+});
+export const mutations = {
+  increment(state) {
+    state.counter++;
+  },
+};
+export const plugins = [ myPlugin ]
+
+// store/todos.js（サブフォルダにする必要はない）
+export const state = () => ({
+  list: []
+})
+
+export const mutations = {
+  add (state, text) {
+    state.list.push({
+      text: text,
+      done: false
+    })
+  },
+  remove (state, { todo }) {
+    state.list.splice(state.list.indexOf(todo), 1)
+  },
+  toggle (state, todo) {
+    todo.done = !todo.done
+  }
+}
+```
+
+### nuxtServerInit
+
+- ルートストアの Actions で`nuxtServerInit`が定義されていると、Nuxt はそのアクションを呼び出す（サーバサイドのみ）。
+- 第二引数に`context`を取る。
+
+```js
+actions: {
+  nuxtServerInit ({ commit }, { req }) {
+    if (req.session.user) {
+      commit('user', req.session.user)
+    }
+  }
+}
+```
+
+### Strict Mode
+
+Strict モードを有効にしたいときは下記のようにする。
+
+```js
+// Classic Mode
+const createStore = () => {
+  return new Vuex.Store({
+    strict: false,
+  });
+};
+
+// Module Mode
+export const strict = false;
+```
+
+## Commands and Deployment
+
+### Commands
+
+- `nuxt` 開発用サーバを立ち上げる
+- `nuxt build` webpack でビルド
+- `nuxt start` build 後にサーブ
+- `nuxt generate` 全てのページを HTML として書き出し
+
+オプション
+
+- `-c` コンフィグファイルを指定
+- `-s` SPA モードで立ち上げ（SSR を無効化）
+
+### Production Deployment
+
+#### Server Rendered Deployment (Universal)
+
+node.js を使ってサーブする方法
+
+```bash
+nuxt build
+nuxt start
+```
+
+#### Static Generated Deployment (Pre Rendered)
+
+```bash
+yarn generate
+# distフォルダをサーブする
+```
+
+- デフォルトでは、このモードでは Dynamic Routes は無視されるので、[手動でのルート生成](https://nuxtjs.org/api/configuration-generate)が必要。
+- このモードはユーザ認証を使うようなアプリケーションには向かない
+
+#### Single Page Application Deployment (SPA)
+
+- `nuxt.config.js`の`mode`を`spa`にセットする
+- `yarn build`
+- `dist`フォルダをサーブする
+
+## Deployment Tools
+
+### E2E Testing
+
+[こちら](https://nuxtjs.org/guide/development-tools#end-to-end-testing))を参照
+
+### ESLint と Prettier
+
+[こちら](https://nuxtjs.org/guide/development-tools#eslint-and-prettier)を参照してセットアップする。
