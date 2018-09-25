@@ -640,7 +640,7 @@ Vue.config.keyCodes.f1 = 112;
 - `.right`
 - `.middle`
 
-## From Input Bindings
+## Form Input Bindings
 
 ### 基本
 
@@ -774,7 +774,7 @@ Vue.component('blog-post', {
 
 ### Emitting Event
 
-コンポーネントから親にイベントを渡すには、`$emit`を使う。
+コンポーネントから親にイベントを渡すには、`this.$emit`を使う。
 
 ```html
 <!-- component -->
@@ -1068,7 +1068,7 @@ post: {
 ### One-way data flow
 
 いかなる場合でも、props の値は変更するな。
-変えたいなら、あくまで初期値として利用するか、computed を使うなどしろ。
+変えたいなら、あくまで`data`の初期値として利用するにとどめるか、computed を使うなどしろ。
 
 ### コンポーネントに対して Props に記載してない属性を渡すとどうなる？
 
@@ -1259,7 +1259,7 @@ ref を使用することで、要素への参照を取得できる
 this.$refs.input.focus();
 ```
 
-コンポーネントの中の input に focus したい場合は[こちら](https://vuejs.org/v2/guide/components-edge-cases.html#Accessing-Child-Component-Instances-amp-Child-Elements)を参照
+コンポーネントの中の要素への参照を取得したい場合は[こちら](https://vuejs.org/v2/guide/components-edge-cases.html#Accessing-Child-Component-Instances-amp-Child-Elements)を参照
 
 ### Dependency Injection
 
@@ -1311,7 +1311,7 @@ methods: {
 
 循環参照 = 互いに依存するコンポーネント
 
-グローバル登録した場合は Vue が自動的に問題を解消するが、webpack を使っている場合は下記のエラーが出る。
+`Vue.component`を使ってグローバル登録した場合は Vue が自動的に問題を解消するが、webpack を使っている場合は下記のエラーが出る。
 
 ```txt
 Failed to mount component: template or render function not defined.
@@ -1358,7 +1358,7 @@ var myMixin = {
   },
 };
 
-new Vue({
+var MyComponent = new Vue.extend({
   mixins: [mixin],
   // ...
 }

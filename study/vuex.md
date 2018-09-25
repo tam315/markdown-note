@@ -94,7 +94,7 @@ export default {
       count: state => state.count,
       // storeのキー名を使う方法
       countAlias: 'count',
-      // ローカルStateと組み合わせる場合はアロー関数は使えない
+      // ローカルStateと組み合わせる場合はノーマル関数を使う
       countPlusLocalState(state) {
         return state.count + this.localCount;
       },
@@ -328,7 +328,7 @@ const store = new Vuex.Store({
 - `context.getters`
 - `context.dispatch`　など
 
-下記のように destructur を使うことが多い。
+下記のように destructuring を使うことが多い。
 
 ```js
 actions: {

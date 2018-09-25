@@ -57,15 +57,15 @@ var app = new Vue({
 
 ## Dynamic Route Matching
 
-下記は、`/user/foo`と`/user/bar`のどちらにもマッチする。
-`id`の部分は、`this.$route.params`としてコンポーネントに渡される。
+次のようにすることで、ダイナミックルーティングを設定できる。
+`:username`や`:post_id`の部分は、`this.$route.params`としてコンポーネントに渡される。
 
 ```js
 const routes = [{ path: '/user/:username/post/:post_id', component: User }];
 
 // /user/evan/post/123?page=2
 //
-// params => { username: 'shota', post_id: 123 }
+// params => { username: 'evan', post_id: 123 }
 // query => { page: 2 }
 ```
 
@@ -265,20 +265,28 @@ routes = [{ path: '/a', component: A, alias: '/b' }];
 
 パラメータ類を`$route`で取得するとコンポーネントの再利用性・テスト性が低くなるので、`props`を使って取得するほうがよい。
 
+BAD
+
 ```js
-// BAD
+// コンポーネント
 const User = {
   template: '<div>User {{ $route.params.id }}</div>',
 };
+// vue-router設定
 const router = new VueRouter({
   routes: [{ path: '/user/:id', component: User }],
 });
+```
 
-// GOOD
+GOOD
+
+```js
+// コンポーネント
 const User = {
   props: ['id'],
   template: '<div>User {{ id }}</div>',
 };
+// vue-router設定
 const router = new VueRouter({
   routes: [
     { path: '/user/:id', component: User, props: true },

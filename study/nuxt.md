@@ -6,6 +6,24 @@
 
 [https://nuxtjs.org/api](https://nuxtjs.org/api)
 
+## 方針を決める
+
+Nuxt には 3 つのモードがある。どのモードで作るかを、はじめから意識しておくこと。
+
+- Universal Mode
+  - **Node.js サーバごとデプロイ**する
+  - 初回リクエスト時の asyncData：サーバ側で取得して HTML にしたもの（SSR）になる
+  - ページ遷移時の asyncData：Ajax で取得した最新データになる
+- Pre Rendered Mode
+  - **サーバは不要**
+  - 予めビルドしたファイルをデプロイ
+  - 初回リクエスト時の asyncData：**ビルド時**に取得し HTML 化したもので固定になる
+  - ページ遷移時の asyncData：Ajax で取得した最新データになる
+- SPA Mode
+  - **サーバは不要**
+  - 予めビルドしたファイルをデプロイ
+  - asyncData はつねに Ajax で最新のものを取得する
+
 ## インストール
 
 ### create-nuxt-app を使う
@@ -52,13 +70,13 @@ yarn dev
 
 #### `assets`
 
-- コンパイルされるべき Less, Sass, Javascript ファイルなど
+- webpack でコンパイルされるべき Less, Sass, Javascript ファイルなどを格納する
 
 #### `components`
 
 - Vue コンポーネントを格納する
-- Nuxt.js は `components` ディレクトリ内のコンポーネントの data メソッドについては手を加えません
-- 一方、Nuxt.js は `pages` ディレクトリ内のコンポーネントの data メソッドには非同期データを扱えるよう手を加えます
+- Nuxt.js は `components` ディレクトリ内のコンポーネントの data メソッドについては手を加えない
+- 一方、Nuxt.js は `pages` ディレクトリ内のコンポーネントの data メソッドには非同期データを扱えるよう[手を加える](/study/nuxt.html#pages-2)
 
 #### `layouts`
 
@@ -71,8 +89,7 @@ yarn dev
 
 #### `pages`
 
-- View と Routes を格納する
-- このフォルダにある全ての`.vue`ファイルをもとに routes が生成される
+- `.vue`ファイルを格納する。ここに配置したファイルが、View と Routes になる。
 
 #### `plugins`
 
@@ -81,11 +98,11 @@ yarn dev
 #### `static`
 
 - 静的ファイルを格納する。
-- ここに置いたファイルはそのまま`/`に配置される
+- ここに置いたファイルは webpack を経由せず、そのまま`/`に配置される
 
 #### `store`
 
-- Vuex Store ファイルを格納する
+- Vuex 関連のファイルを格納する
 
 #### `nuxt.config.js`
 
@@ -107,12 +124,14 @@ vue テンプレートでファイルを相対指定する時に、次のよう�
 
 ## Configuration
 
+[API ドキュメント](https://nuxtjs.org/api/configuration-build)
+
 ### 設定項目
 
 #### build
 
-- webpack の`vendor.bundle.js`に入れ込むモジュールを指定する。これにより本体 bundle の容量を減らすことができる。
-- webpack の設定を変更する
+- webpack 関連の設定を行う
+  - 例えば、webpack の`vendor.bundle.js`に入れ込むモジュールを指定する。これにより本体 bundle の容量を減らすことができる。
 
 #### css
 
@@ -128,7 +147,8 @@ vue テンプレートでファイルを相対指定する時に、次のよう�
 
 #### generate
 
-動的なルーティングをしている場合において、それらを HTML ファイルに変換するときに使う。動的なルーティングに用いるパラメータを指定できる。
+`nuxt generate`(Static Generated Deployment)した時、動的なルーティングは無視される。
+動的なルーティングも含めて静的な HTML ファイルに変換したいときは、ここに設定を記述する。
 
 #### head
 
@@ -140,7 +160,7 @@ vue テンプレートでファイルを相対指定する時に、次のよう�
 
 #### modules
 
-nuxt で使用するモジュールを指定する。モジュール＝ nuxt 用のプラグインのようなもの
+nuxt で使用するモジュールを指定する。モジュール＝ nuxt の設定を一括して行うプラグインのようなもの
 
 #### modulesDir
 
@@ -178,7 +198,7 @@ vue-router の設定を指定する。
 - フォルダ名 or ファイル名に`_`をつけると Dynamic Route(`:id`など) になる
 - フォルダ内の`_`ファイルは一つまで。2 つ以上あると名前順で一番上のものが採用される
 - フォルダ内に`index.vue`が存在しない場合、`_`から始まるファイルは**任意の**Dynamic Route になる（index.vue の役割を兼ねる）
-- Dynamic Routes は`generage`コマンドでは無視される
+- Dynamic Routes は`nuxt generage`コマンドでは無視される
 
 ```txt
 pages/
@@ -386,9 +406,10 @@ export default {
 - ファイル名がミドルウェア名になる　`middleware/auth.js` => `auth`
 - ミドルウェアは非同期にすることもできる。非同期にしたい場合は Promise を Return すること。
 
-ミドルウェアは`context`を引数に取る。Context の詳細は[こちら](https://nuxtjs.org/api/context)。
+ミドルウェアは`context`を引数に取る。Context の詳細は[こちら](https://nuxtjs.org/api/context)。context を書き換えたり、context にプロパティを追加することで、後にコンポーネントの`asyncData`や`fetch`で使えるようにする。
 
 ```js
+// middleware/auth.js
 export default function(context) {
   context.userAgent = context.isServer
     ? context.req.headers['user-agent']
@@ -489,13 +510,13 @@ export default {
 <!-- prettier-ignore -->
 キー名|説明
 ---|---
-`asyncData`|ページがインスタンス化される前に、データを取得し、`data`にセットする。コンテキストを引数として受け取る。
-`fetch`|ページがインスタンス化される前に、データを取得する。`data`にセットするのではなく、storeを操作する時に使う。
+`asyncData`|ページがインスタンス化される前に、データを取得し、`data`にセットする。`context`を引数として受け取る。
+`fetch`|ページがインスタンス化される前に、データを取得する。`data`にセットするのではなく、storeを操作する時に使う。`context`を引数として受け取る。
 `head`|現在のページに対して`<meta>` タグを設定する。
 `layout`|layouts ディレクトリに定義されているレイアウトを指定する
-`loading`|false に設定すると、ページへ遷移してきた際に this.$nuxt.$loading.finish() が呼び出されなくなり、ページから離れる際に this.$nuxt.$loading.start() が呼び出されなくなります。これによりローディングの振る舞いを 手動で 制御ができるようになります。この動作は、exampleから確認できます。loading は nuxt.config.js で設定されている場合のみ適用されます。loading プロパティを参照してください。
+`loading`|loadingの状態を手動で処理する場合に使う。詳細は[APIドキュメント](https://nuxtjs.org/api/configuration-loading)を参照。
 `transition`|ページの特定のトランジションを設定する
-`scrollToTop`|Boolean型（デフォルト値：false）で、ページをレンダリングする前にページを一番上にスクロールするかどうかを指定する。これはネストされたルートに使用されます。
+`scrollToTop`|Boolean型（デフォルト値：false）で、ページをレンダリングする前にページを一番上にスクロールするかどうかを指定する。これはネストされたルートに使用される。
 `validate`|動的なルーティングを行った際に`params`を検証する
 `middleware`|このページのミドルウェアを設定する
 `watchQuery`|どのクエリが変更された時に、上記のメソッド群を実行するか指定する（デフォルトではクエリ変更時に上記のメソッド群は実行されない）
@@ -533,8 +554,10 @@ head: {
 ### Async Data
 
 - return したオブジェクトが`data`にマージされる
-- `pages`フォルダ内のコンポーネントを描写する時に呼ばれる
-- サーバサイドでデータを取得してプリレンダリングする or SPA のページ遷移時にデータを取得する
+- Nuxt のモードにより、データ取得のタイミングが変わる
+  - Universal Mode: 初回はサーバでデータ取得、以降はページ遷移時に Ajax で取得
+  - Pre Rendered Mode: `nuxt generate`時にデータを取得して、あらかじめ HTML 化
+  - SPA Mode: ページ遷移時に Ajax で取得
 - 第一引数に`context`を受け取る
 - store は使えない
 - `this`でコンポーネントインスタンスにアクセスすることはできない（Instanciate する前だから）
@@ -555,13 +578,9 @@ export default {
 };
 ```
 
-### Context
+#### 注意
 
-context の詳細は[こちら](https://nuxtjs.org/api/context)
-
-ルーティングに関するデータの取得をする際は、例えば`_slug.vue`なら、`context.params.slug`で取得できる。
-
-注意：query の変更では`asyncData`メソッド等は実行されない。実行したい場合は[`watchQuery`](https://nuxtjs.org/api/pages-watchquery)プロパティに下記のような設定を行う。
+query の変更では`asyncData`メソッド等は実行されない。実行したい場合は[`watchQuery`](https://nuxtjs.org/api/pages-watchquery)プロパティに下記のような設定を行う。
 
 ```js
 // 下記の設定により、'page'クエリが変更された時に、
@@ -571,6 +590,12 @@ export default {
   watchQuery: ['page'],
 };
 ```
+
+### Context
+
+context の詳細は[こちら](https://nuxtjs.org/api/context)
+
+context により、データ取得時に必要となる様々なデータを取得できる。例えば、`_slug.vue`コンポーネントにおいて params をする際は、`context.params.slug`で取得できる。
 
 ### エラーハンドリング
 
@@ -827,8 +852,10 @@ Nuxt のセットアップを簡単にする方法。
 ```js
 // modules/simple.js
 module.exports = function SimpleModule(moduleOptions) {
-  // この中で色々な処理ができる
-  this.options = {};
+  this.options = {}; // 何らかの処理
+  this.nuxt = {} // 何らかの処理
+  this = {} // 何らかの処理
+  // ...
 };
 
 // nuxt.config.js
@@ -850,7 +877,7 @@ module.exports = {
 
 ### 使用例
 
-#### トップレベルの option
+#### config ファイルを参照する
 
 ```js
 // nuxt.config.js
@@ -1035,7 +1062,7 @@ export default createStore;
 このモードで使いたいときは次のようにする。
 
 - state はファンクションとして名前付きでエクスポート
-- mutations、actions、plugins 等 は Object として名前付きでエクスポート
+- mutations、actions、plugins 等は名前付き Object としてエクスポート
 
 ```js
 // store/index.js
@@ -1107,8 +1134,8 @@ export const strict = false;
 
 - `nuxt` 開発用サーバを立ち上げる
 - `nuxt build` webpack でビルド
-- `nuxt start` build 後にサーブ
-- `nuxt generate` 全てのページを HTML として書き出し
+- `nuxt start` build したファイルをサーブ
+- `nuxt generate` 全てのページを静的 HTML ファイルとして書き出し
 
 オプション
 
