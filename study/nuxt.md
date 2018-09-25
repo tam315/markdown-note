@@ -1178,3 +1178,25 @@ yarn generate
 ### ESLint と Prettier
 
 [こちら](https://nuxtjs.org/guide/development-tools#eslint-and-prettier)を参照してセットアップする。
+
+## その他
+
+### sass を使う
+
+```bash
+yarn add node-sass sass-loader
+```
+
+```js
+// nuxt.config.js
+module.exports = {
+  css: [
+    // node モジュールを直接ロードする (ここでは SASS ファイル)
+    'bulma',
+    // プロジェクト内の CSS ファイル
+    '~/assets/css/main.css',
+    // プロジェクト内の SCSS ファイル
+    '~/assets/css/main.scss',
+  ],
+};
+```
