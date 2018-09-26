@@ -564,22 +564,22 @@ vue inspect --plugin html
 .env.[mode].local   # only loaded in specified mode, ignored by git
 
 // mode
-mode = production | development | test
+mode = production | development | test | otherUserDefinedMode...
 
 // ファイルの内容はkey=valueの形式で記載する
 FOO=bar
 VUE_APP_SECRET=secret
 ```
 
-## Modes
+### Modes
 
-Vue CLI にはデフォルトで 3 つの動作モードがある。追加もできる。
+Vue CLI にはデフォルトで 3 つの動作モードがある。ユーザ定義のモードを追加することもできる。
 
 - `development` is used by `vue-cli-service serve`
 - `production` is used by `vue-cli-service build` and `vue-cli-service test:e2e`
 - `test` is used by `vue-cli-service test:unit`
 
-### 例）Staging Mode
+### 例）ユーザ定義の「Staging Mode」を追加する
 
 Mode が`development`,`production`,`test`のいずれかだった場合、`NODE_ENV`もそれと同じものに自動的に設定される。独自に作ったモードにおいては、手動での設定が必要。
 
