@@ -348,3 +348,364 @@ MPA を作るときは[こちら](https://cli.vuejs.org/guide/html-and-static-as
 デメリットが多いので基本的には使わないほうが良い。
 
 もし使う場合で、ルートパス以外で運用している場合は[こちら](https://cli.vuejs.org/guide/html-and-static-assets.html#the-public-folder)を参考に、`public/index.html`の変更が必要。
+
+## CSS の設定
+
+vue-cli では、PostCSS, CSS Modules のほか、プリプロセッサとして Sass,Less,Stylus をサポートしている。
+
+### Assets の参照
+
+- コンパイル後の CSS は css-loader で処理される。css-loader は、`url()`の参照をモジュールに変換してくれる。
+- これは、`url()`に相対パスを記載できることを意味する。なお、`node_modules`のファイルを参照するときはパスを`~`から始めること。
+
+### Pre-Processors
+
+プリプロセッサを後から追加する場合は下記を実行する。
+
+```bash
+# Sass
+npm install -D sass-loader node-sass
+
+# Less
+npm install -D less-loader less
+
+# Stylus
+npm install -D stylus-loader stylus
+```
+
+これで、それらのファイルを import したり、`*.vue`ファイルの中で記載できるようになる。
+
+```txt
+<style lang="scss">
+$color: red;
+</style>
+```
+
+### Automatic imports
+
+TODO: よくわからない
+
+### PostCSS
+
+Vue CLI は内部で PostCSS を使っている。
+
+- `.postcssrc` postCSS の設定を行う
+- `vue.config.js`の`css.loaderOptions.postcss` postcss-loader の設定を行う
+
+### CSS Modules
+
+[CSS Module](https://vue-loader.vuejs.org/guide/css-modules.html#usage)がデフォルトで使える。
+
+### Pre-Processor ローダの設定
+
+`vue.config.js`の`css.loaderOptions`で行う。下記の全てを同じ方法で設定できる。
+
+- css-loader
+- postcss-loader
+- sass-loader
+- less-loader
+- stylus-loader
+
+例えば、全ての sass ファイルに特定の変数を読み込ませる設定の場合：
+
+```js
+// vue.config.js
+module.exports = {
+  css: {
+    loaderOptions: {
+      // pass options to sass-loader
+      sass: {
+        // @/ is an alias to src/
+        // so this assumes you have a file named `src/variables.scss`
+        data: `@import "@/variables.scss";`,
+      },
+    },
+  },
+};
+```
+
+## Webpack の設定
+
+### シンプルな設定方法
+
+`configureWebpack`オプションを使う。
+
+`webpack-merge`を使ってマージされる。直接変更しては行けない Webpack のプロパティもあるので注意する。
+
+```js
+// vue.config.js
+module.exports = {
+  configureWebpack: {
+    plugins: [new MyAwesomeWebpackPlugin()],
+  },
+};
+```
+
+条件によって設定を変えたいときや、直接コンフィグを編集したいときは、ファンクションを使う。
+config を直接編集するか、マージしたい Object を return すること。
+
+```js
+// vue.config.js
+module.exports = {
+  configureWebpack: config => {
+    if (process.env.NODE_ENV === 'production') {
+      // mutate config for production...
+    } else {
+      // mutate for development...
+    }
+  },
+};
+```
+
+### 複雑な設定方法(Chaining)
+
+[`webpack-chain`](https://github.com/neutrinojs/webpack-chain#getting-started)を使った設定方法。`vue inspect`しながら使うとよい。なお、CSS 関連の設定はこの方法は使わずに、`css.loaderOptions`で変更すること。
+
+例：ローダーの設定を変更する
+
+```js
+// vue.config.js
+module.exports = {
+  chainWebpack: config => {
+    config.module
+      .rule('vue')
+      .use('vue-loader')
+      .loader('vue-loader')
+      .tap(options => {
+        // modify the options...
+        return options;
+      });
+  },
+};
+```
+
+例：ローダを新しく追加する
+
+```js
+// vue.config.js
+module.exports = {
+  chainWebpack: config => {
+    // GraphQL Loader
+    config.module
+      .rule('graphql')
+      .test(/\.graphql$/)
+      .use('graphql-tag/loader')
+      .loader('graphql-tag/loader')
+      .end();
+  },
+};
+```
+
+例：ローダをまるごと置き換える
+
+```js
+module.exports = {
+  chainWebpack: config => {
+    const svgRule = config.module.rule('svg');
+
+    // clear all existing loaders.
+    // if you don't do this, the loader below will be appended to
+    // existing loaders of the rule.
+    svgRule.uses.clear();
+
+    // add replacement loader(s)
+    svgRule.use('vue-svg-loader').loader('vue-svg-loader');
+  },
+};
+```
+
+例：プラグインの設定を変更する
+
+```js
+// vue.config.js
+module.exports = {
+  chainWebpack: config => {
+    config.plugin('html').tap(args => {
+      return [
+        /* new args to pass to html-webpack-plugin's constructor */
+      ];
+    });
+  },
+};
+```
+
+### 現在の webpack の設定を確認
+
+`vue inspect`で現在の webpack 設定を出力できる。
+出力結果はシリアライズされているため、そのままでは valid な webpack のコンフィグにはならないので注意すること。
+
+```bash
+vue inspect > output.js
+vue inspect module.rules.0
+vue inspect --rules
+vue inspect --rule vue
+vue inspect --plugins
+vue inspect --plugin html
+```
+
+### 生成された webpack のコンフィグが必要な場合
+
+外部ツール（IDE など）で webpack のコンフィグファイル自体への参照が必要な場合は、下記を使うとよい。
+このファイルは常に最新の webpack 設定を返すように設定されている。
+
+```txt
+<projectRoot>/node_modules/@vue/cli-service/webpack.config.js
+```
+
+## Environment Variables and Modes
+
+プロジェクトルートに下記のファイルを作成することで、環境変数を設定できる。
+環境変数は、`vue-cli-service`コマンドや、プラグイン等で利用できる。
+
+```txt
+.env                # loaded in all cases
+.env.local          # loaded in all cases, ignored by git
+.env.[mode]         # only loaded in specified mode
+.env.[mode].local   # only loaded in specified mode, ignored by git
+
+// mode
+mode = production | development | test
+
+// ファイルの内容はkey=valueの形式で記載する
+FOO=bar
+VUE_APP_SECRET=secret
+```
+
+## Modes
+
+Vue CLI にはデフォルトで 3 つの動作モードがある。追加もできる。
+
+- `development` is used by `vue-cli-service serve`
+- `production` is used by `vue-cli-service build` and `vue-cli-service test:e2e`
+- `test` is used by `vue-cli-service test:unit`
+
+### 例）Staging Mode
+
+Mode が`development`,`production`,`test`のいずれかだった場合、`NODE_ENV`もそれと同じものに自動的に設定される。独自に作ったモードにおいては、手動での設定が必要。
+
+`.env`
+
+```txt
+VUE_APP_TITLE=My App
+```
+
+`.env.staging`
+
+```txt
+NODE_ENV=production
+VUE_APP_TITLE=My App (staging)
+```
+
+上記設定で`vue-cli-service build`した場合は、`.env`, `.env.production`, `.env.production.local`が参照される。
+
+上記設定で`vue-cli-service build --mode staging`した場合は、`.env`, `.env.staging`, `.env.stagin.local`が参照される。
+
+いずれも、NODE_ENV は production に設定される。
+
+## Build Targets
+
+`vue-cli-service build`するときに、App, Library, Web Component の 3 種類のターゲットを指定することができる。
+
+### App
+
+デフォルトのターゲットである。このターゲットでは下記の処理が行われる。
+
+- リソースヒントとともに、`index.html`が生成される
+- ベンダーバンドルは分離して生成される
+- 4kb 以下のアセットはインライン化される
+- `public`フォルダのファイルが出力フォルダにコピーされる
+
+### Library
+
+ライブラリとして出力する。エントリファイルは`.js`or`.vue`を指定する。
+指定されていない場合は`src/App.vue`が参照される。
+
+```bash
+vue-cli-service build --target lib --name myLib [entry]
+```
+
+このコマンドは 4 つのファイルを出力する。
+
+- `dist/myLib.common.js` CommonJS バンドル(Webpack 等用)
+- `dist/myLib.umd[.min].js` UMD バンドル（ブラウザで直接使う時、もしくは AMD ローダー用）
+- `dist/myLib.css` 抽出された CSS ファイル（インライン化するには`vue.config.js`で`css: { extract: false }`を設定しておくこと）
+
+#### js ファイルと vue ファイルの違い
+
+- `.vue`ファイルをエントリーポイントとした場合は、コンポーネント自体がエクスポートされる。
+- `.js`ファイルをエントリーポイントとした場合は、`default`としてエクスポートされる。これは、ライブラリ使用時に下記のようにしなければならないことを意味する。
+  - `window.yourLib.default`
+  - `const myLib = require('mylib').default`
+
+js ファイルでも default エクスポートしたい場合は、`vue.config.js`を下記のようにする。
+
+```js
+module.exports = {
+  configureWebpack: {
+    output: {
+      libraryExport: 'default',
+    },
+  },
+};
+```
+
+### Web Component
+
+::: tip NOTE
+IE11 以下では Web Component は使えない
+:::
+
+- エントリファイルは`*.vue`である必要がある。自動的に`main.js`にラップされる。
+- 使用時は、Vue がグローバルでアクセス可能である必要がある
+
+```bash
+vue-cli-service build --target wc --name my-element [entry].vue
+```
+
+```html
+<script src="https://unpkg.com/vue"></script>
+<script src="path/to/my-element.js"></script>
+
+<!-- use in plain HTML, or in any other framework -->
+<my-element></my-element>
+```
+
+#### 複数のコンポーネントを Web Component にする
+
+- glob で指定することで複数のコンポーネントをいっぺんに Web Component にできる。
+- この場合、`--name`に指定した値が prefix として使用される。
+
+```bash
+vue-cli-service build --target wc --name foo 'src/components/*.vue'
+# `HelloWorld.vue` => `<foo-hello-world>`
+```
+
+#### Async Web Component
+
+複数のコンポーネントを一つの Web Component にした場合、使用時に必要ないコンポーネントまで全て読み込まれるため効率がよろしくない。`wc-async`でビルドすることで、コンポーネントごとに JS ファイルが分割され、使用時にオンデマンドで読み込まれる様になる。
+
+```bash
+vue-cli-service build --target wc-async --name foo 'src/components/*.vue'
+
+# File                Size                        Gzipped
+# dist/foo.0.min.js    12.80 kb                    8.09 kb
+# dist/foo.min.js      7.45 kb                     3.17 kb
+# dist/foo.1.min.js    2.91 kb                     1.02 kb
+# dist/foo.js          22.51 kb                    6.67 kb
+# dist/foo.0.js        17.27 kb                    8.83 kb
+# dist/foo.1.js        5.24 kb                     1.64 kb
+```
+
+```html
+<script src="https://unpkg.com/vue"></script>
+<script src="path/to/foo.min.js"></script>
+
+<!-- foo-one's implementation chunk is auto fetched when it's used -->
+<foo-one></foo-one>
+```
+
+## Deployment
+
+[こちら](https://cli.vuejs.org/guide/deployment.html)を参照
+
+MPA の場合や、HTML5(history)モードで動かしている場合はサーバ側にも設定が必要なので注意する。
