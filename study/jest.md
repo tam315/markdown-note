@@ -8,6 +8,20 @@
 
 - テストのセットアップファイルの指定は、`package.json` の`setupTestFrameworkScriptFile` で行う。
 
+### babel 関係
+
+```bash
+yarn add babel-core babel-jest babel-preset-env regenerator-runtime
+```
+
+.babelrc
+
+```json
+{
+  "presets": ["env"]
+}
+```
+
 ## コンポーネントのモック
 
 ```jsx
