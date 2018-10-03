@@ -80,7 +80,7 @@ yarn dev
 
 #### `layouts`
 
-- アプリケーションのレイアウトファイルを格納する
+- アプリケーションのレイアウトファイルを格納する。
 
 #### `middleware`
 
@@ -164,7 +164,14 @@ nuxt で使用するモジュールを指定する。モジュール＝ nuxt の
 
 #### modulesDir
 
-`node_modules`フォルダの場所を指定する
+`node_modules`フォルダの場所を指定する。
+
+yarn の workspaces 機能を使っているなら、下記の設定が必須。
+
+```js
+// 例えば`<projectRoot>/packages/nuxt`にnuxtプロジェクトを格納している場合
+modulesDir: ['../../node_modules'],
+```
 
 #### plugins
 
@@ -463,6 +470,12 @@ module.exports = {
   <nuxt/>
 </template>
 ```
+
+レイアウトファイルは下記の 3 パターンで作るのが鉄板。
+
+- `default.vue`（共通画面など。ヘッダ・フッタあり）
+- `home.vue`（トップページなど。全画面）
+- `blank.vue`（規約やお問い合わせ表示用の 1 カラム画面）
 
 ### Error Page
 
