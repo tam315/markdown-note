@@ -1,6 +1,11 @@
-# Firestore
+# Firebase - Firestore
 
 [[toc]]
+
+## API
+
+- [Web](https://firebase.google.com/docs/reference/js/firebase.firestore)
+- [Node.js](https://firebase.google.com/docs/reference/admin/node/admin.firestore)
 
 ## データの追加と管理
 
@@ -41,6 +46,8 @@ db.collection('rooms')
 
 ### データ構造の選択
 
+子データ群をどのようにもつか
+
 - 単純にネストさせる
   - 簡単
   - ネストされたリストにはクエリを実行できない
@@ -49,10 +56,12 @@ db.collection('rooms')
   - 親ドキュメントのサイズが変わらない
   - クエリが使える（複数のサブコレクション間は不可）
   - サブコレクションの削除が面倒
-- ルートレベルのコレクション
+- ルートレベルのコレクションを使う
   - クエリが強力
 
 ### データの追加
+
+#### db への参照を取得
 
 ```js
 const db = firebase.firestore();
@@ -113,6 +122,12 @@ db.doc('users/someSpecificId').set(
   { merge: true },
 );
 ```
+
+#### set と update の違い
+
+- `set` without merge will overwrite a document or create it if it doesn't exist yet
+- `set` with merge will update fields in the document or create it if it doesn't exists
+- `update` will update fields but will fail if the document doesn't exist
 
 ### アトミックオペレーション
 
@@ -252,6 +267,9 @@ const querySnapshot = await db
   .collection('testcollection')
   .where('owner', '==', 'some-uid')
   .get();
+
+// querySnapshot.docs[]に、documentSnapshotが入っている。
+// これらにforEachするためのショートハンド。
 querySnapshot.forEach(queryDocumentSnapshot =>
   console.log(queryDocumentSnapshot.data()),
 );
@@ -375,9 +393,155 @@ citiesRef.where('state', '==', 'CA').where('population', '<', 1000000);
 citiesRef.where('state', '>=', 'CA').where('population', '>', 100000);
 ```
 
+### OrderBy, Limit
+
+```js
+citiesRef.orderBy('name').limit(3);
+citiesRef.orderBy('name', 'desc').limit(3);
+citiesRef.orderBy('state').orderBy('population', 'desc');
+citiesRef
+  .where('population', '>', 100000)
+  .orderBy('population')
+  .limit(2);
+
+// 範囲フィルタと最初の orderBy を異なるフィールドに使用することはできない
+citiesRef.where('population', '>', 100000).orderBy('country');
+```
+
+### クエリカーソル
+
+#### シンプルなカーソル
+
+```js
+citiesRef.orderBy('population').startAt(10000); // 10000を含む
+citiesRef.orderBy('population').startAfter(10000); // 10000を含まない
+citiesRef.orderBy('population').endAt(20000); // 20000を含む
+citiesRef.orderBy('population').endBefore(20000); // 20000を含まない
+```
+
+#### ドキュメント スナップショットを使用したカーソル
+
+数字の代わりにドキュメントスナップショットを渡すこともできる。
+
+```js
+return citiesRef
+  .doc('SF')
+  .get()
+  .then(doc => {
+    // Get all cities with a population bigger than San Francisco
+    var biggerThanSf = citiesRef.orderBy('population').startAt(doc);
+  });
+```
+
+#### ページネーションの設定
+
+```js
+var first = db
+  .collection('cities')
+  .orderBy('population')
+  .limit(25);
+
+return first.get().then(documentSnapshots => {
+  // Get the last visible document
+  var lastVisible = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+
+  // Construct a new query starting at this document,
+  // get the next 25 cities.
+  var next = db
+    .collection('cities')
+    .orderBy('population')
+    .startAfter(lastVisible)
+    .limit(25);
+});
+```
+
+#### 複数のカーソル条件
+
+```js
+// name=Springfield, state=Missouri からスタート
+db.collection('cities')
+  .orderBy('name')
+  .orderBy('state')
+  .startAt('Springfield', 'Missouri');
+```
+
+### インデックスの種類
+
+- インデックスタイプ
+  - 単一フィールドインデックス
+  - 複合インデックス
+- インデックスモード（フィールドごとに設定）
+  - 昇順
+  - 降順
+  - 配列の内容
+
+#### 単一フィールドインデックス
+
+デフォルトでは、下記のルールでインデックスが自動作成される。
+
+- 各フィールド（配列・マップを除く）に、2 つの **単一フィールドインデックス（昇順・降順モード）** が作成される。
+- マップ内の各サブフィールド（配列・マップを除く）に、2 つの **単一フィールドインデックス（昇順・降順モード）** 作成される。
+- 配列フィールドには **単一フィールドインデックス(「配列の内容」モード)** が作成される。
+
+単一フィールドインデックスでは、下記のようなクエリを行える。
+
+```js
+var citiesRef = db.collection('cities');
+
+// データの例
+citiesRef.doc('SF').set({
+  name: 'San Francisco',
+  state: 'CA',
+  country: 'USA',
+  capital: false,
+  population: 860000,
+  tags: ['west coast', 'famous bridge'],
+});
+
+// クエリの例
+citiesRef.where('state', '==', 'CA');
+citiesRef.where('population', '<', 100000);
+citiesRef.where('name', '>=', 'San Francisco');
+citiesRef.where('tags', 'array_contains', 'mega city');
+citiesRef.where('state', '==', 'CO').where('name', '==', 'Denver');
+citiesRef
+  .where('country', '==', 'USA')
+  .where('capital', '==', false)
+  .where('state', '==', 'CA')
+  .where('population', '==', 860000);
+```
+
+#### 複合インデックス
+
+範囲比較（<、<=、>、>=）を使用する複合クエリを実行する必要がある場合、または別のフィールドにより並べ替える必要がある場合は、そのクエリ用の複合インデックスを作成する必要があります。
+
+```js
+citiesRef.where('country', '==', 'USA').orderBy('population', 'asc');
+citiesRef.where('country', '==', 'USA').where('population', '<', 3800000);
+citiesRef.where('country', '==', 'USA').where('population', '>', 690000);
+```
+
+例えば上記のクエリを実行するには、下記から構成される複合インデックスが必要となる。
+
+- `country`フィールドの昇順（or 降順）インデックス
+- `population`の昇順インデックス
+
+複合インデックスが必要なクエリを実行すると、エラーメッセージと共に作成方法が教授されるので、それに従うこと。
+
+#### インデックス マージの活用
+
+複数の等式（==）句（およびオプションで orderBy 句）が含まれるクエリについては、インデックスのマージ機能を活用することで、費用を削減できる。
+詳細は[こちら](https://firebase.google.com/docs/firestore/query-data/index-overview#taking_advantage_of_index_merging)。
+
+#### インデックス除外のベストプラクティス
+
+- 大きな文字列フィールド（使用しないなら無駄だから）
+- 大規模な配列・マップフィールド（ドキュメントごとのインデックス上限が 2 万件だから）
+- 連続した値を持つ、書き込みレートの高いもの？
+
 ## セキュリティルール
 
-### 基本形
+### ルールの作成
 
 ```js
 service cloud.firestore {
@@ -387,7 +551,39 @@ service cloud.firestore {
 }
 ```
 
-### 権限の種類
+#### match
+
+- すべての match ステートメントは、コレクションではなく**ドキュメント**を指す必要がある
+- ネストさせてもいいし、しなくてもいい。
+
+#### ワイルドカード構文
+
+サブコレクションには適用されない。
+
+```txt
+match /cities/{city} {
+  match /landmarks/{landmark} {
+    allow read, write: if <condition>;
+  }
+}
+```
+
+#### 再帰ワイルドカード構文
+
+サブコレクションにも適用される。
+
+```txt
+match /cities/{document=**} {
+  allow read, write: if <condition>;
+}
+```
+
+再帰ワイルドカードは、空のパスには一致しない。例えば、
+
+- `/cities/{city}/{document=**}`の場合、`/cities/hamada`は引っかからない
+- `/cities/{document=**}`の場合、`/cities/hamada`は引っかかる
+
+#### 権限の種類
 
 - read
   - get
@@ -403,35 +599,25 @@ service cloud.firestore {
 allow list, write: if <condition>
 ```
 
-### match
+### 条件設定
 
-ネストさせてもいいし、しなくてもいい。
+#### request
 
-```txt
-match /cities/{city} {
-  match /landmarks/{landmark} {
-    allow read, write: if <condition>;
-  }
-}
-```
+リクエストを表す変数。
 
-再帰ワイルドカード構文
+- `request.auth.uid` リクエストユーザの ID
+- `request.resource.data.***` 書き込もうとしているデータ
+- `request.query.***` クエリの`limit`,`offset`,`orderBy`プロパティにアクセスできる
 
-```txt
-match /cities/{document=**} {
-  allow read, write: if <condition>;
-}
-```
+#### resource
 
-### `request`, `resource`
+既存データを表す変数。存在しない場合は null になる
 
-- `request` リクエストを扱う API
-  - `request.auth.uid` リクエストユーザの ID
-  - `request.resource.data.***` 書き込もうとしているデータ
-- `resource` 既存データを扱う API。存在しない場合は null になる
-  - `resource.data.***` 既存データ自体
+- `resource.data.***` 既存データ
 
-下記の例では、自身が owner のデータにのみアクセスできるように設定している。
+#### ファンクションの利用
+
+セキュリティルール内でファンクションを使用できる。下記の例では、自身が owner のデータにのみアクセスできるように設定している。
 
 ```js
 match /portfolios/{portfolioId} {
@@ -450,4 +636,164 @@ match /portfolios/{portfolioId} {
 
   allow read, write: if isOwner() || isValidNewPortfolio();
 }
+```
+
+#### 他のドキュメントへのアクセス
+
+get()関数、getAfter()関数、exists()関数、$(variable)構文などを使うことで、
+現在のコレクション以外のコレクションとの整合性を担保するよう、ルールを設定をすることができる。
+
+```js
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /cities/{city} {
+      // Make sure a 'users' document exists for the requesting user before
+      // allowing any writes to the 'cities' collection
+      allow create: if exists(/databases/$(database)/documents/users/$(request.auth.uid))
+
+      // Allow the user to delete cities if their user document has the
+      // 'admin' field set to 'true'
+      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true
+    }
+  }
+}
+```
+
+### 安全にクエリを行う
+
+#### クエリとセキュリティルール
+
+- クエリの権限判定は、結果ベースではなく可能性ベースで行われる。
+- あるクエリが権限を逸脱したデータを返す可能性がある場合は、そのクエリは失敗する。
+
+#### 上限の設定
+
+大量のデータ取得を防ぐために、`limit`が設定されていないクエリを拒否する例）
+
+```js
+allow list: if request.query.limit <= 10;
+```
+
+## オフラインデータ
+
+### オフラインデータの有効化
+
+- Android と iOS ではデフォルトで有効になっている。
+- ウェブの場合はデフォルトで無効になっている。有効にするには次の通り。
+
+```js
+firebase
+  .firestore()
+  .enablePersistence()
+  .then(function() {
+    // Initialize Cloud Firestore through firebase
+    var db = firebase.firestore();
+  });
+```
+
+### オフラインデータのリッスン
+
+オフライン時にデータが変更されるとイベントが発生する。
+この際、メタデータの`fromCache`プロパティを確認することで、最新のデータなのか、キャッシュデータなのかを確認できる。
+
+```js
+db.collection('cities').onSnapshot(
+  { includeQueryMetadataChanges: true }, // metadataの変更はデフォルトではイベントを起こさないので
+  snapshot => {
+    snapshot.docChanges.forEach(change => {
+      var source = snapshot.metadata.fromCache ? 'local cache' : 'server';
+      console.log('Data came from ' + source);
+    });
+  },
+);
+```
+
+## Solutions
+
+### Aggregation
+
+下記の rates が追加されるたびに`avgRating`と`numRatings`を更新するような処理を Aggregation という。
+
+トランザクションを使う方法と Cloud Function を使う方法がある。詳細は[ドキュメント参照](https://firebase.google.com/docs/firestore/solutions/aggregation)。
+
+```js
+var someRestaurant = {
+  name: 'Arinell Pizza',
+  avgRating: 4.65,
+  numRatings: 683,
+  rates: [4, 4, 5, 1, 3, 4, 4, , , ,],
+};
+```
+
+## Cloud Functions による拡張
+
+### Cloud Functions のトリガー
+
+- `onCreate` Triggered when a document is written to for the first time.
+
+```js
+exports.createUser = functions.firestore
+  .document('users/{userId}')
+  .onCreate((snap, context) => {
+    // Get an object representing the document
+    // e.g. {'name': 'Marie', 'age': 66}
+    const newValue = snap.data();
+
+    // access a particular field as you would any JS property
+    const name = newValue.name;
+
+    // perform desired operations ...
+  });
+```
+
+- `onUpdate` Triggered when a document already exists and has any value changed.
+
+```js
+exports.updateUser = functions.firestore
+  .document('users/{userId}')
+  .onUpdate((change, context) => {
+    // Get an object representing the document
+    // e.g. {'name': 'Marie', 'age': 66}
+    const newValue = change.after.data();
+
+    // ...or the previous value before this update
+    const previousValue = change.before.data();
+
+    // access a particular field as you would any JS property
+    const name = newValue.name;
+
+    // perform desired operations ...
+  });
+index.js;
+```
+
+- `onDelete` Triggered when a document with data is deleted.
+
+```js
+exports.deleteUser = functions.firestore
+  .document('users/{userID}')
+  .onDelete((snap, context) => {
+    // Get an object representing the document prior to deletion
+    // e.g. {'name': 'Marie', 'age': 66}
+    const deletedValue = snap.data();
+
+    // perform desired operations ...
+  });
+```
+
+- `onWrite` Triggered when onCreate, onUpdate or onDelete is triggered.
+
+```js
+exports.modifyUser = functions.firestore
+  .document('users/{userID}')
+  .onWrite((change, context) => {
+    // Get an object with the current document value.
+    // If the document does not exist, it has been deleted.
+    const document = change.after.exists ? change.after.data() : null;
+
+    // Get an object with the previous document value (for update or delete)
+    const oldDocument = change.before.data();
+
+    // perform desired operations ...
+  });
 ```
