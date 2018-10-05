@@ -65,6 +65,15 @@ const provider = new firebase.auth.GoogleAuthProvider();
 provider.addScope('email');
 await firebase.auth().signInWithRedirect(provider);
 
+// login anonimously
+const result = await firebase.auth().signInAnonymously();
+
+// listen auth status change
+firebase.auth().onAuthStateChanged(user => {});
+
+// get current user
+var user = firebase.auth().currentUser;
+
 // handle redirect all time
 const result = await firebase.auth().getRedirectResult();
 if (!result.user) return;
