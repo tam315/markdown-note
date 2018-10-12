@@ -18,17 +18,11 @@ exports.storeImage = functions.https.onRequest((request, response) => {
 
 ## Auth
 
-### setup
+### backend
 
 ```bash
-# backend
 yarn add firebase-admin
-
-# frontend
-yarn add firebase
 ```
-
-### backend
 
 ```js
 const firebaseAdmin = require('firebase-admin');
@@ -47,6 +41,10 @@ const firebaseUserId = result.user_id;
 ```
 
 ### frontend
+
+```bash
+yarn add firebase
+```
 
 ```js
 import firebase from 'firebase/app';
@@ -78,4 +76,16 @@ var user = firebase.auth().currentUser;
 const result = await firebase.auth().getRedirectResult();
 if (!result.user) return;
 const token = await firebase.auth().currentUser.getIdToken();
+```
+
+[gapi](/study/gapi.html) を使って取得した idToken を使う方法。匿名アカウントのアップグレードなどが必要な場合は、この方法をとる必要がある。
+
+```js
+var credential = firebase.auth.GoogleAuthProvider.credential(ID_TOKEN);
+
+// 既存アカウントに紐付ける
+await firebase.auth().currentUser.linkAndRetrieveDataWithCredential(credential);
+
+// ログインする
+await firebase.auth().signInAndRetrieveDataWithCredential(credential);
 ```

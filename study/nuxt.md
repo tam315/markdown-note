@@ -550,19 +550,44 @@ nuxt は head の管理に`vue-meta`を使用している。デフォルトの�
 アプリケーション単位、ページ単位で head プロパティを設定できる。
 
 ```js
-// nuxt.config.jsの例
-head: {
-  meta: [
-    { charset: 'utf-8' },
-    { name: 'viewport', content: 'width=device-width, initial-scale=1' }
-  ],
-  link: [
-    { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Roboto' }
-  ]
-}
+// グローバル設定（nuxt.config.js）の例
+config = {
+  head: {
+    meta: [
+      { charset: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+    ],
+    link: [
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css?family=Roboto',
+      },
+    ],
+  },
+};
+
+// ローカル設定の場合
+export default {
+  head() {
+    return {
+      script: [
+        {
+          src:
+            'https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js',
+        },
+      ],
+      link: [
+        {
+          rel: 'stylesheet',
+          href: 'https://fonts.googleapis.com/css?family=Roboto',
+        },
+      ],
+    };
+  },
+};
 ```
 
-親と子で重複させたくない項目については、`hid`キーを設定しておくことで子のほうが優先されるようになる。詳細は[こちら](https://github.com/declandewet/vue-meta#lists-of-tags)。
+親と子で重複させたくない項目については、`hid`(本家では`vmid`と呼ばれている)キーを設定しておくことで子のほうが優先されるようになる。詳細は[こちら](https://github.com/declandewet/vue-meta#lists-of-tags)。
 
 ### Async Data
 
