@@ -1338,9 +1338,178 @@ components: {
 - Inline Template
 - X-Template
 
-## Transitions & Animation
+## Enter/Leave & List Transitions
 
-TODO
+### シングル要素、シングルコンポーネントのトランジション
+
+`transition`コンポーネントでラップすると、`entering`と`leaving`のトランジションを設定できる。ラップできる要素 or コンポーネントの条件は下記の通り。
+
+- `v-if`が使われている
+- `v-show`が使われている
+- [Dynamic Component](/study/vuejs.html#dynamic-components) である
+- Component root nodes である
+
+```html
+<transition name="fade">
+  <p v-if="show">hello</p>
+</transition>
+```
+
+```css
+.fade-enter,
+.fade-leave-to {
+  transform: translateX(10px);
+  opacity: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.5s;
+}
+```
+
+`transition`で囲まれた要素が挿入・削除されたときに、次のことが起こる。
+
+- CSS クラスが適切なタイミングで挿入される
+- JavaScript hooks が適切なタイミングで実行される
+- アニメーション・トランジションも、JS Hooks もない場合は、DOM 操作が即時に実行される。
+
+#### transition classes
+
+6 種類の class が付与される。
+
+- `v-enter`, `v-leave` 最初の 1 フレームだけに付与される
+- `v-enter-to`, `v-leave-to` 2 フレーム目から最後まで付与される
+- `v-enter-active`,`v-leave-active` 最初から最後のフレームまで付与される。duration, delay, easing curve の設定に使う。
+
+![image](https://vuejs.org/images/transition.png)
+
+`v-`の部分は、`transition`要素の name 属性によって変わる。
+`<transition>`の場合は`v-`, `<transition name="my">`なら`my-`になる。
+
+#### CSS Transitions を使った例
+
+前述の通り
+
+#### CSS Animations を使った例
+
+```css
+.bounce-enter-active {
+  animation: bounce-in 0.5s;
+}
+.bounce-leave-active {
+  animation: bounce-in 0.5s reverse;
+}
+@keyframes bounce-in {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+```
+
+#### カスタムクラス
+
+[Animate.css](https://github.com/daneden/animate.css) などのライブラリを使うときは、`transition`要素に下記の属性をつけることで、カスタムクラスを設定して対応する。
+
+- `enter-class`
+- `enter-active-class`
+- `enter-to-class`
+- `leave-class`
+- `leave-active-class`
+- `leave-to-class`
+
+```html
+<transition
+  enter-active-class="animated tada"
+  leave-active-class="animated bounceOutRight"
+>
+```
+
+#### animation と transition の同時利用
+
+これをやるときは[設定](https://vuejs.org/v2/guide/transitions.html#Using-Transitions-and-Animations-Together)が必要。
+
+#### Explicit Transition Durations
+
+Vue はアニメーションやトランジションの終了を`transitionend` or `animationend`イベントで判定する。いくつかのケースでこれが不適切な場合があるので、そういうときは明示的に時間を指定する。
+
+```html
+<transition :duration="1000" />
+<transition :duration="{ enter: 500, leave: 800 }" />
+```
+
+#### Javascript Hooks
+
+[Velocity.js](http://velocityjs.org/)など、JS ベースのアニメーションライブラリを使うときは、Javascript Hooks を使う。詳細は[こちら](https://vuejs.org/v2/guide/transitions.html#JavaScript-Hooks)。
+
+```html
+<transition
+  @before-enter="beforeEnter"
+  @enter="enter"
+  @after-enter="afterEnter"
+  @enter-cancelled="enterCancelled"
+  @before-leave="beforeLeave"
+  @leave="leave"
+  @after-leave="afterLeave"
+  @leave-cancelled="leaveCancelled"
+/>
+```
+
+```js
+const option = {
+  methods: {
+    beforeEnter: function(el) {},
+    enter: function(el, done) {
+      done();
+    },
+    afterEnter: function(el) {},
+    enterCancelled: function(el) {},
+    beforeLeave: function(el) {},
+    leave: function(el, done) {
+      done();
+    },
+    afterLeave: function(el) {},
+    leaveCancelled: function(el) {},
+  },
+};
+```
+
+### 初期表示時のトランジション
+
+通常、初回表示の際はトランジションが適用されないが、`appear`属性をつけることでトランジションを適用することができる。その他、[細かい設定](https://vuejs.org/v2/guide/transitions.html#Transitions-on-Initial-Render)も可能。
+
+```html
+<transition appear></transition>
+```
+
+### 2 つ以上の要素のトランジション
+
+`transition`の中で複数の要素を扱うときは、それぞれに`key`属性を設定すること。そうしないと、DOM が再利用されてトランジションが適用されない。
+
+```html
+<transition>
+  <button v-if="docState === 'saved'" key="saved">
+    Edit
+  </button>
+  <button v-if="docState === 'edited'" key="edited">
+    Save
+  </button>
+  <button v-if="docState === 'editing'" key="editing">
+    Cancel
+  </button>
+</transition>
+```
+
+#### Transition Mode
+
+- `in-out` 新しい要素のトランジションが完了後、古い方のトランジションを開始
+- `out-in` 上記の逆
 
 ## Mixins
 

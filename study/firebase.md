@@ -4,6 +4,35 @@
 
 ## Functions
 
+### 名称
+
+下記の 2 つは微妙に違うみたい。
+
+- Cloud Functions
+  - `gcloud` cli から操作する
+- Cloud Functions for Firebase
+  - `firebase` cli から操作する
+
+### セットアップ
+
+```bash
+firebase login
+firebase init functions
+firebase deploy
+```
+
+Node.js v8.\* を使うなら、`functions/package.json` に `"engines": { "node": "8" }` を追加する
+
+```js
+const functions = require('firebase-functions');
+
+// ユーザの削除をトリガにする
+exports.helloWorld = functions.auth.user().onDelete(user => {});
+
+// http通信をトリガにする
+exports.helloWorld2 = functions.https.onRequest(async (req, res) => {});
+```
+
 ### cors を有効にする
 
 ```js
@@ -46,6 +75,8 @@ const firebaseUserId = result.user_id;
 yarn add firebase
 ```
 
+#### 初期化
+
 ```js
 import firebase from 'firebase/app';
 import 'firebase/auth';
@@ -57,7 +88,11 @@ firebase.initializeApp({
   projectId: '',
   storageBucket: '',
 });
+```
 
+#### ログイン
+
+```js
 // login with google
 const provider = new firebase.auth.GoogleAuthProvider();
 provider.addScope('email');
@@ -65,18 +100,29 @@ await firebase.auth().signInWithRedirect(provider);
 
 // login anonimously
 const result = await firebase.auth().signInAnonymously();
+```
 
-// listen auth status change
-firebase.auth().onAuthStateChanged(user => {});
+#### ユーザ情報の取得
 
-// get current user
+```js
+// listen auth status change (必要に応じてunsubscribeを忘れずに)
+const unsubscribe() = firebase.auth().onAuthStateChanged(user => {});
+unsubscribe();
+
+// get current user（初期ロード時などはUndefinedになる可能性あり）
 var user = firebase.auth().currentUser;
+```
 
+#### リダイレクト情報の取得
+
+```js
 // handle redirect all time
 const result = await firebase.auth().getRedirectResult();
 if (!result.user) return;
 const token = await firebase.auth().currentUser.getIdToken();
 ```
+
+#### gapi を使った手動でのログイン
 
 [gapi](/study/gapi.html) を使って取得した idToken を使う方法。匿名アカウントのアップグレードなどが必要な場合は、この方法をとる必要がある。
 

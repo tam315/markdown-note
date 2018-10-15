@@ -197,7 +197,7 @@ encodeURIComponent('post/filename.jpg');
 // => "post%2Ffilename.jpg"
 ```
 
-### Object のクローン
+## Object のクローン
 
 spread(`...`)を使ってオブジェクトをコピーしても、2 階層目以下の変数は依然同じオブジェクトを指し示す。
 これを回避するには lodash の`cloneDeep`などが必要となるが、手っ取り早くやるには下記のようにするとよい。
@@ -215,3 +215,8 @@ newObject.address.city = 'Delhi';
 console.log(oldObject); // => Pune
 console.log(newObject); // => Delhi
 ```
+
+## Async / Await の落とし穴
+
+`forEach`の中では`await`が効かない。
+`for`, `for-of`, `for-in`を使え。
