@@ -1340,7 +1340,7 @@ components: {
 
 ## Enter/Leave & List Transitions
 
-### シングル要素、シングルコンポーネントのトランジション
+### 単一の要素・コンポーネントのトランジション
 
 `transition`コンポーネントでラップすると、`entering`と`leaving`のトランジションを設定できる。ラップできる要素 or コンポーネントの条件は下記の通り。
 
@@ -1350,20 +1350,20 @@ components: {
 - Component root nodes である
 
 ```html
-<transition name="fade">
+<transition>
   <p v-if="show">hello</p>
 </transition>
 ```
 
 ```css
-.fade-enter,
-.fade-leave-to {
+.v-enter,
+.v-leave-to {
   transform: translateX(10px);
   opacity: 0;
 }
 
-.fade-enter-active,
-.fade-leave-active {
+.v-enter-active,
+.v-leave-active {
   transition: all 0.5s;
 }
 ```
@@ -1394,10 +1394,10 @@ components: {
 #### CSS Animations を使った例
 
 ```css
-.bounce-enter-active {
+.v-enter-active {
   animation: bounce-in 0.5s;
 }
-.bounce-leave-active {
+.v-leave-active {
   animation: bounce-in 0.5s reverse;
 }
 @keyframes bounce-in {
@@ -1423,6 +1423,7 @@ components: {
 - `leave-class`
 - `leave-active-class`
 - `leave-to-class`
+- `move-class`
 
 ```html
 <transition
@@ -1433,7 +1434,7 @@ components: {
 
 #### animation と transition の同時利用
 
-これをやるときは[設定](https://vuejs.org/v2/guide/transitions.html#Using-Transitions-and-Animations-Together)が必要。
+同時利用するときは Vue がアニメーションの終わりを判定できないので、個別に[設定](https://vuejs.org/v2/guide/transitions.html#Using-Transitions-and-Animations-Together)が必要。
 
 #### Explicit Transition Durations
 
@@ -1454,6 +1455,7 @@ Vue はアニメーションやトランジションの終了を`transitionend` 
   @enter="enter"
   @after-enter="afterEnter"
   @enter-cancelled="enterCancelled"
+
   @before-leave="beforeLeave"
   @leave="leave"
   @after-leave="afterLeave"
@@ -1465,15 +1467,12 @@ Vue はアニメーションやトランジションの終了を`transitionend` 
 const option = {
   methods: {
     beforeEnter: function(el) {},
-    enter: function(el, done) {
-      done();
-    },
+    enter: function(el, done) {},
     afterEnter: function(el) {},
     enterCancelled: function(el) {},
+
     beforeLeave: function(el) {},
-    leave: function(el, done) {
-      done();
-    },
+    leave: function(el, done) {},
     afterLeave: function(el) {},
     leaveCancelled: function(el) {},
   },
@@ -1488,7 +1487,7 @@ const option = {
 <transition appear></transition>
 ```
 
-### 2 つ以上の要素のトランジション
+### 複数の要素のトランジション
 
 `transition`の中で複数の要素を扱うときは、それぞれに`key`属性を設定すること。そうしないと、DOM が再利用されてトランジションが適用されない。
 
@@ -1508,8 +1507,114 @@ const option = {
 
 #### Transition Mode
 
-- `in-out` 新しい要素のトランジションが完了後、古い方のトランジションを開始
-- `out-in` 上記の逆
+2 つ以上の要素にトランジションをかける時、どの順番でトランジションするかを設定できる。指定しなかった場合は、同時に実行される。
+
+- `out-in` 古い要素のトランジションが完了後、新しい方のトランジションを開始
+- `in-out` 上記の逆。あまり使わない。
+
+```html
+<transition name="fade" mode="out-in">
+```
+
+### 複数のコンポーネントのトランジション
+
+複数のコンポーネントのトランジションには、ダイナミックコンポーネントを使用する。`key`属性は不要。
+
+```html
+<transition>
+  <component v-bind:is="view"></component>
+</transition>
+```
+
+```js
+new Vue({
+  data: {
+    view: 'v-a',
+  },
+  components: {
+    'v-a': {
+      template: '<div>Component A</div>',
+    },
+    'v-b': {
+      template: '<div>Component B</div>',
+    },
+  },
+});
+```
+
+```css
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.3s ease;
+}
+.v-enter,
+.v-leave-to {
+  opacity: 0;
+}
+```
+
+### リスト要素のトランジション
+
+`v-for`などにトランジションを設定するには`<transition-group>`を使用する。
+
+- `transition`と異なり、`transition-group`は実際に要素をレンダリングする。デフォルトは`span`なので変更したいときは`tag`属性を指定する。
+- Transition Mode は使えない
+- リストの各要素に`key`属性が必須
+- `name`属性でクラス名（`v-`の部分）が変わる挙動は、`transition`と同じ。
+
+#### List Entering & Leaving Transitions
+
+```html
+<transition-group tag="div">
+  <span v-for="item in items" v-bind:key="item" class="list-item">{{ item }}</span>
+</transition-group>
+```
+
+```css
+.v-enter-active,
+.v-leave-active {
+  transition: all 1s;
+}
+.v-enter, .v-leave-to /* .list-leave-active below version 2.1.8 */ {
+  opacity: 0;
+  transform: translateY(30px);
+}
+```
+
+#### リスト要素の移動のトランジション
+
+`v-move`クラスを使う。他のクラスと同じく、`transition-group`の`name`属性によりルックアップするクラス名が変わる。また、`move-class`属性を指定することでクラス名をカスタマイズすることも可能。
+
+```css
+.v-move {
+  transition: transform 1s;
+}
+.v-leave-active {
+  position: absolute;
+}
+```
+
+注意点
+
+- `inline`では使えない。`inline-box` or `flex`を使うこと。
+- 要素の削除時 = `v-leave-active`時は position を absolute にしないと、`v-move`が効かない。詳細はサンプルを参照。
+
+#### Staggering List Transitions
+
+時間差でリストを畳んだり表示したりする。JavaScript で制御する。詳細は[ドキュメント](https://vuejs.org/v2/guide/transitions.html#Staggering-List-Transitions)参照。
+
+### Transition の再利用
+
+`slot`を使って再利用できる Transition を作ると便利。詳細は[ドキュメント](https://vuejs.org/v2/guide/transitions.html#Reusable-Transitions)参照。
+
+### Dynamic Transitions
+
+- トランジションの`name`属性を動的に変更することで、トランジションをダイナミックにすることができる。
+- もしくは、Javascript Hooks を使う。
+
+## State Transitions
+
+数値のトランジションには Tween.js, 色のトランジションには Color.js などが使える。必要になったときに[ドキュメント](https://vuejs.org/v2/guide/transitioning-state.html)を参照する。
 
 ## Mixins
 
