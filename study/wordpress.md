@@ -76,18 +76,41 @@ sudo /opt/bitnami/ctlscript.sh restart apache
 
 ### SSH での接続
 
-- コンソールの、アカウント →SSH キーから、デフォルトのキーをダウンロードしておく
-- 下記コマンドを実行する
+`/home/bitnami/.ssh/authorized_keys`に自身の公開鍵を追記したのち、下記で接続する。（コンソールから公開鍵をアップロードする方法ではうまく動かなかった）
 
-  ```bash
-  ssh -i ${ダウンロードしたkey} bitnami@${lightsailのIP}
-  ```
+```bash
+ssh　bitnami@${lightsailのIP}
+```
 
 ### パス
 
 - `domain/wp-admin` wordpress 管理画面
+- `domain/wp-json/wp/v2/posts` REST API
 - `domain/phpmyadmin` phpMyAdmin 管理画面
 
-### Tips
+## Tips
 
 - `sudo su -`で root user に切り替えられる
+
+## REST API
+
+### routes
+
+- `/wp-json/wp/v2/posts` posts の一覧
+- `/wp-json/wp/v2/pages` pages の一覧
+- `/wp-json/wp/v2/media` media の一覧
+- `/wp-json/wp/v2/types` types の一覧。デフォルトは下記のとおり。適用する Taxonomies はここで指定できる？
+  - post
+  - page
+  - attachment(media)
+- `/wp-json/wp/v2/statuses` 記事の状態の一覧？
+  - publish
+- `/wp-json/wp/v2/taxonomies` taxonomies の一覧。デフォルトは下記のとおり。
+  - category
+  - post_tag
+- `/wp-json/wp/v2/categories` カテゴリの一覧
+- `/wp-json/wp/v2/tags` タグの一覧
+
+## TODO
+
+- バックアップの流れを確認する
