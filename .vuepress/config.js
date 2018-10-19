@@ -2,7 +2,10 @@ module.exports = {
   lang: 'ja-JP', // this will be set as the lang attribute on <html>
   title: 'Yuuniworks Notes',
   description: '📋個人的なメモ帳です✍🏻',
-  head: [['link', { rel: 'icon', type: 'image/png', href: '/favicon.png' }]],
+  head: [
+    ['link', { rel: 'icon', type: 'image/png', href: '/favicon.png' }],
+    ['link', { rel: 'manifest', href: '/manifest.json' }],
+  ],
   themeConfig: {
     sidebar: 'auto',
     docsRepo: 'junkboy0315/markdown-notes',
@@ -21,4 +24,5 @@ module.exports = {
     },
   },
   ga: 'UA-116967778-5',
+  serviceWorker: true,
 };
