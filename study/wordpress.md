@@ -74,10 +74,6 @@ sudo /opt/bitnami/apps/wordpress/bnconfig --disable_banner 1
 sudo /opt/bitnami/ctlscript.sh restart apache
 ```
 
-### Tips
-
-- `sudo su -`で root user に切り替えられる
-
 ### SSH での接続
 
 - コンソールの、アカウント →SSH キーから、デフォルトのキーをダウンロードしておく
@@ -91,3 +87,7 @@ sudo /opt/bitnami/ctlscript.sh restart apache
 
 - `domain/wp-admin` wordpress 管理画面
 - `domain/phpmyadmin` phpMyAdmin 管理画面
+
+### Tips
+
+- `sudo su -`で root user に切り替えられる
