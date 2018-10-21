@@ -2,6 +2,21 @@
 
 [[toc]]
 
+## 基本事項
+
+コマンドラインで php ファイルを実行
+
+```bash
+php test.php
+```
+
+デバッグ用出力
+
+```php
+print_r(); // 簡易
+var_dump(); // 詳細
+```
+
 ## Basic Syntax
 
 - `<?php`ではじめて、`?>`で終わる。終わりのタグは、可能であれば省略する。
@@ -310,7 +325,7 @@ php で使うほとんどの値は`serialize()`を使うことで string に変�
 
 ### Arrays
 
-PHP の Array は、実際は Ordered Map である。下記のような用途に使うことができる。
+PHP の Array は、実際は Ordered Map(key-value ペア) である。下記のような用途に使うことができる。
 
 - array
 - list(vector)
@@ -319,3 +334,154 @@ PHP の Array は、実際は Ordered Map である。下記のような用途�
 - collection
 - stack
 - queue
+
+#### `array()`による作成
+
+- キーには integer 又は string を使うことができる
+- value にはあらゆる値を格納できる
+
+```php
+print_r(array(123, 456));
+// => Array ( [0] => 123 [1] => 456 )
+
+print_r(array(
+    "foo" => "bar",
+    "bar" => "foo", // trailing commaが使える
+));
+print_r([ // PHP 5.4以降では[]も使える
+    "foo" => "bar",
+    "bar" => "foo",
+]);
+// => Array ( [foo] => bar [bar] => foo )
+```
+
+- キー名は、次のルールによりキャストされる
+  - Valid な 10 進数を含む String は integer に
+  - float は trunc された integer に
+  - boolean は integer に
+  - null は""(empty string)に
+- なお、array と object は key として使用することはできない
+- キーを省略すると、Auto Increment な integer が順に振られる。この際、その配列において過去に一度でも使われた数字は、すでに配列から消去されている場合でも、再利用はされない。
+
+```php
+$array = array(
+         "a",
+         "b",
+    6 => "c",
+         "d",
+);
+/*
+array(4) {
+  [0]=>
+  string(1) "a"
+  [1]=>
+  string(1) "b"
+  [6]=>
+  string(1) "c"
+  [7]=>
+  string(1) "d"
+}
+*/
+```
+
+- 要素へのアクセスは`[]`or`{}`をつかう。なお、この 2 つの記法は全く等価である。
+
+```php
+var_dump($array["foo"]);
+var_dump($array[42]);
+var_dump($array["multi"]["dimensional"]["array"]);
+```
+
+#### `[]`による作成・変更
+
+- `[]`で特定の要素を作成、取得、変更できる
+- もし`$arr`が存在しなかった場合は作成される（Array 作成の方法としては非推奨）
+- Key を省略した場合は、Auto Increment な数値が自動で振られる。
+
+```php
+$arr[] = 56;
+$arr["x"] = 42;
+// Array([0] => 56, [x] => 42)
+```
+
+#### Array に関連した便利なファンクション
+
+[Array Function の一覧](http://php.net/manual/en/ref.array.php)
+
+- `unset($arr)`, `unset($arr[key])` 要素又は配列を削除する。reindex は行わない。
+
+  ```php
+  $arr = array(5 => 1, 12 => 2);
+
+  $arr[] = 56;    // $arr[13] = 56;
+  $arr["x"] = 42;
+  unset($arr[5]); // This removes the element from the array
+  unset($arr);    // This deletes the whole array
+  ```
+
+- `array_values($arr)` reindex した配列を返す
+- `foreach ($array as $value) {}`
+- `foreach ($array as $key => $value) {}`
+- `count($arr)`
+- `sort($arr)`
+
+#### String へのキャスト時の注意
+
+key のタイプによってキャスト時の作法が変わる
+
+```php
+// Keyが変数のとき
+echo "$array[$i]"; // ""で囲む
+
+// KeyがStringのとき
+echo "{$array['test']}"; // complex-syntaxを使う
+echo $array['test'];　// 又は""の外に出して、`.`でconcatして対応する
+```
+
+#### Array へのキャスト
+
+- `(array) someval`で Array にキャストできる。
+- int, fload, string, boolean, resource の場合、`array(someVal)`したのと同じことになる。つまり、長さ 1 の配列に、someVal が格納される。
+
+  ```php
+  print_r((array) 123); // => Array([0]=>123)
+  ```
+
+- NULL の場合、長さが 0 の配列になる。
+- object の場合は要調査　 TODO
+
+#### 配列の比較
+
+`array_diff($arr1, $arr2)`により、$arr1 に存在し、$arr2 に存在しない要素を抽出できる。
+
+```php
+$array1 = array("a" => "green", "red", "blue", "red");
+$array2 = array("b" => "green", "yellow", "red");
+$result = array_diff($array1, $array2);
+// => Array([1] => blue)
+```
+
+#### ループ処理で内容を書き換え
+
+- forEach において参照渡し(`&`)を使うことで、元の値を書き換えることができる。
+- JS と異なり、下記で言う`$color`は forEach の外側でも生きている（マジか）。
+
+```php
+$colors = array('red', 'blue', 'green', 'yellow');
+foreach ($colors as &$color) {
+    $color = strtoupper($color); // 大文字に変換
+}
+unset($color); // ここでもまだ$colorは生きているのでクリアしておく
+```
+
+#### 参照渡しと値渡し
+
+Array の場合、デフォルトは値渡しになる。参照渡しにしたい場合は`&`を付与する。
+
+```php
+$arr1 = array(2, 3);
+$arr2 = $arr1;
+$arr2[] = 4; // arr1は変更されていない
+$arr3 = &$arr1;
+$arr3[] = 4; // arr1は変更されている
+```
