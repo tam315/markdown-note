@@ -485,3 +485,311 @@ $arr2[] = 4; // arr1は変更されていない
 $arr3 = &$arr1;
 $arr3[] = 4; // arr1は変更されている
 ```
+
+### Iterables
+
+PHP 7.1 以降で使える疑似タイプ。下記を受け付ける。foraech することができる。
+
+- array
+- Traversable interface を備えた Object
+
+```php
+function arr(): iterable
+{
+    return [1, 2, 3];
+}
+function gen(): iterable
+{
+    yield 1;
+    yield 2;
+    yield 3;
+}
+
+foreach (arr() as $value) {}
+foreach (gen() as $value) {}
+```
+
+### Objects
+
+object = クラスインスタンスのこと。
+
+```php
+class Dog
+{
+    public function bark()
+    {
+        echo "bow!";
+    }
+}
+
+$dog = new Dog;
+$dog->bark();
+```
+
+#### object へのキャスト
+
+- object へキャストした場合は、`stdClass`というビルトインクラスを基にしたインスタンスが作成される。
+- NULL はプロパティを持たないインスタンスに変換される
+
+  ```php
+  var_dump((object) null);
+  /*
+  object(stdClass)#1 (0) {}
+  */
+  ```
+
+- Array は、key-value がそのまま property-value に変換される。
+
+  ```php
+  $arr = [
+      "name" => "john",
+      "age" => 33,
+  ];
+  var_dump((object) $arr);
+  /*
+  object(stdClass)#1 (2) {
+    ["name"]=> string(4) "john"
+    ["age"]=> int(33)
+  }
+  */
+  ```
+
+- int や string など、scalar な値は、`scalar`というプロパティに格納される。
+
+  ```php
+  var_dump((object) 123);
+  /*
+  object(stdClass)#1 (1) {
+    ["scalar"]=> int(123)
+  }
+  */
+  ```
+
+### Resources
+
+- 外部への参照を持つ、特別な値。
+- 作成や使用の際は、[特別なファンクション](http://php.net/manual/en/resource.php)を使う。
+- メモリの開放は自動で行われる。ただし、データベースへのコネクションだけは[別である](http://php.net/manual/en/features.persistent-connections.php)。
+
+### null
+
+変数が値を持っていないことを示す。
+
+- null を明示的にセットした変数
+- まだ一度も値がセットされていない変数
+- unset()された Key 又は Array
+
+#### null へのキャスト
+
+昔は`(unset)`が使えたが、今は強く非推奨。
+
+### Callbacks / Callables
+
+`call_user_func()` or `usort()`など、いくつかのファンクションは、コールバックを受け取ることができる。
+
+#### シンプルな関数をコールバックに指定
+
+```php
+function myCallbackFunction($text = "")
+{
+    echo 'hello world!'.$text;
+}
+call_user_func('myCallbackFunction');
+call_user_func('myCallbackFunction','hello2');
+```
+
+#### クラスメソッド、インスタンスメソッドをコールバックに指定
+
+注意：JS と異なり、PHP ではクラスメソッドをインスタンスからも呼ぶことができる。
+
+```php
+// An example callback method
+class MyClass
+{
+    public static function myCallbackMethod()
+    {
+        echo 'Hello World!';
+    }
+}
+
+// Static class method call
+call_user_func('MyClass::myCallbackMethod');
+call_user_func(array('MyClass', 'myCallbackMethod')); // old fasion
+
+// Object(instance) method call
+$obj = new MyClass();
+call_user_func(array($obj, 'myCallbackMethod'));
+```
+
+#### 親クラスのメソッドをコールバックに指定
+
+```php
+class MyChildClass extends MyClass
+{
+    public static function myCallbackMethod()
+    {
+        echo "some message";
+    }
+}
+
+call_user_func(array('MyChildClass', 'parent::myCallbackMethod')); // => Hello World!
+```
+
+#### `__invoke`を実装しているクラスのインスタンスをコールバックに指定
+
+```php
+class MyInvokableClass
+{
+    public function __invoke($name)
+    {
+        echo 'Hello ', $name, "\n";
+    }
+}
+
+$c = new MyInvokableClass();
+call_user_func($c, 'PHP!');
+```
+
+#### Closure
+
+こういうのをクロージャーというらしい。
+
+```php
+// closure
+$double = function ($a) {
+    return $a * 2;
+};
+$new_numbers = array_map($double, [1,2,3,4,5]);
+// => 2,4,6,8,10
+```
+
+### Pseudo-types
+
+PHP のドキュメントにおいて、説明の便宜上、定義しているタイプのこと。引数のタイプや値を正しく説明するための架空のものであり、実際の PHP のプリミティブタイプとして存在するわけではない。
+
+#### mixed
+
+いくつかのタイプを受け取る事ができるタイプ。例）`gettype()`
+
+#### number
+
+integer + float
+
+#### callback
+
+callable のこと。callable が登場する以前は callback が擬似タイプとして存在していた。
+
+#### array|object
+
+array もしくは object
+
+#### void
+
+何もリターンしない、何も引数として受け付けない、というタイプ。PHP7.1 以降ではリターンタイプとして使える。
+
+### 型の相互変換
+
+#### 自動変換
+
+PHP の方は、文脈によって自動的に決定される。例えば乗算演算子では、下記のように型が自動変換される。
+
+| オペランドのいずれかが | オペランドの評価 | 結果    |
+| ---------------------- | ---------------- | ------- |
+| float を含む           | すべて float     | float   |
+| float を含まない       | すべて integer   | integer |
+
+#### キャストの種類
+
+- (int), (integer) - 整数へのキャスト
+- (bool), (boolean) - 論理値へのキャスト
+- (float), (double), (real) - float へのキャスト
+- (string) - 文字列へのキャスト
+- (array) - 配列へのキャスト
+- (object) - オブジェクトへのキャスト
+- (binary) - バイナリへのキャスト
+- (unset) - NULL へのキャスト (強く非推奨)
+
+## Variables
+
+### Basics
+
+- 命名規則 →`\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*`
+- 値の代入
+
+  - デフォルトは値渡し
+  - 参照渡ししたい場合は、代入する値に`&`を使う。この場合、代入された側はただのエイリアスになる。
+  - `&`をつけることができる対象は、名前付き変数のみ(`&(1+2)`などは無効)
+
+  ```php
+  $a = 1;
+  $b = $a;
+  $b = 2;
+  var_dump($a); // => 2
+  ```
+
+### Predefined Variables
+
+PHP には多くの[定義済み変数](http://php.net/manual/en/reserved.variables.php)がある。特に、Superglobals と呼ばれる下記のものは、プログラムのどこからでも、なんの手続きもせずに使用することができる。
+
+- `$GLOBALS`
+- `$_SERVER`
+- `$_GET`
+- `$_POST`
+- `$_FILES`
+- `$_COOKIE`
+- `$_SESSION`
+- `$_REQUEST`
+- `$_ENV`
+
+### Scope
+
+変数のスコープは、定義されているファイル内にとどまる。
+
+#### Include
+
+ただし、下記のように他のファイルを Include した場合、Include した場所に、`other.php`を差し込んだようなイメージになる。
+
+- `$a`は、`other.php`内で使用可能
+- `other.php`内の変数・メソッドは、取り込み主で使用可能。スコープは、`include`文が存在している場所によって決まる。詳細は[こちら](http://php.net/manual/ja/function.include.php)。
+
+```php
+$a = 1;
+include 'other.php';
+```
+
+#### グローバル変数とローカル変数
+
+ファンクションの中からアクセスできるのはローカル変数のみ。グローバル変数にアクセスする方法は後述。
+
+```php
+$a = 1; // グローバル
+function test()
+{
+    echo $a; // ローカル変数を参照しているので、グローバルにはアクセスできない。
+}
+```
+
+#### `global` キーワードを使ってグローバルにアクセス
+
+```php
+$a = 1;
+
+function Sum()
+{
+    global $a;
+    echo $a; // グローバルにアクセスできる
+}
+```
+
+#### `$GLOBALS` を使ってグローバルにアクセス
+
+```php
+$a = 1;
+
+function Sum()
+{
+    echo $GLOBALS['a'];
+}
+```
+
+#### static 変数
