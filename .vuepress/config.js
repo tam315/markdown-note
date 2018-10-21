@@ -16,6 +16,9 @@ module.exports = {
       apiKey: '74244ba9a848241cee21adac30d63d03',
       indexName: 'yuuniworks',
     },
+    serviceWorker: {
+      updatePopup: true,
+    },
   },
   markdown: {
     toc: { includeLevel: [2] },
