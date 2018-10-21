@@ -791,5 +791,3 @@ function Sum()
     echo $GLOBALS['a'];
 }
 ```
-
-#### static 変数
