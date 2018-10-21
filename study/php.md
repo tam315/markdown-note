@@ -791,3 +791,207 @@ function Sum()
     echo $GLOBALS['a'];
 }
 ```
+
+#### static 変数
+
+static 変数を使うと、ファンクションの終了後も値を保持しておくことができる。
+
+```php
+function test()
+{
+    static $a = 0;
+    echo $a;
+    $a++;
+}
+test(); // 0
+test(); // 1
+test(); // 2
+```
+
+static 変数を使って再帰処理を書くとこんな感じ。ちょっと筋が悪そう。
+
+```php
+function test()
+{
+    static $count = 0;
+
+    $count++;
+    echo $count;
+    if ($count < 10) {
+        test();
+    }
+}
+```
+
+#### References with global and static variables
+
+TODO: 意味不明
+
+### Variable Variables
+
+動的に指定できる変数名のこと。
+
+```php
+$a = 'hello';
+$$a = 'world';
+
+echo "$a $hello"; // hello owrld
+echo "$a ${$a}"; // hello world
+```
+
+配列で使う場合は、あいまいさを`{}`で解消する必要があるので注意。
+
+```php
+$$a[1] // invalid as it's ambiguous
+${$a[1]} // ok
+${$a}[1] // ok
+```
+
+クラスのプロパティに動的にアクセスしたいときは、変数や、`{}`を使うことができる。
+
+```php
+class foo
+{
+    public $bar = 'I am bar.';
+    public $r = 'I am r.';
+}
+$foo = new foo();
+$name = 'bar';
+$names = array('foo', 'bar');
+
+echo $foo->$name . "\n"; // I am bar.
+echo $foo->{$names[1]} . "\n"; // I am bar.
+echo $foo->{'b' . 'ar'} . "\n"; // I am bar.
+echo $foo->{'arr'[1]} . "\n"; // I am r.
+```
+
+### Variables From External Sources
+
+#### フォームで送られてきた値の取得
+
+使うことはなさそう。必要になったら[学習](http://php.net/manual/en/language.variables.external.php)する。
+
+```php
+$_POST['username']; // POSTのbodyのみ取得
+$_REQUEST['username']; // POSTのbodyと、Queryも取得
+```
+
+#### Cookies
+
+- `setcookie()`で値をセット
+- `$_COOKIE`で値を取得
+
+```php
+// 下記のように配列「風」にしておけば、取り出す際に自動で配列にしてくれる
+setcookie('mycookie[0]', 'mydata-1');
+setcookie('mycookie[1]', 'mydata-2');
+
+var_dump($_COOKIE);
+```
+
+#### ドットの扱い
+
+外部から取得したデータの変数名（Key など）にドットが含まれている場合、PHP では変数名にドットが使えないので、自動的に`_`に変換される。
+
+## Constants
+
+### Basics
+
+- scalar と array を値に設定できる。resource は使うな。
+- 変更できない
+- case-sensitive
+- 慣例として名前はすべて大文字にする。 命名規則 => `[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*`
+
+### Syntax
+
+#### 変数との違い
+
+- `$`が頭につかない
+- 変数のスコープとは関係ない。どこでも宣言でき、どこからでもアクセスできる。
+- 値を変更できない
+
+#### 宣言方法
+
+- `const`を使う方法と`define()`を使う方法がある。
+- `const`の場合はコンパイル時に定義されるため、トップレベルのスコープでのみ使用できる。
+- ファンクションやループの中で動的に定義したい場合は`define()`を使うこと。
+- `get_defined_constants()`で定義済み定数の一覧を Array で取得できる
+
+```php
+const CONSTANT = 'Hello World';
+define("CONSTANT", "Hello world");
+
+const ANIMALS = array('dog', 'cat', 'bird');
+define('ANIMALS', array(
+  'dog',
+  'cat',
+  'bird'
+));
+```
+
+### Magic constants
+
+定義済みの定数。コンパイル時に定義される。詳細は[こちら](http://php.net/manual/en/language.constants.predefined.php)。
+
+- `__LINE__`
+- `__FILE__`
+- `__DIR__`
+- `__FUNCTION__`
+- `__CLASS__`
+- `__TRAIT__`
+- `__METHOD__`
+- `__NAMESPACE__`
+- `ClassName::class`
+
+## Expressions
+
+PHP では、すべてが Expressions であり、評価の対象である。
+
+### Expressions とは？
+
+プリミティブな値を表しているもののこと？
+
+```php
+$a = 5
+// 5は、integerの5を表すExpressionである
+// 代入後は、$aも、int(5)を表すExpressionになる
+// さらに、代入後は、'$a = 5'自体も、int(5)を表すExpressionになる
+
+// <= 下記も全部Expression
+someFunc()
+i++
+1 > 5
+a += 5
+```
+
+### Statement とは？
+
+`何らかのexpression;`が Statement である。
+
+```php
+$b = $a = 5;
+// '$b = $a = 5;'がStatement
+/// $b, $a, 5, '$a=5' などはExpression
+```
+
+## Operators
+
+### Precedence
+
+- オペレータの優先順位によって、計算順が決まる
+- 計算順が同じ場合は、Associativity(left or right)により、計算順が決まる。
+- Associativity が non-associative なオペレータを 2 つ以上つなげることはできない
+
+詳細は[こちら](http://php.net/manual/en/language.operators.precedence.php)
+
+#### 落とし穴
+
+`and/or` は `=` よりも優先度が低い。`||/&&`は`=`よりも優先度が高い。このため、下記のような事故がおこりがち。
+
+```php
+$bool = true && false;
+var_dump($bool); // false, that's expected
+
+$bool = true and false;
+var_dump($bool); // true, ouch!
+```
