@@ -27,13 +27,6 @@ var_dump(); // 詳細
 <?php echo 'hello world' ?>.
 <?= 'hello world' ?>
 
-// 条件分岐
-<?php if ($expression == true): ?>
-  This will show if the expression is true.
-<?php else: ?>
-  Otherwise this will show.
-<?php endif; ?>
-
 // comment1
 # comment2
 /*
@@ -92,7 +85,7 @@ if ($is_valid) {}
 
 #### echo
 
-boolean を echo すると、true は 1 を出力し、false は何も出力しない。
+boolean を echo (文字列に Cast)すると、true は 1 を出力し、false は何も出力しない。
 
 #### キャスト
 
@@ -267,7 +260,7 @@ EOT;
 
 #### 変数のパース - simple syntax
 
-double quoted 等の中において変数をパースする方法は、simple と complex の 2 種類がある。
+double quoted 等の中において変数をパースする方法は、simple と complex の 2 種類がある。simple-syntax では、`$`を使う。変数名の区切りをはっきりさせる必要があるときはを`{}`で囲む。
 
 ```php
 echo "my name is $myname. nice to meet you";
@@ -277,10 +270,15 @@ echo "$people->john drank some $juices[0] juice.".PHP_EOL;
 
 #### 変数のパース - complex syntax
 
-TODO: 要調査
+複雑な Expression を書ける方法、という意味で Complex と呼ばれている。`{}`を使う。下記のような場合に使用する。
+
+- シングルクオートを使いたい
+- 動的に変数名を設定したい
+- Object のプロパティ名の区切りを明示したい
 
 ```php
-echo "This is {$great}";
+echo "This is {$arr['foo']}";
+echo "This is ${$great}";
 echo "This square is {$square->width}00;
 ```
 
@@ -305,7 +303,7 @@ echo "my name "."is"." android";
 
 `(string)`or`strval()`で文字列にキャストできる。`echo`や`print`function では自動的にキャストが行われる。
 
-array, object, resources はそのままキャストしても意味がないので、`print_r()`や`var_dump()`を使うこと。
+array, object, resources はそのままキャストしても意味がない（"Array"などになってしまう）ので、`print_r()`や`var_dump()`を使うこと。
 
 - boolean
   - true は"1"に、false は""になる
@@ -361,7 +359,7 @@ print_r([ // PHP 5.4以降では[]も使える
   - boolean は integer に
   - null は""(empty string)に
 - なお、array と object は key として使用することはできない
-- キーを省略すると、Auto Increment な integer が順に振られる。この際、その配列において過去に一度でも使われた数字は、すでに配列から消去されている場合でも、再利用はされない。
+- キーを省略すると、Auto Increment な integer が順に振られる。この際、その配列において過去に一度でも使われた数字は、すでに配列から消去されている場合でも、再利用はされない。再利用したい場合は`array_values()`を使って reindex する作業が必要。
 
 ```php
 $array = array(
@@ -424,6 +422,7 @@ $arr["x"] = 42;
 - `foreach ($array as $key => $value) {}`
 - `count($arr)`
 - `sort($arr)`
+- `array_diff($arr1, $arr2)`
 
 #### String へのキャスト時の注意
 
@@ -448,7 +447,28 @@ echo $array['test'];　// 又は""の外に出して、`.`でconcatして対応�
   ```
 
 - NULL の場合、長さが 0 の配列になる。
-- object の場合は要調査　 TODO
+- object の場合
+
+  - プロパティがキー名になる
+  - private の場合は`\0クラス名\0プロパティ名`になる
+  - protected の場合は`\0*\0プロパティ名`になる
+  - `\0`は null を表す。なぜこれが必要なのかはよくわからない。
+
+  ```php
+  class MyClass
+  {
+    public $myPublic;
+    private $myPrivate;
+    protected $myProtected;
+  }
+  /*
+    array(3) {
+      ["myPublic"]=>  NULL
+      ["\0MyClass\0myPrivate"]=>  NULL
+      ["\0*\0myProtected"]=>  NULL
+    }
+  */
+  ```
 
 #### 配列の比較
 
@@ -459,19 +479,6 @@ $array1 = array("a" => "green", "red", "blue", "red");
 $array2 = array("b" => "green", "yellow", "red");
 $result = array_diff($array1, $array2);
 // => Array([1] => blue)
-```
-
-#### ループ処理で内容を書き換え
-
-- forEach において参照渡し(`&`)を使うことで、元の値を書き換えることができる。
-- JS と異なり、下記で言う`$color`は forEach の外側でも生きている（マジか）。
-
-```php
-$colors = array('red', 'blue', 'green', 'yellow');
-foreach ($colors as &$color) {
-    $color = strtoupper($color); // 大文字に変換
-}
-unset($color); // ここでもまだ$colorは生きているのでクリアしておく
 ```
 
 #### 参照渡しと値渡し
@@ -716,7 +723,7 @@ PHP の方は、文脈によって自動的に決定される。例えば乗算�
 - 命名規則 →`\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*`
 - 値の代入
 
-  - デフォルトは値渡し
+  - デフォルトは値渡し（Object だけは例外で、参照渡し）
   - 参照渡ししたい場合は、代入する値に`&`を使う。この場合、代入された側はただのエイリアスになる。
   - `&`をつけることができる対象は、名前付き変数のみ(`&(1+2)`などは無効)
 
@@ -724,7 +731,7 @@ PHP の方は、文脈によって自動的に決定される。例えば乗算�
   $a = 1;
   $b = $a;
   $b = 2;
-  var_dump($a); // => 2
+  var_dump($a); // => 1
   ```
 
 ### Predefined Variables
@@ -765,7 +772,7 @@ include 'other.php';
 $a = 1; // グローバル
 function test()
 {
-    echo $a; // ローカル変数を参照しているので、グローバルにはアクセスできない。
+    echo $a; // ローカル変数を参照する。グローバルにはアクセスできない。
 }
 ```
 
@@ -949,7 +956,7 @@ PHP では、すべてが Expressions であり、評価の対象である。
 
 ### Expressions とは？
 
-プリミティブな値を表しているもののこと？
+最終的に値になるものすべて。「式」と訳される。
 
 ```php
 $a = 5
@@ -966,7 +973,7 @@ a += 5
 
 ### Statement とは？
 
-`何らかのexpression;`が Statement である。
+`何らかのexpression;`が Statement である。「文」と訳される。
 
 ```php
 $b = $a = 5;
@@ -984,7 +991,69 @@ $b = $a = 5;
 
 詳細は[こちら](http://php.net/manual/en/language.operators.precedence.php)
 
-#### 落とし穴
+#### Operators の種類
+
+気になったところだけ記載した。
+
+- [Arithmetic Operators](http://php.net/manual/en/language.operators.arithmetic.php)
+  - `+$a`, `-$a`
+- [Assignment Operators](http://php.net/manual/en/language.operators.assignment.php)
+  - `$a = 1`自体も Expression である
+  - combined operators `+=`, `*=`など
+  - 既定では、object は参照渡し、それ以外は値渡し
+  - `new`句はもともと参照を返しているので、`&new`はエラーになる
+- [Bitwise Operators](http://php.net/manual/en/language.operators.bitwise.php)
+  - 必要になったら調べる
+- [Comparison Operators](http://php.net/manual/en/language.operators.comparison.php)
+
+  - `==`,`!=`,`<>` タイプの自動変換後の比較
+  - `===`,`!==` タイプの自動変換をせずに厳密比較
+  - `<=>` 大きいか(1)、小さいか(-1)、イコールか(0)を返す
+
+    ```php
+    echo 1 <=> 1; // 0
+    echo 1 <=> 2; // -1
+    echo 2 <=> 1; // 1
+    echo "b" <=> "a"; // 1
+    ```
+
+  - Ternary Operator
+
+    ```php
+    $action = (empty($_POST['action'])) ? 'default' : $_POST['action'];
+    ```
+
+  - Null Coalesing(合体) Operator
+    - 左辺が null だったときのみ右辺を評価する
+    ```php
+    $a = null ?? 'true!';
+    ```
+
+### Error Control Operators
+
+`@`のこと。Expression に前置すると、その Expression に関するエラーを無視する。
+詳細は[こちら](http://php.net/manual/en/language.operators.errorcontrol.php)。
+
+### Execution Operators
+
+backtick で囲むことでシェルコマンドを実行できる。
+
+```php
+echo `ls -al`;
+```
+
+### Incrementing/Decrementing Operators
+
+`++$a`, `$a++`, `--$a`, `$a--`
+
+### Logical Operators
+
+- `and` どちらも true
+- `or` 少なくとも 1 つが true
+- `xor` どちらか一方のみ true
+- `!`
+- `&&`
+- `||`
 
 `and/or` は `=` よりも優先度が低い。`||/&&`は`=`よりも優先度が高い。このため、下記のような事故がおこりがち。
 
@@ -994,4 +1063,107 @@ var_dump($bool); // false, that's expected
 
 $bool = true and false;
 var_dump($bool); // true, ouch!
+```
+
+### String Operators
+
+`.`で文字列を接続する。`.=`も使える。
+
+### Array Operators
+
+- `+` 配列を結合する。キー重複時は左辺が優先される。
+- 緩い比較
+  - `==` 同じ key-value ペアを持っているか
+  - `!=` 上記の否定形
+  - `<>` 上記の否定形
+- 厳密な比較
+  - `===` 同じ key-value ペアを持っているかつ、同じ順番、同じタイプか
+  - `!==` 上記の否定形
+
+### Type Operators
+
+- `instanceof` あるインスタンスがあるクラスから生成されたかどうかを返す。
+- 継承、インターフェースの実装でも True を返す。
+- 右辺は文字列でも OK
+
+```php
+class MyClass{}
+class NotMyClass{}
+$a = new MyClass;
+
+var_dump($a instanceof MyClass); // true
+var_dump($a instanceof NotMyClass); // false
+```
+
+## Control Structures
+
+### JS とほぼ同じ書き方のもの
+
+- `if/elseif/else`
+- `while`
+- `do-while`
+- `for`
+- `switch`
+
+### `foreach`
+
+配列や Object にループ処理を行う。
+
+```php
+foreach (array_expression as $value)
+foreach (array_expression as $key => $value)
+foreach (array_expression as $key => &$value) // 値を編集したいときは参照渡しにする
+```
+
+- JS と異なり、下記で言う`$color`は foreach の外側でも生きている（マジか）。`unset()`で削除しておくこと。
+
+```php
+$colors = array('red', 'blue', 'green', 'yellow');
+foreach ($colors as &$color) {
+    $color = strtoupper($color); // 大文字に変換
+}
+unset($color); // ここでもまだ$colorは生きているのでクリアしておく
+```
+
+#### list()
+
+`list()`では、Array の中身を順番に取り出せる。
+
+```php
+list($a, $b, $c) = [1, 2, 3];
+```
+
+これを使うと、ネストした Array の情報をうまく引き出せる
+
+```php
+$array = [[1, 2], [3, 4]];
+foreach ($array as list($a, $b)) { echo "$a $b" };
+```
+
+### `declare`
+
+`ticks`, `encoding`, `strict_types`というものを扱う時に使えるらしい。必要になったら[ドキュメント](http://php.net/manual/en/control-structures.declare.php)を参照する。
+
+### `include / require`
+
+- 外部の PHP ファイルを読み込む
+- 読み込みに失敗した時、include は警告するだけだが、require は致命的エラーを投げる
+- `include`を記載した場所で利用可能な **Variable Scope** は、読み込まれた側のファイルですべて利用可能となる。逆に、読み込まれたファイル内の**変数**は、`include`の場所で宣言されたのと同じように振る舞う。
+- ただし、**ファンクションとクラス**については、グローバルとして読み込まれる。
+
+### `include_once / require_once`
+
+すでに読み込まれていたら読み込まない。
+
+### 別の書き方
+
+- `if`,`while`,`for`,`foreach`,`switch`については、別の書き方ができる。
+- `:`ではじめ、`endif`,`endwhile`,`endfor`,`endforeach`,`endswitch`で終わる。
+
+```php
+<?php if ($expression == true): ?>
+  This will show if the expression is true.
+<?php else: ?>
+  Otherwise this will show.
+<?php endif; ?>
 ```
