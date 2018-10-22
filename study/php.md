@@ -1525,3 +1525,208 @@ echo $class::CONSTANT; // constant value
 ```
 
 ### Autoloading Classes
+
+`spl_autoload_register()`を使うことで、クラス名を元にして必要な外部ファイルを自動で読み込むことができる。
+
+```php
+spl_autoload_register(function ($class_name) {
+    include $class_name . '.php';
+    // => MyClass1.php, MyClass2.php, ITest.php
+});
+
+$obj  = new MyClass1();
+$obj2 = new MyClass2();
+class Foo implements ITest{}
+```
+
+### Constructors and Destructors
+
+#### Constructor
+
+- クラスにはコンストラクタ・デストラクタを設定できる。
+- サブクラスでは親のコンストラクタ・デストラクタは呼ばれないので、必要なら`parent::__construct()`等で明示的に呼ぶこと
+- 同名のメソッドがコンストラクタとして扱われた時代も合ったが今は昔なので忘れること。
+
+```php
+class MyClass
+{
+    function __construct(){}
+    function __destruct(){}
+}
+```
+
+### Visibility
+
+- プロパティ、メソッド、コンスタントのスコープを決めるもの
+  - `public` どこからでも
+  - `protected` そのクラスと、親・子クラスからなら
+  - `private`　そのクラスからのみ
+
+#### Property visibility
+
+`var`で宣言した場合は public になる（非推奨）
+
+#### Method Visibility
+
+無印の場合は public になる。
+
+#### Constant Visibility
+
+無印の場合は public になる。
+
+### Scope Resolution Operator
+
+`::`のこと。下記の 3 つの用途で使う。
+
+クラスの外側から、クラス内の定数にアクセスする
+
+```php
+echo MyClass::CONST_VALUE;
+```
+
+クラスメソッド内から、クラスのスタティックな値にアクセスする
+
+```php
+class OtherClass extends MyClass
+{
+    public static $my_static = 'static var';
+
+    public static function sampleFunc() {
+        echo self::$my_static;
+    }
+}
+```
+
+クラスメソッド内から、親クラスのプロパティ・メソッドにアクセスする
+
+```php
+class OtherClass extends MyClass
+{
+    public static function sampleFunc() {
+        echo parent::CONST_VALUE;
+        echo parent::sampleFunc();
+        echo parent::$my_static;
+    }
+}
+```
+
+### Static Keyword
+
+- static に宣言されたクラスのメソッドとプロパティは、クラスのインスタンスを作らなくても使用することができる。
+- static なプロパティには、インスタンスから`$instance->$someStatic`にようにアクセスできない。`$instance::$someStatic`ならアクセスできる。
+- スタティックメソッドの中では`$this`は使えない。インスタンス化していないので当然。
+
+### Class Abstraction
+
+- Abstract class はインスタンス化できない
+- 部分的に完成されたクラスの雛形
+- Abstract class で宣言されているメソッドは、extends 先でも同じもの（名前、引数のタイプ、等）を実装する必要がある。
+
+```php
+abstract class AbstractClass
+{
+    // force extending class to define these methods
+    abstract protected function getValue();
+    abstract protected function prefixValue($prefix);
+    // common method
+    public function printOut(){}
+}
+
+class ConcreteClass1 extends AbstractClass
+{
+    public function getValue(){/* some implementation */}
+    public function prefixValue($prefix){/* some implementation */}
+}
+```
+
+#### Abstract と Interface の違い
+
+```php
+// this is saying that "X" agrees to speak language "Y" with your code.
+class X implements Y { }
+
+ // this is saying that "X" is going to complete the partial class "Y".
+class X extends Y { }
+```
+
+### Object Interfaces
+
+- インターフェースのメソッドは外部からアクセスするための定義なので、当然すべて public である。
+- `extends`を使えば、インターフェースがインターフェースを継承することもできる。
+- ある Object が特定のメソッドを持つことを保証したい時に使う。もっと具体的には、差し替える可能性のあるクラスに、インターフェースを実装しておくことで、[後を楽にする](http://php.net/manual/en/language.oop5.interfaces.php#107364)ためのもの。
+
+```php
+interface ITemplate
+{
+    public function setVariable($name, $var);
+    public function getHtml($template);
+}
+
+class Template implements ITemplate
+{
+    public function setVariable($name, $var){}
+    public function getHtml($template){}
+}
+```
+
+### Traits
+
+- コードを再利用するための方法
+- 好きな粒度でコードをグループ化できる
+- abstract, static, property, method などを予め作成しておき、クラスにコピペできる。
+- 詳細は[ドキュメントを参照](http://php.net/manual/en/language.oop5.traits.php)
+
+```php
+trait SayHello
+{
+    public function sayHello()
+    {
+        echo 'Hello ';
+    }
+}
+
+trait SayWorld
+{
+    public function sayWorld()
+    {
+        echo 'World!';
+    }
+}
+
+class MyHelloWorld
+{
+    use SayHello, SayWorld;
+}
+
+$o = new MyHelloWorld();
+$o->sayHello();
+$o->sayWorld();
+```
+
+### Anonymous classes
+
+- サクッと一時的にクラスを作るための機能。PHP7 以降で使用できる。
+- extends, implements, trait, constructor など、通常のクラスと同じことがすべてできる。
+- [詳細](http://php.net/manual/en/language.oop5.anonymous.php)
+
+```php
+$util->setLogger(new class {
+    public function log($msg)
+    {
+        echo $msg;
+    }
+});
+```
+
+### Overloading
+
+- 動的にプロパティやメソッドを作るための方法。
+- 非常に評判が悪そうなので、必要になったら[学習](http://php.net/manual/en/language.oop5.overloading.php)する。
+
+#### Property overloading
+
+`__set`,`__get`,`__isset`,`__unset`
+
+### Method overloading
+
+`__call()`,`__callStatic()`
