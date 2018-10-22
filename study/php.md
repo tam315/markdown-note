@@ -659,7 +659,7 @@ call_user_func($c, 'PHP!');
 
 #### Closure
 
-こういうのをクロージャーというらしい。
+PHP での Closure 　= Anonymous function のこと。
 
 ```php
 // closure
@@ -1167,3 +1167,361 @@ foreach ($array as list($a, $b)) { echo "$a $b" };
   Otherwise this will show.
 <?php endif; ?>
 ```
+
+## Functions
+
+### User-defined functions
+
+- 呼び出す時点よみも前の行で宣言しておく必要はない（例外あり）
+- PHP では、すべてのファンクション・クラスはグローバルスコープを持つ。仮に、ファンクション内で宣言したとしても。
+- ファンクションのオーバーロード、再定義はできない
+- ファンクション名は case-insensitive である
+
+### Arguments
+
+#### 引数の参照渡し
+
+```php
+function add_some_extra(&$string)
+{
+    $string .= 'and something extra.';
+}
+$str = 'This is a string, ';
+```
+
+#### Default Value
+
+```php
+function makecoffee($type = "cappuccino"){}
+```
+
+#### Type declarations (= 以前は Type hints と呼ばれていた)
+
+```php
+function myFunc(string $text) {};
+```
+
+strict モードにすると、自動変換を行わずにエラーを投げるようになる。
+
+```php
+declare (strict_types = 1);
+function myFunc(string $text)
+{
+    echo $text;
+};
+myfunc(123); // => TypeError
+```
+
+TypeError のキャッチ方法
+
+```php
+try {
+    /* do some error */
+} catch (TypeError $e) {
+    echo 'Error: '.$e->getMessage();
+}
+```
+
+#### Variable-length argument list
+
+`...`を使う。
+
+呼び出される側で展開する
+
+```php
+function myFunc(...$args)
+{
+    var_dump($args);
+    // [0]=>  string(5) "hello"
+    // [1]=>  string(5) "world"
+};
+myfunc('hello', 'world');
+```
+
+呼び出し側で展開する
+
+```php
+function add($a, $b) {}
+echo add(...[1, 2]);
+```
+
+### Returning values
+
+return を省略すると Null が返る。
+
+#### array で返す
+
+```php
+function small_numbers()
+{
+    return array (0, 1, 2);
+}
+list ($zero, $one, $two) = small_numbers();
+```
+
+#### 参照を返す
+
+呼び出し側、呼び出され側の両方に`&`をつける。TODO:要調査
+
+```php
+function &returnsReference()
+{
+    return $someRef;
+}
+$newref = &returnsReference();
+```
+
+#### Return type declarations
+
+PHP7 からは、返値のタイプを指定できる。strict mode も適用される。
+
+```php
+function sum($a, $b): float {}
+```
+
+### Variable functions
+
+string に`()`をつけると、ファンクションとして実行される。
+
+```php
+function foo($text)
+{
+    echo $text;
+}
+
+'foo'('hello'); // hello
+
+$foo = 'foo';
+$foo('hello2'); // hello2
+```
+
+インスタンスメソッドにも使える
+
+```php
+class Foo
+{
+    public function Variable()
+    {
+        $name = 'Bar';
+        $this->$name();
+    }
+    public function Bar()
+    {
+        echo "This is Bar";
+    }
+}
+
+$foo = new Foo();
+$funcname = "Variable";
+$foo->$funcname(); // => This is Bar
+```
+
+### Internal (built-in) functions
+
+使用できる Internal Function は環境により異なる。`phpinfo()`で読み込まれている Extension を一覧表示することができる。必要に応じて設定を行うこと。
+
+### Anonymous functions
+
+- Anonymous functions(=closures)
+- コールバック関数として使うときに便利
+- Closure クラスで実装されている
+- 変数に代入できる
+
+#### 親スコープの変数を使う方法
+
+- `use`を使う。値渡しである。必要があれば`&message`に変えて、参照渡しにすること。
+- `use`した値は、ファンクションの宣言時の値で固定される。**ファンクションを呼んだ時の値ではない**ので注意する。
+
+```php
+$message = 'hello';
+
+$example = function () use ($message) {
+    var_dump($message);
+};
+$example();
+```
+
+#### Automatic binding
+
+クラス内の Anonymous Function にある`$this`は、自動的にクラスインスタンスにバインドされる。
+この挙動がふさわしくない場合は Static anonymous functions を使うこと。
+
+```php
+class Test
+{
+    public function testing()
+    {
+        $func = function() {
+            var_dump($this); // $this はインスタンス自体に自動でバインドされる
+        };
+        $func();
+    }
+}
+```
+
+#### Static anonymous functions
+
+Static Closure ともいう。クラスインスタンスにバインドできない無名関数のこと？
+
+```php
+class Test
+{
+    public function testing()
+    {
+        $func = static function () {
+            var_dump($this);  // $this はインスタンスにバインドされていない（エラーになる）
+        };
+        $func();
+    }
+};
+```
+
+## Classes & Objects
+
+### Basics
+
+- クラスはプロパティ（Constants, Variables）とメソッド(functions)をもつ。
+
+```php
+class SimpleClass
+{
+    // property declaration
+    public $var = 'a default value';
+
+    // method declaration
+    public function displayVar() {
+        echo $this->var; // $thisはインスタンスを指す
+    }
+}
+```
+
+#### $this
+
+- $this が何を指すかは、PHP のバージョンや、呼び出し方（静的・非静的）によって異なる。
+- PHP7 の使用は下記の通り。
+
+```php
+class A
+{
+    public function foo()
+    {
+        if (isset($this)) {
+            echo 'defined';
+        } else {
+            echo "undefined";
+        }
+    }
+}
+
+class B
+{
+    public function bar()
+    {
+        A::foo();
+    }
+}
+
+$a = new A();
+$a->foo(); // 非静的　defined
+
+A::foo(); // 静的　undefined
+
+$b = new B();
+$b->bar(); // 非静的　undefined
+
+B::bar(); // 静的　undefined
+```
+
+#### new
+
+クラスから新しいインスタンスを作成する。
+
+```php
+$instance = new SimpleClass();
+```
+
+クラス内では、`new self`,`new parent`とすることで自身を作成できる。
+
+インスタンスを代入すると、インスタンスの**実体への参照（handle）がコピー**される。
+これは、インスタンスを格納している変数への参照(エイリアス)ではないので注意する。
+詳細は[こちらのコメント](http://php.net/manual/en/language.oop5.basic.php#79856)を参照する。
+
+```php
+$instance = new SimpleClass();
+
+$assigned = $instance;
+$reference = &$instance;
+
+$instance->var = '$assigned will have this value';
+
+$instance = null; // $instance and $reference become null
+
+var_dump($instance); // null
+var_dump($reference); // null
+var_dump($assigned); // ["var"]=> string(30) "$assigned will have this value"
+```
+
+作成したインスタンスへすぐにアクセスする。
+
+```php
+echo (new DateTime())->format('Y');
+```
+
+#### プロパティとメソッド
+
+プロパティとメソッドを同じ名前にできる。その場合、呼び出され方によって自動的に選択される。
+
+#### extends
+
+- 他のクラスを 1 つだけ継承できる。
+- メソッドやプロパティは、親で`final`として定義されていない限りは、子側で上書きできる。
+- `parent::`で親のメソッド、スタティックプロパティにアクセスできる。
+
+#### ::class
+
+`Classname::class`とすることで、ネームスペースも含めた Fully Qualified Name を取得できる。
+
+```php
+namespace NS {
+    class ClassName
+    {
+    }
+
+    echo ClassName::class;
+}
+```
+
+### Properties
+
+- プロパティは`public`,`protected`,`private`のいずれかと、名前によって作成される。
+- メソッド内から non-static なプロパティにアクセスするには`this->property`の記法を使う。
+- メソッド内から static なプロパティにアクセスするには、`self::$property`の記法を使う
+- `$this`はクラスインスタンス自体を指す。すべてのクラスメソッドから利用可能。ただし、メソッドが異なるコンテキストから呼ばれた場合は NULL になる。
+
+### Class Constants
+
+- クラスレベルの定数を設定できる。
+- `public`,`private`の 2 つの Visibility がある。
+
+```php
+class MyClass
+{
+    private const PRIVATE_CONST = 'private'; // クラス外からアクセスできない
+    public const CONSTANT = 'constant value';
+
+    public function showConstant()
+    {
+        echo self::CONSTANT;
+    }
+}
+
+echo MyClass::CONSTANT; // constant value
+echo "MyClass"::CONSTANT; // constant value
+
+$class = new MyClass();
+$class->showConstant();// constant value
+
+echo $class::CONSTANT; // constant value
+```
+
+### Autoloading Classes
