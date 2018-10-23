@@ -260,7 +260,7 @@ EOT;
 
 #### 変数のパース - simple syntax
 
-double quoted 等の中において変数をパースする方法は、simple と complex の 2 種類がある。simple-syntax では、`$`を使う。変数名の区切りをはっきりさせる必要があるときはを`{}`で囲む。
+double quoted 等の中において変数をパースする方法は、simple と complex の 2 種類がある。simple-syntax では、`$`を使う。変数名の区切りをはっきりさせる必要があるときは変数名を`{}`で囲む。
 
 ```php
 echo "my name is $myname. nice to meet you";
@@ -319,7 +319,7 @@ array, object, resources はそのままキャストしても意味がない（"
 - NULL
   - ""になる
 
-php で使うほとんどの値は`serialize()`を使うことで string に変換できる。
+なお、php で使うほとんどの値は`serialize()`を使うことで string の表現に変換できる。シリアライズ化した値は、`unserialize()`でもとに戻すことができる。
 
 ### Arrays
 
@@ -387,6 +387,7 @@ array(4) {
 ```php
 var_dump($array["foo"]);
 var_dump($array[42]);
+var_dump($array{42});
 var_dump($array["multi"]["dimensional"]["array"]);
 ```
 
@@ -593,6 +594,12 @@ $dog->bark();
 ### Callbacks / Callables
 
 `call_user_func()` or `usort()`など、いくつかのファンクションは、コールバックを受け取ることができる。
+コールバックの渡し方は下記の 4 つがある。
+
+- 文字列で渡す方法
+- array で渡す方法
+- object を渡す方法
+- Anonymous Function を渡す方法
 
 #### シンプルな関数をコールバックに指定
 
@@ -607,7 +614,7 @@ call_user_func('myCallbackFunction','hello2');
 
 #### クラスメソッド、インスタンスメソッドをコールバックに指定
 
-注意：JS と異なり、PHP ではクラスメソッドをインスタンスからも呼ぶことができる。
+注意：JS と異なり、PHP ではクラスメソッドをインスタンスを起点にして呼ぶことができる。
 
 ```php
 // An example callback method
@@ -659,7 +666,7 @@ call_user_func($c, 'PHP!');
 
 #### Closure
 
-PHP での Closure 　= Anonymous function のこと。
+Closure = Anonymous function のこと。
 
 ```php
 // closure
@@ -684,7 +691,7 @@ integer + float
 
 #### callback
 
-callable のこと。callable が登場する以前は callback が擬似タイプとして存在していた。
+callable のこと。callable が登場する以前は、callback という擬似タイプが存在していた。
 
 #### array|object
 
@@ -750,14 +757,14 @@ PHP には多くの[定義済み変数](http://php.net/manual/en/reserved.variab
 
 ### Scope
 
-変数のスコープは、定義されているファイル内にとどまる。
+スコープの種類は、グローバルか、ローカル（ファンクション内）の 2 つ。
 
 #### Include
 
-ただし、下記のように他のファイルを Include した場合、Include した場所に、`other.php`を差し込んだようなイメージになる。
+他のファイルを Include した場合、Include した場所にそのファイルを差し込んだようなイメージになる。
 
 - `$a`は、`other.php`内で使用可能
-- `other.php`内の変数・メソッドは、取り込み主で使用可能。スコープは、`include`文が存在している場所によって決まる。詳細は[こちら](http://php.net/manual/ja/function.include.php)。
+- `other.php`内の変数・メソッドは、取り込み主で使用可能。スコープは、`include`文が存在している場所によって決まる。ただし、ファンクションとクラスはグローバルスコープになる。詳細は[こちら](http://php.net/manual/ja/function.include.php)。
 
 ```php
 $a = 1;
@@ -766,7 +773,7 @@ include 'other.php';
 
 #### グローバル変数とローカル変数
 
-ファンクションの中からアクセスできるのはローカル変数のみ。グローバル変数にアクセスする方法は後述。
+ファンクションの中からアクセスできるのはローカル変数のみ。
 
 ```php
 $a = 1; // グローバル
@@ -914,7 +921,7 @@ var_dump($_COOKIE);
 #### 変数との違い
 
 - `$`が頭につかない
-- 変数のスコープとは関係ない。どこでも宣言でき、どこからでもアクセスできる。
+- 変数のスコープとは異なり、どこでも宣言でき、どこからでもアクセスできる。
 - 値を変更できない
 
 #### 宣言方法
@@ -1000,8 +1007,8 @@ $b = $a = 5;
 - [Assignment Operators](http://php.net/manual/en/language.operators.assignment.php)
   - `$a = 1`自体も Expression である
   - combined operators `+=`, `*=`など
-  - 既定では、object は参照渡し、それ以外は値渡し
-  - `new`句はもともと参照を返しているので、`&new`はエラーになる
+  - 原則としてすべて値渡しである。object は参照渡しのように見えるが、実際は handle(object の実体への参照のようなもの)を値渡ししている。
+  - `&new`はエラーになる
 - [Bitwise Operators](http://php.net/manual/en/language.operators.bitwise.php)
   - 必要になったら調べる
 - [Comparison Operators](http://php.net/manual/en/language.operators.comparison.php)
@@ -1074,8 +1081,7 @@ var_dump($bool); // true, ouch!
 - `+` 配列を結合する。キー重複時は左辺が優先される。
 - 緩い比較
   - `==` 同じ key-value ペアを持っているか
-  - `!=` 上記の否定形
-  - `<>` 上記の否定形
+  - `!=`, `<>` 上記の否定形
 - 厳密な比較
   - `===` 同じ key-value ペアを持っているかつ、同じ順番、同じタイプか
   - `!==` 上記の否定形
@@ -1172,10 +1178,10 @@ foreach ($array as list($a, $b)) { echo "$a $b" };
 
 ### User-defined functions
 
-- 呼び出す時点よみも前の行で宣言しておく必要はない（例外あり）
-- PHP では、すべてのファンクション・クラスはグローバルスコープを持つ。仮に、ファンクション内で宣言したとしても。
+- すべてのファンクション・クラスはグローバルスコープを持つ。仮に、ファンクション内で宣言したとしても。
 - ファンクションのオーバーロード、再定義はできない
 - ファンクション名は case-insensitive である
+- 宣言した場所よりも前の行でファンクションを呼ぶことができる（一部例外あり）
 
 ### Arguments
 
@@ -1361,7 +1367,7 @@ class Test
 
 #### Static anonymous functions
 
-Static Closure ともいう。クラスインスタンスにバインドできない無名関数のこと？
+Static Closure ともいう。クラスインスタンスにバインドされない無名関数。
 
 ```php
 class Test
@@ -1386,6 +1392,7 @@ class Test
 class SimpleClass
 {
     // property declaration
+    const CONSTANT = 'some const';
     public $var = 'a default value';
 
     // method declaration
@@ -1483,11 +1490,9 @@ echo (new DateTime())->format('Y');
 
 ```php
 namespace NS {
-    class ClassName
-    {
-    }
+    class ClassName {}
 
-    echo ClassName::class;
+    echo ClassName::class; // => NS\ClassName
 }
 ```
 
@@ -1545,7 +1550,7 @@ class Foo implements ITest{}
 
 - クラスにはコンストラクタ・デストラクタを設定できる。
 - サブクラスでは親のコンストラクタ・デストラクタは呼ばれないので、必要なら`parent::__construct()`等で明示的に呼ぶこと
-- 同名のメソッドがコンストラクタとして扱われた時代も合ったが今は昔なので忘れること。
+- 同名のメソッドがコンストラクタとして扱われた時代もあったが、昔のことなので忘れること。
 
 ```php
 class MyClass
@@ -1559,7 +1564,7 @@ class MyClass
 
 - プロパティ、メソッド、コンスタントのスコープを決めるもの
   - `public` どこからでも
-  - `protected` そのクラスと、親・子クラスからなら
+  - `protected` そのクラスと、親・子クラスからのみ
   - `private`　そのクラスからのみ
 
 #### Property visibility
