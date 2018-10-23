@@ -220,3 +220,20 @@ console.log(newObject); // => Delhi
 
 `forEach`の中では`await`が効かない。
 `for`, `for-of`, `for-in`を使え。
+
+## Generator
+
+通常のファンクションと似ているが、処理途中の段階で値を取り出す（yield）ことができること、その状態を保持したまま何度も呼び出して処理を継続できる点が異なる
+
+```js
+function* generator() {
+  for (i = 0; i < 10; i++) {
+    yield i;
+  }
+}
+
+for (i of generator()) {
+  console.log(i);
+}
+// => 123456789
+```

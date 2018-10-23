@@ -1967,3 +1967,246 @@ namespace を使用している時、ファンクションと定数はグロー�
 namespace A\B\C;
 new ArrayObject(); // => エラー。`\ArrayObject()`にすればOK。
 ```
+
+## Errors
+
+- エラーには[タイプ](http://php.net/manual/en/errorfunc.constants.php)がある
+- `php.ini`の`error_reporting`（もしくはランタイム時ならば`error_reporting()`）で、エラーの報告レベルを設定できる。報告レベルは、開発環境、本番環境ともに`E_ALL`にセットしとくのがおすすめ
+- `php.ini`の`display_errors`で表示有無を設定できる。本番環境ではセキュリティの観点から無効にすること。
+- `php.ini`の`log_errors`でログの書き出し有無を設定できる。
+
+### PHP7 でのエラー
+
+- PHP7 のエラーは`Error`クラスになった？
+- Error クラス の特徴は以下の通り
+  1.  `catch`ブロックにキャッチされるまでバブルアップする。
+  1.  catch ブロックがなければ、`set_exception_hander()`でセットされたハンドラが呼ばれる
+  1.  ハンドラもなければ、エラーは致命的エラーに変換され、従来と同じ方法で処理される
+- Error クラスと Exception クラスは、どちらも`Throwable`クラスを継承しているので、Throwable で両方キャッチできる。
+
+  ```php
+  try {}catch(Throwable $t) {}
+  ```
+
+## Exceptions
+
+- 例外のこと
+- throw でき、catch できる。
+- try-catch-finally と組み合わせて使う。
+
+```php
+try {
+    throw new Exception('Division by zero.');
+} catch (Throwable $e) {
+    echo 'Caught exception: ', $e->getMessage(), "\n";
+}
+```
+
+## Generators
+
+### Overview
+
+- Generator は簡単に Iterable な Object を作る方法。
+- 通常のファンクションと似ているが、処理途中の状態で値を取り出す（yield）ことができること、その状態を保持したまま何度も呼び出して処理を継続てきる点が異なる
+
+たとえば range を generator で実装すると下記のようになる
+
+```php
+function xrange($start, $end)
+{
+    for ($i = $start; $i <= $end; $i += 1) {
+        yield $i;
+    }
+}
+foreach (xrange(1, 9) as $number) {
+    echo $number;
+}
+// => 123456789
+```
+
+### Generator Object
+
+generator ファンクションが実行されると、`Generator`クラスが返される。
+このクラスは[`Iterator`インターフェース](http://php.net/manual/en/class.iterator.php)を実装している。
+これにより、繰り返しの処理を行うことができるようになっている。
+
+### Reference での yield
+
+```php
+function &gen_reference() {
+    $value = 3;
+
+    while ($value > 0) {
+        yield $value;
+    }
+}
+foreach (gen_reference() as &$number) {
+    echo --$number;
+}
+// => 2 1 0
+```
+
+### yield from
+
+`yield from`を使うと、generator の中で、別の Traversable（generator, traversable object, array）を返すことができる。
+
+```php
+function countToTen()
+{
+    yield 1;
+    yield 2;
+    yield from [3, 4];
+    yield from new ArrayIterator([5, 6]);
+    yield from sevenEight();
+    yield 9;
+    yield 10;
+}
+function sevenEight()
+{
+    yield 7;
+    yield from eight();
+}
+function eight()
+{
+    yield 8;
+}
+foreach (countToTen() as $num) {
+    echo "$num ";
+}
+// => 1 2 3 4 5 6 7 8 9 10
+```
+
+### Iterator との比較
+
+Iterator interface を実装したクラスを使うのと、Generator を使う場合の違い
+
+- Iterator の方は、`rewind`,`valid`などいろいろと実装しないといけない。一方 Generator はシンプル。
+- ただし、Generator は、一度スタートすると巻き戻しができない、また、繰り返し使用することはできない、などのデメリットも有る。
+
+## Reference
+
+### What is Reference
+
+- 参照とは、同じ変数に違う名前でアクセスすること。（同じ人が 2 つの名前を持っているようなもの）
+- PHP では変数名とそのコンテンツは別物なので、同じコンテンツで別の名前を持つことができる
+
+### What References Do
+
+#### 1. Assign by reference
+
+- PHP の変数は、向き先（Reference）と、向き先が持つ内容（Content）から成り立つ。
+  - 向き先を変える方法　`$a = &$b`
+  - コンテンツを変える方法　`$a = 1`
+
+例えば下記では、$a と$b が同じコンテンツを指すようになる。
+$a => コンテンツ、 $b => コンテンツであり、$a => $b ではないので注意。
+
+```php
+$a = &$b;
+```
+
+同じ記法は、3 番の参照を返すファンクションの結果を受け取る時にも使う。
+
+```php
+$foo = &find_var();
+```
+
+#### 2. Pass by reference
+
+引数に`&`をつけると、値として受け取るのではなく、向き先（Reference）として受け取る事ができる。
+
+```php
+function add(&$value)
+{
+    $value++; // 向き先のコンテンツをいじる
+}
+
+$a=5;
+add($a); // => 6
+```
+
+#### 3. Return by reference
+
+ファンクション名に&をつけることで、参照を返すファンクションを作成できる。
+return したものが自動的に Reference として return される。
+
+```php
+function &test()
+{
+    $val = 1;
+    return $val;
+}
+```
+
+### What References Are Not
+
+Reference はポインタではない。このため、下記のコードは予想したように動かない。
+
+```php
+$origin = '';
+$update = 'update!';
+
+function foo(&$arg)
+{
+    $arg = &$GLOBALS['update'];
+    // 書き換わるのは$argの向き先だけ。
+    // $argは$originとは別なので、別々の向き先を持てる。
+}
+foo($origin);
+var_dump($origin);
+// => ''
+```
+
+## Predefined Variables
+
+- `Superglobals` — Superglobals are built-in variables that are always available in all scopes
+- `$GLOBALS` — References all variables available in global scope
+- `$_SERVER` — Server and execution environment information
+- `$_GET` — HTTP GET variables
+- `$_POST` — HTTP POST variables
+- `$_FILES` — HTTP File Upload variables
+- `$_REQUEST` — HTTP Request variables
+- `$_SESSION` — Session variables
+- `$_ENV` — Environment variables
+- `$_COOKIE` — HTTP Cookies
+- `$php_errormsg` — The previous error message
+- `$HTTP_RAW_POST_DATA` — Raw POST data
+- `$http_response_header` — HTTP response headers
+- `$argc` — The number of arguments passed to script
+- `$argv` — Array of arguments passed to script
+
+## Predefined Exceptions
+
+- `Exception`
+- `ErrorException`
+- `Error`
+- `ArgumentCountError`
+- `ArithmeticError`
+- `AssertionError`
+- `DivisionByZeroError`
+- `CompileError`
+- `ParseError`
+- `TypeError`
+
+## Predefined Interfaces & Classes
+
+- `Traversable`
+- `Iterator`
+- `IteratorAggregate`
+- `Throwable`
+- `ArrayAccess`
+- `Serializable`
+- `Closure`
+- `Generator`
+
+## Context options and parameters
+
+- `Socket context options` — Socket context option listing
+- `HTTP context options` — HTTP context option listing
+- `FTP context options` — FTP context option listing
+- `SSL context options` — SSL context option listing
+- `CURL context options` — CURL context option listing
+- `Phar context options` — Phar context option listing
+- `MongoDB context options` — MongoDB context option listing
+- `Context parameters` — Context parameter listing
+- `Zip context options` — Zip context option listing
