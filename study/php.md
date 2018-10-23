@@ -1732,6 +1732,238 @@ $util->setLogger(new class {
 
 `__set`,`__get`,`__isset`,`__unset`
 
-### Method overloading
+#### Method overloading
 
 `__call()`,`__callStatic()`
+
+### Object Iteration
+
+Object のプロパティは Iterable である。
+
+```php
+$class = new MyClass();
+foreach($class as $key => $value) {}
+```
+
+クラスメソッド内で自身のプロパティを Iterate することもできる。
+
+```php
+// この場合、protectedやprivateなプロパティにもアクセスできる
+foreach ($this as $key => $value) {}
+```
+
+より細かい制御を行うには、`Iterator`インターフェースと配列の内部ポインタを用いて、手動で Iteration の設定を行うこと。詳細は[ドキュメント参照](http://php.net/manual/en/language.oop5.iterations.php)。
+
+### Magic Methods
+
+`__`で始まるクラスメソッドは、Magic Methods として予約されている。
+
+- `__construct()`
+- `__destruct()`
+- `__call()`
+- `__callStatic()`
+- `__get()`
+- `__set()`
+- `__isset()`
+- `__unset()`
+- `__sleep()`,`__wakeup()`
+  - serialize, unserialise の前処理
+- `__toString()`
+  - 文字列へのキャスト時の挙動を定義する
+- `__invoke()`
+  - Object 自体を呼び出し可能にする場合に、コードをここに定義する
+- `__set_state()`
+  - `var_export()`したときの表示内容を定義する？よくわからない
+- `__clone()`
+- `__debugInfo()`
+  - `var_dump()`したときの表示内容を定義する
+
+### Final Keyword
+
+親クラスで`final`として定義したメソッドは、子クラスでオーバーライドできない。
+クラスメソッドに対して付与できる。プロパティには付与できない。
+
+```php
+class BaseClass {
+    final public function moreTesting() {}
+}
+```
+
+### Object Cloning
+
+Object をクローンするには`clone`を使う。なお、クラスに`__clone()`が定義されてる場合は、クローン後の新しい Object においてのみ、`__clone()`の内容が実行される。
+
+```php
+class MyClass{}
+$a = new MyClass();
+$b = clone $a;
+```
+
+### Comparing Objects
+
+判定条件
+
+- `==`の場合
+  - 同じクラスのインスタンスである
+  - 同じプロパティを持つ(値は関係ない)
+- `===`の場合
+  - 全く同じインスタンスである
+
+### Late Static Binding
+
+`self::`で static なメソッドを呼び出すと、参照先は呼び出し元のクラス内に限定される。
+子クラスの static メソッドを参照したい場合は、`self`の代わりに`static`を使うこと。
+
+```php
+class A
+{
+    public static function who()
+    {
+        echo __CLASS__;
+    }
+    public static function testSelf()
+    {
+        self::who();
+    }
+    public static function testStatic()
+    {
+        static::who();
+    }
+}
+
+class B extends A
+{
+    public static function who()
+    {
+        echo __CLASS__;
+    }
+}
+
+B::testSelf(); // => A
+B::testStatic(); // => B
+```
+
+### Object Serialization
+
+Object をデシリアライズするときは、そのスコープでクラス定義が参照できないと失敗するので注意。
+詳細は[こちら](http://php.net/manual/en/language.oop5.serialization.php)。
+
+## Namespaces
+
+### Overview
+
+- ネームスペースの目的は、衝突の回避と、やたら長い名前を短くするため。
+- case-insensitive
+
+### Defining namespaces
+
+ネームスペースの影響を受けるもの
+
+- classes (including abstracts and traits)
+- interfaces
+- functions
+- constants
+
+namespace の定義はファイルのトップで行う（例外は define だけ）。
+
+```php
+<?php
+namespace MyProject;
+// or
+namespace MyProject\Sub\Level; // sub-namespacesも定義できる
+```
+
+napespace ごとにファイルを分けることが望ましい。
+
+### Using namespaces
+
+相対参照
+
+```php
+// 現在のネームスペースが\fooなら、下記の参照先は\foo\othernamespaceになる
+
+othernamespace\foo() // ファンクション
+othernamespace\foo::staticmethod() // クラスのスタティックメソッド
+echo subnamespace\FOO // 定数
+```
+
+絶対参照
+
+```php
+\othernamespace\foo(); // 頭に`\`をつける
+```
+
+### `namespace` operator
+
+自身のネームスペースを指す？なくてもいいような。使いみちがよくわからない。
+
+```php
+namespace myspace {
+    namespace\mysubspace\hello();
+}
+
+namespace myspace\mysubspace {
+    function hello()
+    {
+        echo 'hello!!!!!!!!!!';
+    }
+}
+```
+
+### `__NAMESPACE__`
+
+現在のネームスペースを取得する
+
+```php
+echo __NAMESPACE__;
+```
+
+### Aliasing/Importing
+
+`use`を使うことで、下記に対して、エイリアスの作成、インポートができる。
+
+- class name
+- interface name
+- namespace name
+- function
+- constant
+
+```php
+namespace foo;
+use My\Full\Classname as Another;
+
+// this is the same as use My\Full\NSname as NSname
+use My\Full\NSname;
+
+// importing a global class
+use ArrayObject;
+
+// importing a function (PHP 5.6+)
+use function My\Full\functionName;
+
+// aliasing a function (PHP 5.6+)
+use function My\Full\functionName as func;
+
+// importing a constant (PHP 5.6+)
+use const My\Full\CONSTANT;
+```
+
+- `use`では、ネームスペースは必ず完全修飾であるものとして扱われるの。先頭の`\`はつけないことを推奨。
+- `use`はコンパイル時に処理されるので、グローバルスコープでしか宣言できない。（ファンクション内では宣言不可）
+
+#### グルーピング（PHP7 以降）
+
+```php
+use some\namespace\{ClassA, ClassB, ClassC as C};
+use function some\namespace\{fn_a, fn_b, fn_c};
+use const some\namespace\{ConstA, ConstB, ConstC};
+```
+
+### Fallback to global function/constant
+
+namespace を使用している時、ファンクションと定数はグローバルにフォールバックされるが、クラスはフォールバックされないので注意する。
+
+```php
+namespace A\B\C;
+new ArrayObject(); // => エラー。`\ArrayObject()`にすればOK。
+```
