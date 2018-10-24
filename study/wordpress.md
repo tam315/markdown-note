@@ -199,7 +199,7 @@ name | desc
 
 ### テンプレートの優先順位
 
-![テンプレートの優先順位](http://wpdocs.osdn.jp/wiki/images/wp-template-hierarchy.jpg)
+![テンプレートの優先順位](//wpdocs.osdn.jp/wiki/images/wp-template-hierarchy.jpg)
 
 ### テンプレートに取り込めるパーツ
 
