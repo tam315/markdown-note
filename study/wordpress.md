@@ -179,27 +179,27 @@ Author: the WordPress team
 下記のファイル名は予約済みであり、特別な役割を果たす。
 
 <!-- prettier-ignore -->
-| name                     | desc                                                                                                                                                                                                             |
-| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `style.css`              | メインの stylesheet。テーマのメタ情報をヘッダとして含める必要がある。                                                                                                                                            |
-| `rtl.css`                | RTL 環境で採用される CSS。このファイルは RTLer plugin を使って作成できる。                                                                                                                                       |
-| `index.php`              | メインのテンプレート。必須。投稿一覧、カテゴリ一覧、タグ一覧、検索結果一覧など一覧と名の付くものすべてを表示するためのテンプレートとして扱うとよい。                                                             |
-| `comments.php`           | コメントのテンプレート                                                                                                                                                                                           |
-| `front-page.php`         | フロントページのテンプレート                                                                                                                                                                                     |
-| `home.php`               | フロントページの表示方法が「最新の投稿を表示」になっていた場合にのみ、`front-page.php`に変わってこれが採用される。フロントページの表示方法が「固定ページを表示」になっている場合は`front-page.php`が採用される。 |
-| `single.php`             | 個別投稿のテンプレート。                                                                                                                                                                                         |
-| `single-{post-type}.php` | カスタム投稿タイプごとの、個別投稿のテンプレート。                                                                                                                                                               |
-| `page.php`               | 固定ページ用テンプレート                                                                                                                                                                                         |
-| `category.php`           | カテゴリ*                                                                                                                                                                                                        |
-| `tag.php`                | タグ*                                                                                                                                                                                                            |
-| `taxonomy.php`           | タクソノミ*                                                                                                                                                                                                      |
-| `author.php`             | Author*                                                                                                                                                                                                          |
-| `date.php`               | 日時・時間用*                                                                                                                                                                                                    |
-| `archive.php`            | アーカイブ用テンプレート。上記*がない場合に採用される。                                                                                                                                                          |
-| `search.php`             | 検索結果用                                                                                                                                                                                                       |
-| `attachment.php`         | 単一の添付ファイルを閲覧する用のテンプレート                                                                                                                                                                     |
-| `image.php`              | 単一の画像ファイル用のテンプレート。なければ`attachment.php`が採用される。                                                                                                                                       |
-| `404.php`                | 404                                                                                                                                                                                                              |
+| name                     | desc                                                                                                                                                 |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `style.css`              | メインの stylesheet。テーマのメタ情報をヘッダとして含める必要がある。                                                                                |
+| `rtl.css`                | RTL 環境で採用される CSS。このファイルは RTLer plugin を使って作成できる。                                                                           |
+| `index.php`              | メインのテンプレート。必須。投稿一覧、カテゴリ一覧、タグ一覧、検索結果一覧など一覧と名の付くものすべてを表示するためのテンプレートとして扱うとよい。 |
+| `comments.php`           | コメントのテンプレート                                                                                                                               |
+| `front-page.php`         | ルートパスで表示するページのテンプレートは常にこれ。                                                                                                 |
+| `home.php`               | 「設定＞表示設定＞ホームページの表示＞固定ページを表示」になっている場合の「投稿ページ（一覧表示するページ）」のテンプレート                         |
+| `single.php`             | 個別投稿のテンプレート。                                                                                                                             |
+| `single-{post-type}.php` | カスタム投稿タイプごとの、個別投稿のテンプレート。                                                                                                   |
+| `page.php`               | 固定ページ用テンプレート                                                                                                                             |
+| `category.php`           | カテゴリ*                                                                                                                                            |
+| `tag.php`                | タグ*                                                                                                                                                |
+| `taxonomy.php`           | タクソノミ*                                                                                                                                          |
+| `author.php`             | Author*                                                                                                                                              |
+| `date.php`               | 日時・時間用*                                                                                                                                        |
+| `archive.php`            | アーカイブ用テンプレート。上記*がない場合に採用される。                                                                                              |
+| `search.php`             | 検索結果用                                                                                                                                           |
+| `attachment.php`         | 単一の添付ファイルを閲覧する用のテンプレート                                                                                                         |
+| `image.php`              | 単一の画像ファイル用のテンプレート。なければ`attachment.php`が採用される。                                                                           |
+| `404.php`                | 404                                                                                                                                                  |
 
 ### テンプレートの優先順位
 
@@ -351,12 +351,12 @@ WordPress が自動生成した様々なクラスを挿入するには、下記�
 ### テーマ開発の流れ
 
 1. PHP / WordPress のエラーを修正する。この際、`wp-config.php`に`define('WP_DEBUG', true)`を追記して行うと良い。
-1. [チェックリスト](https://codex.wordpress.org/Theme_Development#Template_File_Checklist)でチェックを行う
-1. [Unit Test](https://codex.wordpress.org/Theme_Unit_Test)を行う
-1. [Validation](https://codex.wordpress.org/Validating_a_Website)を行う
-1. JS のエラーを修正する
-1. 複数のブラウザでテストを行う
-1. 不要な comment、デバッグ設定、TODO を消す
+2. [チェックリスト](https://codex.wordpress.org/Theme_Development#Template_File_Checklist)でチェックを行う
+3. [Unit Test](https://codex.wordpress.org/Theme_Unit_Test)を行う
+4. [Validation](https://codex.wordpress.org/Validating_a_Website)を行う
+5. JS のエラーを修正する
+6. 複数のブラウザでテストを行う
+7. 不要な comment、デバッグ設定、TODO を消す
 
 ## Child Theme
 
