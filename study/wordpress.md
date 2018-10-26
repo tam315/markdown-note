@@ -84,6 +84,14 @@ sudo /opt/bitnami/ctlscript.sh restart apache
 ssh　bitnami@${lightsailのIP}
 ```
 
+## おすすめプラグイン
+
+- WP Multibyte Patch
+  - 日本語環境での不具合を修正する
+- Advanced Custom Fileds
+  - 投稿にカスタムフィールドを作ることができる
+  - Pro 版を使えば表形式にも対応
+
 ## パス
 
 - `domain/wp-admin` wordpress 管理画面
