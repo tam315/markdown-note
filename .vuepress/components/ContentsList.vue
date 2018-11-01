@@ -8,9 +8,12 @@
 
 <script>
 export default {
+  props: ['junle'],
   computed: {
     notes() {
-      return this.$site.pages.filter(x => x.path !== '/');
+      return this.$site.pages.filter(
+        x => x.path !== '/' && x.path.startsWith(`/${this.junle}`),
+      );
     },
   },
 };
