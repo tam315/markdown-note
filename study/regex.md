@@ -54,3 +54,10 @@
 ```javascript
 /<br>[\s\S]*?<br>/m;
 ```
+
+## case-insensitive search
+
+```javascript
+/[a-z]/; // 小文字のa-z
+/[a-z]/i; // 小文字・大文字のa-z
+```
