@@ -90,7 +90,7 @@ Author: the WordPress team
 
 ![テンプレートの優先順位](//wpdocs.osdn.jp/wiki/images/wp-template-hierarchy.jpg)
 
-## ヘッダ等の作成
+## 基本部分の構築
 
 ### 下準備
 
@@ -100,7 +100,7 @@ Author: the WordPress team
 - style.css
 - screenshot.jpg (管理画面のサムネイル用)
 
-### ヘッダを構築する
+### ヘッダ
 
 ```php
 <!DOCTYPE html>

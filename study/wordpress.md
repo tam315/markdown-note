@@ -135,3 +135,7 @@ ssh　bitnami@${lightsailのIP}
 ## データベースについて
 
 page(固定ページ)、post(投稿)、custom-post(カスタム投稿)、attatchment(メディア)のデータは、すべて`wp_posts`という一つのテーブルで管理されている。
+
+## 参考
+
+- [コーディング規約](http://adgraphy03.heteml.net/adgraphy-kiyaku/)
