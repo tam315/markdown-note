@@ -330,11 +330,12 @@ const myFunc = () => {
 };
 ```
 
-### プロパティやメソッドをプライベートにするには
+### プライベートメンバ
 
-原則として、オブジェクトのメンバは全てパブリックである。
+原則として、Javascript オブジェクトのメンバは全てパブリックである。
+以下では、プロパティやメソッドを擬似的にプライベートにする方法を説明する。
 
-#### プライベートメンバ
+#### コンストラクタでプライベートメンバを作る
 
 プライベートメンバを作成したいときは、コンストラクタでクロージャを使う。
 
@@ -365,3 +366,386 @@ class Car {
   }
 }
 ```
+
+- ここでの`getName()`のように、プライベートな変数へのアクセス権を持つメソッドを、**特権メソッド**と呼ぶことがある。
+- オブジェクトや配列を Return してしまうと参照を返すので、プライベート変数を変更することが可能になってしまう。これを回避するには、オブジェクトをクローンして返すか、必要最低限のプリミティブのみを返すようにすること。（POLA の法則：Principle Of Leart Authority - 最小権限の法則）
+
+#### オブジェクトリテラルでプライベートメンバを作る
+
+オブジェクトリテラルでプライベートなメンバを作るには、無名即時関数が作成するクロージャを利用する。（＝**モジュールパターン**という）
+
+```js
+let obj;
+
+(function() {
+  const name = 'john';
+  obj = {
+    getName: function() {
+      return name;
+    },
+  };
+})();
+
+console.log(obj.getName());
+```
+
+または
+
+```js
+const obj = (function() {
+  const name = 'john';
+  return {
+    getName: function() {
+      return name;
+    },
+  };
+})();
+
+console.log(obj.getName());
+```
+
+#### プロトタイプを使ってプライベートメンバを作る
+
+コンストラクタでプライベートメンバを作ると、すべてのインスタンスに重複してメンバが作成されてしまい、効率が悪い。
+これを避けるには、プロトタイプを使ってプライベートメンバを作成する。
+
+```js
+function Car() {}
+
+Car.prototype = (function() {
+  const secret = 'my-secret';
+  return {
+    getSecret: function() {
+      return secret;
+    },
+  };
+})();
+
+const car = new Car();
+console.log(car.getSecret()); // => 'my-secret'
+```
+
+#### プライベート関数を開示する
+
+プライベートメソッドをパブリックメソッドとして開示する方法（=**開示パターン**）。
+仮にパブリックなメソッドが書き換えられても、プライベートなメソッドは無事である。（イマイチ使いみちがわからない）
+
+```js
+let myUtil;
+
+(function() {
+  function a() {}
+  function b() {}
+  function c() {}
+  myutil = { a, b, c };
+});
+```
+
+### モジュールパターン
+
+機能ごとにそれぞれ完結したいくつかのコード群に分ける方法。以下の機能を組み合わせて実現する。
+
+- 名前空間
+- 即時関数
+- プライベートメンバと特権メソッド
+- 依存関係の宣言
+
+#### オブジェクトを作成するモジュール
+
+```js
+// 名前空間
+MYAPP = { utilities: {} };
+
+// 即時関数でクロージャを作成
+MYAPP.utilities.array = (function(global) {
+  // 依存関係の宣言
+  const utilObj = MYAPP.utilities.object;
+  const utilLang = MYAPP.utilities.lang;
+
+  // プライベートメンバ
+  const privateVar = 1;
+  const privateMethod = function() {};
+
+  // 一度限りの初期化処理
+  doSomething();
+
+  // パブリックAPI
+  return {
+    // ここでプライベートメンバを使ってなにかを行う
+    somePublicMethod: function() {},
+    somePublicMethod2: function() {},
+  };
+})(global); // globalを渡してクロージャ内部で使うことが多い
+```
+
+#### コンストラクタを作成するモジュール
+
+```js
+MYAPP = { utilities: {} };
+
+MYAPP.utilities.Array = (function() {
+  /* この部分は先例と同じ */
+
+  // パブリックAPI　コンストラクタ
+  const Constructor = function() {
+    // ここでプライベートメンバを使ってなにかを行う
+  };
+
+  // パブリックAPI　プロトタイプ
+  Constructor.prototype = {
+    // ここでプライベートメンバを使ってなにかを行う
+  };
+
+  return Constructor;
+})(global);
+```
+
+### サンドボックスパターン
+
+モジュールパターンが持つ以下の欠点を克服するために使う。
+
+- 同じ名前空間名を同時に使えない（バージョン違いなどのテストがやりにくい）
+- 名前が長たらしい（MYAPP.utilities.array など）
+
+サンドボックス環境にモジュール（機能）をインジェクトし、サンドボックス内で処理を完結する。
+AngularJS と同じパターンかも。
+
+1. インスタンスを作成する
+1. インスタンスに機能をインジェクトする
+1. コールバック関数内でインスタンスを操作して必要な処理を行う（下記で言う`box`）
+
+詳細なコードは、本書の 5.5.2, 5.5.3 を参照すること。
+
+```js
+new Sandbox(['module1', 'module2'], function(box) {
+  // `box`には、すでにmodule1/module2の機能がインジェクトされている。
+  // ここで、それらの機能を活用して必要な処理を行う
+});
+
+function Sandbox(modules, callback) {
+  /* thisに対してSandbox.modules.module1などをアタッチする処理を行ったのち、callbackする */
+  callback(this);
+}
+
+// モジュールはコンストラクタ関数にアタッチしておく
+Sandbox.modules.module1 = function something();
+Sandbox.modules.module2 = function something2();
+```
+
+### スタティックメンバ
+
+スタティック＝クラス全体で共有するもの
+
+#### パブリックなスタティックメンバ
+
+```js
+const Car = function() {};
+
+// スタティックメソッド
+Car.ride = function() {};
+
+// インスタンスメソッド
+Car.prototype.sayName = function() {};
+
+const bmw = new Car();
+
+Car.ride(); // ok
+Car.sayName(); // bad
+bmw.ride(); // bad
+bmw.sayName(); // ok
+```
+
+インスタンスからスタティックメソッドにアクセスしたい時は、プロトタイプにスタティックメソッドを追加しておく。
+この場合、スタティックメソッド内で、スタティックに呼ばれたのかインスタンスから呼ばれたのかを判定し、適切な分岐処理を行う必要がある。
+
+```js
+Car.ride = function() {
+  if (this instanceof Car) {
+    /* インスタンスメソッドとして呼び出された場合の処理 */
+  }
+};
+
+Car.prototype.sayName = Car.sayName;
+```
+
+#### プライベートなスタティックメンバ
+
+```js
+const Car = (function() {
+  let count = 0; // プライベートなスタティックメンバ
+
+  // returnするコンストラクタ
+  const NewCar = function() {
+    couner += 1; // newされるたびにスタティックメンバを加算する
+  };
+
+  // スタティックメンバを取得する特権メソッド
+  NewCar.prototype.getLastId = function() {
+    return counter;
+  };
+
+  return NewCar;
+})();
+
+const car1 = new Car();
+const car2 = new Car();
+car1.getLastId(); // 1
+car2.getLastId(); // 2
+```
+
+### オブジェクト定数
+
+Javascript に定数はない。しかし、定数を静的プロパティとしてコンストラクタ関数に追加することはよく行われる。
+
+```js
+Car.MAX_HEIGHT = 1500;
+Car.MAX_WIDTH = 1780;
+```
+
+### 連鎖（Chain）パターン
+
+基本的に、オブジェクトのメソッドは`this`を返すようにしておくとよい（意味のある値を返す必要がある場合を除く）。
+これにより、メソッドのチェーンが可能になる。
+
+- メリット
+  - タイピング量の減少
+  - 簡潔で文のように読める
+  - 処理を分割でき保守性が高い
+- デメリット
+  - デバッグが難しくなる
+
+```js
+const obj = {
+  value: 1,
+  increment: function() {
+    this.value++;
+    return this;
+  },
+  decrement: function() {
+    this.value--;
+    return this;
+  },
+};
+
+console.log(
+  obj
+    .increment()
+    .increment()
+    .decrement().value, // 2
+);
+```
+
+## コード再利用パターン
+
+- prototype プロパティは関数ではなくオブジェクトである必要がある。これは重要なことなのでよく覚えること。
+
+### クラシカルなパターンその 1：デフォルトパターン
+
+```js
+Child.prototype = new Parent();
+```
+
+- このパターンでは、親のインスタンスメンバ（例：`name`）とプロトタイプメンバ（例：`say`）が、全て子に継承される。
+- ただしこれはプロトタイプ連鎖によるもので、コピーされているわけではない。
+- 欠点
+  - 親のインスタンスメンバが継承されるが、これは不要なことが多い
+  - 子から親にパラメータを渡せない
+
+```js
+// 親
+function Parent() {
+  this.name = 'Adam';
+}
+Parent.prototype.say = function() {
+  return this.name;
+};
+
+// 子
+function Child() {}
+
+// 継承
+Child.prototype = new Parent();
+
+const child = new Child();
+child.say(); // Adam
+```
+
+上記の例では、プロパティやメソッドは下記の順に遡って検索される。
+
+1. Child インスタンス
+1. Child コンストラクタのプロトタイプ（Parent インスタンス）
+1. Parent コンストラクタのプロトタイプ
+
+### クラシカルなパターンその 2：コンストラクタを拝借
+
+```js
+function Child(...args) {
+  Parent.apply(this, args);
+}
+```
+
+- 親のインスタンスメンバ（例：`name`）のみ継承される。親のプロトタイプメンバは継承されない。
+- 利点
+  - 親のインスタンスメンバのコピーを得られる
+- 欠点
+  - 親のプロトタイプからなにも継承されないので、連鎖は壊れる
+
+```js
+// 親
+function Parent() {
+  this.name = 'Adam';
+}
+
+// 子
+function Child(...args) {
+  Parent.apply(this, args);
+}
+
+const child = new Child();
+console.log(child.name); // Adam
+console.log(child.hasOwnProperty('name')); // true
+```
+
+### クラシカルなパターンその 3：コンストラクタ＆プロトタイプを拝借
+
+```js
+function Child(...args) {
+  Parent.apply(this, args);
+}
+Child.prototype = new Parent();
+```
+
+- 親のインスタンスメンバは子にコピーされる（親のインスタンスメンバされることはない）
+- 親のプロトタイプも、連鎖により子に継承される。
+
+```js
+// 親
+function Parent(name) {
+  this.name = name || 'Adam';
+}
+Parent.prototype.say = function() {
+  return this.name;
+};
+
+// 子
+function Child(...args) {
+  Parent.apply(this, args);
+}
+Child.prototype = new Parent();
+
+const child = new Child('Patrick');
+console.log(child.name); // Patrick
+console.log(child.say()); // Patrick
+```
+
+### クラシカルなパターンその 4：プロトタイプを共有
+
+```js
+Child.prototype = Parent.prototype;
+```
+
+- 利点
+  - 速い、シンプル
+- 欠点
+  - 親のプロトタイプの変更がすべての子に影響する。
+  - 親のインスタンスメンバが子に継承されない
