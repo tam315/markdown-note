@@ -6,6 +6,25 @@ module.exports = {
     ['link', { rel: 'icon', type: 'image/png', href: '/favicon.png' }],
     ['link', { rel: 'manifest', href: '/manifest.json' }],
     ['meta', { name: 'theme-color', content: '#2E6BE6' }],
+    [
+      // adsense
+      'script',
+      {
+        async: true,
+        src: '//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js',
+      },
+    ],
+    [
+      // adsense
+      'script',
+      null,
+      `
+      (adsbygoogle = window.adsbygoogle || []).push({
+        google_ad_client: "ca-pub-7134126650568891",
+        enable_page_level_ads: true
+      });
+      `,
+    ],
   ],
   themeConfig: {
     sidebar: 'auto',
