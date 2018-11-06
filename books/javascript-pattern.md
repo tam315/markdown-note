@@ -295,21 +295,39 @@ TODO：よくわからない、ざっくり下記の感じ？
 
 ### （番外編）this の不思議な動作
 
-あるオブジェクト(`otherObj`)のメソッドではない関数(`obj.sayName`)を呼ぶと、その関数内の `this` は、`obj`でも`otherObj`でもなく、グローバルオブジェクトを指す。
+#### その 1
+
+あるオブジェクト(`obj`)において、他のオブジェクトのメソッド(`otherObj.sayName`)を呼ぶと、その関数内の `this` は、`obj`でも`otherObj`でもなく、グローバルオブジェクトを指す。
 
 ```js
-obj = {
+const otherObj = {
   name: 'John',
   sayName: function() {
     console.log(this.name);
   },
 };
 
-otherObj = {
-  sayName: obj.sayName,
+const obj = {
+  sayName: otherObj.sayName,
 };
 
-otherObj.sayName(); // undefined
+obj.sayName(); // undefined
+```
+
+#### その 2
+
+あるオブジェクト(`otherObj`)のメソッドをグローバル変数に代入すると、`this` はグローバルオブジェクトを指す。
+
+```js
+const obj = {
+  name: 'John',
+  sayName: function() {
+    console.log(this.name);
+  },
+};
+const someGlobal = obj.sayName;
+
+someGlobal(); // undefined
 ```
 
 ## オブジェクト作成のパターン
@@ -639,7 +657,7 @@ console.log(
 
 - prototype プロパティは関数ではなくオブジェクトである必要がある。これは重要なことなのでよく覚えること。
 
-### クラシカルなパターンその 1：デフォルトパターン
+### クラシカルなパターンその 1：プロパティ・プロトタイプを継承（デフォルトパターン）
 
 ```js
 Child.prototype = new Parent();
@@ -676,7 +694,7 @@ child.say(); // Adam
 1. Child コンストラクタのプロトタイプ（Parent インスタンス）
 1. Parent コンストラクタのプロトタイプ
 
-### クラシカルなパターンその 2：コンストラクタを拝借
+### クラシカルなパターンその 2：プロパティのみ継承（コンストラクタを拝借）
 
 ```js
 function Child(...args) {
@@ -706,7 +724,7 @@ console.log(child.name); // Adam
 console.log(child.hasOwnProperty('name')); // true
 ```
 
-### クラシカルなパターンその 3：コンストラクタ＆プロトタイプを拝借
+### クラシカルなパターンその 3：プロパティ・プロトタイプを継承（コンストラクタ＆プロトタイプを拝借）
 
 ```js
 function Child(...args) {
@@ -738,7 +756,7 @@ console.log(child.name); // Patrick
 console.log(child.say()); // Patrick
 ```
 
-### クラシカルなパターンその 4：プロトタイプを共有
+### クラシカルなパターンその 4：プロトタイプのみ継承（共有）
 
 ```js
 Child.prototype = Parent.prototype;
@@ -747,5 +765,359 @@ Child.prototype = Parent.prototype;
 - 利点
   - 速い、シンプル
 - 欠点
-  - 親のプロトタイプの変更がすべての子に影響する。
-  - 親のインスタンスメンバが子に継承されない
+  - 一箇所のプロトタイプの変更が、すべての子・親に影響を与えてしまう。
+
+### クラシカルなパターンその 5：プロトタイプのみ継承（一時的コンストラクタによるプロキシ）
+
+パターン 4 を改善したもの。
+Proxy をかませることで、先祖のプロトタイプが変更されてしまうことを防いでいる。
+これが、ほぼベストと言える。
+
+```js
+const Proxy = function() {};
+Proxy.prototype = Parent.prototype;
+Child.prototype = new Proxy();
+Child.prototype.constructor = Child; // Parentじゃないよーと明示
+```
+
+### モダンなパターンその 1：プロトタイプのみ継承
+
+[`Object.create()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create)を使う。
+
+第一引数にプロトタイプとなるべきオブジェクトを、第二引数に[Properties Object](<https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create#Using_propertiesObject_argument_with_Object.create()>)を記載する
+
+```js
+// 親
+function Parent(name) {
+  this.name = name || 'Adam';
+}
+Parent.prototype.say = function() {
+  return this.name;
+};
+
+const parent = new Parent();
+const child = Object.create(parent, { age: { value: 17 } });
+
+console.log(child.hasOwnProperty('name')); // false => prototype
+console.log(child.hasOwnProperty('say')); // false => prototype
+console.log(child.hasOwnProperty('age')); // true
+console.log(child.say()); // Adam
+```
+
+上記の例は、クラシカルパターン１と同じ動作になる。
+
+```js
+const child = Object.create(Parent.prototype, { age: { value: 17 } });
+```
+
+上記の例は、クラシカルパターン 4 と同じ動作になる。
+
+### モダンなパターンその 2：プロパティのみ継承
+
+単純に親のプロパティを子にコピーする。下記の二種類がある。
+
+- Shallow Copy（`Object.assign()`など）
+- Deep Copy (lodash の deep clone など)
+
+### モダンなパターンその 3：ミックスイン
+
+複数のオブジェクトを混ぜ合わせて新しいオブジェクトを作る。実装は簡単で、単にプロパティをコピーしていくだけでよい。
+
+```js
+const cake = mix(
+  { egg: 2, large: true },
+  { butter: 1, salted: true },
+  { sugar: 'sure!' },
+);
+```
+
+### モダンなパターンその 4：メソッドの拝借
+
+あるオブジェクトのメッソドを使いたい、しかし親子関係は作りたくない、そういうときはメソッドの拝借を使うと便利。
+
+先述の通り、`apply`や`call`を使う。
+
+```js
+function slice(...args) {
+  return Array.prototype.slice.apply(args, [1, 3]);
+}
+console.log(slice(1, 2, 3, 4, 5, 6)); // 2, 3
+```
+
+#### 束縛
+
+あるオブジェクトのファンクションに this をバインドしたいときは、下記のようにする（ES5 以前）
+
+```js
+function bind(obj, func) {
+  return function(...args) {
+    return func.apply(obj, args);
+  };
+}
+
+newFunc = bind(object, someObject.oldFunc);
+```
+
+ES5 移行では、`Function.prototype.bind()`を使うことで束縛できる。
+第一引数に this となるべきオブジェクトを指定する。
+第二引数以降を指定することで部分適用も行うことができる。
+
+```js
+someObject.oldFunc.bind(object, arg1, arg2);
+```
+
+## デザインパターン
+
+### シングルトン
+
+JavaScript にはクラスがない。オブジェクト自体がすでにシングルトンである。
+
+```js
+obj1 = {};
+obj2 = {};
+obj1 === obj2; // false
+```
+
+以下、実際には訳には立たないが、実験的に実装してみた例。
+
+#### new を使ってシングルトンを作る（スタティックプロパティにキャッシュ）
+
+```js
+function Car() {
+  if (typeof Car.cache === 'object') {
+    return Car.cache;
+  }
+  // do something like `this.name = 'bmw'`
+  Car.cache = this;
+}
+console.log(new Car() === new Car()); // true
+```
+
+#### new を使ってシングルトンを作る（クロージャにキャッシュ）
+
+先例では書き換えが可能なので、書き換えをできなくしたパターン。
+
+```js
+const Car = (function() {
+  // プライベートメンバ
+  let instance;
+
+  // 特権メソッド（コンストラクタ）を返す
+  return function() {
+    // キャッシュがあればそれを返して終わる
+    if (instance) return instance;
+
+    // キャッシュしておく
+    instance = this;
+
+    // this.name = 'something'などの処理をここでする
+  };
+})();
+
+console.log(new Car() === new Car()); // true
+```
+
+### ファクトリ
+
+- クラスまたはクラスの静的メソッドで実装する
+- ファクトリで作成したオブジェクトは、共通の親を継承する
+- 以下のメリットがある
+  - 似たようなオブジェクトを楽に量産できる（`new`もオブジェクトリテラルも使わないで OK）
+  - 型を知らなくてもオブジェクトを作成できる手段を提供する
+
+```js
+function Car() {}
+
+Car.prototype.drive = function() {
+  console.log(`I have ${this.doors} doors.`);
+};
+
+Car.Compact = function() {
+  this.doors = 4;
+};
+Car.Convertible = function() {
+  this.doors = 2;
+};
+Car.Bus = function() {
+  this.doors = 20;
+};
+
+Car.factory = function(type) {
+  // 一度だけプロトタイプを継承する処理
+  if (typeof Car[type].prototype.drive) {
+    Car[type].prototype = new Car();
+  }
+  // 適切なコンストラクタでオブジェクトを作成して返す
+  return new Car[type]();
+};
+
+compact = Car.factory('Compact');
+convertible = Car.factory('Convertible');
+bus = Car.factory('Bus');
+
+compact.drive(); // I have 4 doors.
+convertible.drive(); // I have 2 doors.
+bus.drive(); // I have 20 doors.
+```
+
+### イテレータ
+
+繰り返し処理のための API のみを公開するオブジェクトを作るパターン。
+API には、`next()`,`hasNext()`,`rewind()`,`current()`などを用意する。
+データはプライベートにすることが多い。
+
+```js
+iterable = (function() {
+  let index = 0;
+  const data = [1, 2, 3, 4, 5];
+
+  return {
+    next: function() {
+      if (!this.hasNext()) return null;
+      element = data[index];
+      index += 1;
+      return element;
+    },
+    hasNext: function() {
+      return index < data.length;
+    },
+    rewind: function() {
+      index = 0;
+    },
+    current: function() {
+      return data[index];
+    },
+  };
+})();
+
+console.log(iterable.next()); // 1
+console.log(iterable.next()); // 2
+console.log(iterable.next()); // 3
+console.log(iterable.next()); // 4
+console.log(iterable.next()); // 5
+console.log(iterable.next()); // null
+```
+
+### デコレータ
+
+実行時に動的に機能を追加していくパターン。下記の例では`getPrice()`に動的に機能を追加している。
+
+```js
+function Sale(price) {
+  this.price = price;
+  this.queue = [];
+}
+
+// デコレータには、デコレートしたい関数と同名の関数を持たせる
+Sale.decorators = {
+  tax: {
+    getPrice: price => price * 1.05,
+  },
+  sending: {
+    getPrice: price => price + 1500,
+  },
+  jpy: {
+    getPrice: price => `JPY:${price}`,
+  },
+};
+
+// 実行時にデコレータが追加されたら、キューに保存しておく
+Sale.prototype.decorate = function(decorator) {
+  this.queue.push(decorator);
+};
+
+// キューからデコレータを読み出し順に実行していく
+Sale.prototype.getPrice = function() {
+  let price = this.price;
+  for (name of this.queue) {
+    price = Sale.decorators[name].getPrice(price);
+  }
+  console.log(price);
+};
+
+const sale = new Sale(10000);
+
+// getPrice()に対し動的に機能を追加している
+sale.decorate('tax');
+sale.decorate('sending');
+sale.decorate('jpy');
+
+// 実行すると、「JPY:12000」が出力される
+sale.getPrice();
+```
+
+### ストラテジー
+
+- 実行時にいくつかのアルゴリズム（戦略・ストラテジー）の中から最適なものを選択するパターン。
+- validation などでよく使われる。
+
+```js
+const validator = {
+  // これがストラテジー（戦略）
+  strtegy: {
+    isNonEmpty: {
+      validate: _ => _ !== '',
+      instructions: '何か入力してください',
+    },
+    isNumber: {
+      validate: _ => !isNaN(_),
+      instructions: '数値にしてください',
+    },
+    isAlphaNum: {
+      validate: _ => !/[^a-z0-9]/i.test(_),
+      instructions: '英数字にしてください',
+    },
+  },
+
+  // キー名（項目）ごとにストラテジーを割り当てておく
+  config: {
+    firstName: 'isNonEmpty', // 空はだめよ
+    // lastNameはなんでもいいよ
+    age: 'isNumber', // 数字じゃないとだめよ
+    username: 'isAlphaNum', // 英数字じゃないとダメよ
+  },
+
+  messages: [],
+
+  validate: function(data) {
+    this.messages = [];
+    for (key in data) {
+      // プロトタイプはスルー
+      if (!data.hasOwnProperty(key)) continue;
+
+      // キーに適合するストラテジー名とストラテジー本体を抽出
+      const strategyName = this.config[key];
+      const strategy = this.strtegy[strategyName];
+
+      // チェックの必要がないキーはスルー
+      if (!strategyName) continue;
+
+      const valid = strategy.validate(data[key]);
+      if (!valid) {
+        const msg = `Error at ${key}. ${strategy.instructions}`;
+        this.messages.push(msg);
+      }
+    }
+  },
+
+  hasErrors: function() {
+    return this.messages.length !== 0;
+  },
+};
+
+const data = {
+  firstName: '',
+  lastName: 'Doe',
+  age: 'unknown',
+  username: 'o_O',
+};
+
+validator.validate(data);
+if (validator.hasErrors()) console.log(validator.messages);
+
+/*
+[ 'Error at firstName. 何か入力してください',
+  'Error at age. 数値にしてください',
+  'Error at username. 英数字にしてください' ]
+*/
+```
