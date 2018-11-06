@@ -565,7 +565,7 @@ Car.ride = function() {
   }
 };
 
-Car.prototype.sayName = Car.sayName;
+Car.prototype.sayName = Car.ride;
 ```
 
 #### プライベートなスタティックメンバ
