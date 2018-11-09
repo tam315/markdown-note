@@ -919,6 +919,8 @@ console.log(new Car() === new Car()); // true
 
 ### ファクトリ
 
+実行時に文字列として指定された型でオブジェクトを作成するためのメソッド。
+
 - クラスまたはクラスの静的メソッドで実装する
 - ファクトリで作成したオブジェクトは、共通の親を継承する
 - 以下のメリットがある
@@ -962,7 +964,7 @@ bus.drive(); // I have 20 doors.
 
 ### イテレータ
 
-繰り返し処理のための API のみを公開するオブジェクトを作るパターン。
+複雑な構造のデータをループで巡回処理するために、必要な API を公開するパターン。
 API には、`next()`,`hasNext()`,`rewind()`,`current()`などを用意する。
 データはプライベートにすることが多い。
 
@@ -1120,4 +1122,189 @@ if (validator.hasErrors()) console.log(validator.messages);
   'Error at age. 数値にしてください',
   'Error at username. 英数字にしてください' ]
 */
+```
+
+### ファサード
+
+ファサード＝建物の正面部分のこと。
+
+組み合わせて使われるメソッド群（あるいは設計がまずいメソッド群）を新しいメソッドで包んで、より便利なAPIを提供する方法。
+
+```js
+// 一緒に呼ぶ
+myobj = {
+  superMethod: (arg) => {
+    method1(arg);
+    method2(arg);
+  }
+}
+
+// 条件分岐する
+myobj = {
+  method: () => {
+    if() method1();
+    if() method2();
+  }
+}
+
+// 古いAPIをまとめて新しいAPIを作る
+myobj = {
+  newAPI: () => {
+    /* do something new */
+
+    // 段階的に古いAPIは廃止する
+    oldAPI1();
+    oldAPI2();
+    oldAPI3();
+  },
+  oldAPI1: () => {},
+  oldAPI2: () => {},
+  oldAPI3: () => {},
+}
+```
+
+### プロキシ
+
+プログラムとAPIの間にプロキシをかませるパターン。下記のような目的で使う。
+
+- 遅延初期化
+  - 本当に必要になるまで、コストの掛かる作業をペンディングする
+- リクエストの集約
+  - bounce等を活用して、リクエストをまとめて送付することで効率を上げる
+- cache
+  - キャッシュがあればそれを使う
+
+### メディエータ（仲介者）
+
+モジュール間を疎結合に保つためのデザインパターン。
+
+モジュール間で直接のやりとりはせずに、全てメディエータと呼ばれる仲介モジュールを介して行う方法。
+
+### オブザーバ
+
+Publish（発行）/Subscribe（購読）パターンともいう。オブザーブ可能なオブジェクトを作成することで、オブジェクト間を疎結合に保つ。
+
+- 発行者は、Publisher(又は Subject)と呼ばれる。RxのSubjectとは意味が異なるので注意。
+- 購読者は、Subscriber(又は Observer)などと呼ばれる。
+
+Publisherは下記のメンバを持つ
+
+- `subscribers`　行動者を保持する配列
+- `subscribe(type, cb)`又は`on(type, cb)` 購読者を追加する
+- `unsubscribe(type, cb)` 購読者を削除する
+- `publish(type, arg)` イベントを発行し、各購読者に通知する
+
+## DOMとブラウザのパターン
+
+### 関心の分離
+
+関心を下記の通りに分け、段階的強化（Progressive Enhansement）を行う、という考え方。
+
+- コンテンツはHTML
+- プレゼンテーションはCSS
+- 振る舞いはJavascript
+
+### DOMスクリプティング
+
+結論：DOM走査は最小限に減らせ
+
+データの取得
+
+```js
+// アンチパターン
+const padding = doument.getElementById('some').style.padding
+const margin = doument.getElementById('some').style.margin
+
+// よりよい方法
+const style = doument.getElementById('some').style
+const padding = style.padding;
+const margin = style.margin;
+```
+
+要素の追加（Fragentを新規に作り、下ごしらえ）
+
+```js
+const fragment = document.createDocumentFragment();
+fragment.appendChild(someChild);
+fragment.appendChild(someChild);
+
+document.body.appendChild(fragment)
+```
+
+要素の変更（クローンすることでFragmentを作り、下ごしらえ）
+
+```js
+const oldNode = document.getElementById('some');
+const cloneNode = oldNode.cloneNode(true);
+
+oldNode.parentNode.replaceChild(cloneNode, oldNode);
+```
+
+### イベント委譲
+
+```html
+<div>
+  <a>button1</a>
+  <a>button2</a>
+  <a>button3</a>
+</div>
+```
+
+上記のような要素があったとき、A要素にイベントを設定せず、DIV要素にイベントを設定して一括で処理すること。DIVのイベントハンドラで下記のように処理する。
+
+```js
+if(e.target.nodeName.toLowerCase() ==="a") doSomething();
+```
+
+### 重たい処理
+
+ブラウザをハングされるような重たい処理には、バックグラウンドで動作する WebWorker を使うと良い。
+worker側で`postMessage`して、ブラウザ側の`onmessage`で受け取る事ができる。
+
+```js
+// Browser
+const worker = new Worker('myWebWorker.js');
+worker.onmessage = (e) => console.log(e.data); // => 'hello' 'done!'
+
+// Web Worker
+postMessage('hello')
+setTimeout(()=>postMessage('done!'),1000);
+```
+
+### JSファイルの読み込み
+
+#### script要素をどこに書くか
+
+script要素は他のダウンロードを阻害するので、可能な限りbody終了タグの近くに書く。HEADにすべてまとめるのは最悪のアンチパターン。
+
+#### 動的なスクリプトの読み込み
+
+```js
+const script = document.createElement('script');
+script.src = "//www.google.com/some.js";
+
+const firstScriptNode =  document.getElementByTagName('script')[0];
+firstScriptNode.parentNode.insertBefore(script, firstScriptNode)
+```
+
+SCRIPT要素の前に挿入している理由は、BODY要素やHEAD要素は存在しない可能性があるが、script要素は絶対に存在する要素だから（なければこのコードは実行できないので）
+
+#### 遅延読み込み
+
+JSを、最低限必要なJSと、装飾的なJSに分けて、後者のみを`window.load`イベント以降に動的に読み込む方法。
+
+```js
+window.onload = () => {
+  /* 動的なJSの読み込み（前項のとおり） */
+}
+```
+
+#### オンデマンドで読み込む
+
+先述の動的なスクリプトの読み込みをプログラマティックに行うだけ。なお、読み込みの完了を補足したい場合は下記のようにする。
+
+```js
+script.onload = () => {
+  /* JSファイルの読み込み完了時に行いたい処理をここに。IEの場合は別の方法が必要 */
+}
 ```
