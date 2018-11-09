@@ -653,18 +653,18 @@ console.log(
 );
 ```
 
-## コード再利用パターン
+## コード再利用パターン(クラシカル)
 
 - prototype プロパティは関数ではなくオブジェクトである必要がある。これは重要なことなのでよく覚えること。
 
-### クラシカルなパターンその 1：プロパティ・プロトタイプを継承（デフォルトパターン）
+### 両方を継承
 
 ```js
 Child.prototype = new Parent();
 ```
 
-- このパターンでは、親のインスタンスメンバ（例：`name`）とプロトタイプメンバ（例：`say`）が、全て子に継承される。
-- ただしこれはプロトタイプ連鎖によるもので、コピーされているわけではない。
+- プロパティ・プロトタイプの両方を継承するパターン
+- このパターンでは、親のインスタンスメンバ（例：`name`）とプロトタイプメンバ（例：`say`）が、全て子に継承される。ただしこれはプロトタイプ連鎖によるもので、コピーされているわけではない。
 - 欠点
   - 親のインスタンスメンバが継承されるが、これは不要なことが多い
   - 子から親にパラメータを渡せない
@@ -694,13 +694,48 @@ child.say(); // Adam
 1. Child コンストラクタのプロトタイプ（Parent インスタンス）
 1. Parent コンストラクタのプロトタイプ
 
-### クラシカルなパターンその 2：プロパティのみ継承（コンストラクタを拝借）
+### 両方を継承（コンストラクタ拝借）
+
+```js
+function Child(...args) {
+  Parent.apply(this, args);
+}
+Child.prototype = new Parent();
+```
+
+- プロパティ・プロトタイプの両方を継承するパターン
+- 前項と異なり、コンストラクタを拝借することで、親のインスタンスメンバは子にコピーされる
+- 親のプロトタイプも、連鎖により子に継承される
+
+```js
+// 親
+function Parent(name) {
+  this.name = name || 'Adam';
+}
+Parent.prototype.say = function() {
+  return this.name;
+};
+
+// 子
+function Child(...args) {
+  Parent.apply(this, args);
+}
+Child.prototype = new Parent();
+
+const child = new Child('Patrick');
+console.log(child.name); // Patrick
+console.log(child.say()); // Patrick
+```
+
+### プロパティのみ継承
 
 ```js
 function Child(...args) {
   Parent.apply(this, args);
 }
 ```
+
+コンストラクタを拝借して、プロパティのみ継承（コピー）する。
 
 - 親のインスタンスメンバ（例：`name`）のみ継承される。親のプロトタイプメンバは継承されない。
 - 利点
@@ -724,39 +759,7 @@ console.log(child.name); // Adam
 console.log(child.hasOwnProperty('name')); // true
 ```
 
-### クラシカルなパターンその 3：プロパティ・プロトタイプを継承（コンストラクタ＆プロトタイプを拝借）
-
-```js
-function Child(...args) {
-  Parent.apply(this, args);
-}
-Child.prototype = new Parent();
-```
-
-- 親のインスタンスメンバは子にコピーされる（親のインスタンスメンバされることはない）
-- 親のプロトタイプも、連鎖により子に継承される。
-
-```js
-// 親
-function Parent(name) {
-  this.name = name || 'Adam';
-}
-Parent.prototype.say = function() {
-  return this.name;
-};
-
-// 子
-function Child(...args) {
-  Parent.apply(this, args);
-}
-Child.prototype = new Parent();
-
-const child = new Child('Patrick');
-console.log(child.name); // Patrick
-console.log(child.say()); // Patrick
-```
-
-### クラシカルなパターンその 4：プロトタイプのみ継承（共有）
+### プロトタイプのみ継承（共有）
 
 ```js
 Child.prototype = Parent.prototype;
@@ -767,10 +770,10 @@ Child.prototype = Parent.prototype;
 - 欠点
   - 一箇所のプロトタイプの変更が、すべての子・親に影響を与えてしまう。
 
-### クラシカルなパターンその 5：プロトタイプのみ継承（一時的コンストラクタによるプロキシ）
+### プロトタイプのみ継承（プロキシ）
 
 パターン 4 を改善したもの。
-Proxy をかませることで、先祖のプロトタイプが変更されてしまうことを防いでいる。
+一時的コンストラクタによるプロキシをかませることで、先祖のプロトタイプが変更されてしまうことを防いでいる。
 これが、ほぼベストと言える。
 
 ```js
@@ -780,7 +783,9 @@ Child.prototype = new Proxy();
 Child.prototype.constructor = Child; // Parentじゃないよーと明示
 ```
 
-### モダンなパターンその 1：プロトタイプのみ継承
+## コード再利用パターン(モダン)
+
+### プロトタイプのみ継承
 
 [`Object.create()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/create)を使う。
 
@@ -812,14 +817,14 @@ const child = Object.create(Parent.prototype, { age: { value: 17 } });
 
 上記の例は、クラシカルパターン 4 と同じ動作になる。
 
-### モダンなパターンその 2：プロパティのみ継承
+### プロパティのみ継承
 
 単純に親のプロパティを子にコピーする。下記の二種類がある。
 
 - Shallow Copy（`Object.assign()`など）
 - Deep Copy (lodash の deep clone など)
 
-### モダンなパターンその 3：ミックスイン
+### ミックスイン
 
 複数のオブジェクトを混ぜ合わせて新しいオブジェクトを作る。実装は簡単で、単にプロパティをコピーしていくだけでよい。
 
@@ -831,7 +836,7 @@ const cake = mix(
 );
 ```
 
-### モダンなパターンその 4：メソッドの拝借
+### メソッドの拝借
 
 あるオブジェクトのメッソドを使いたい、しかし親子関係は作りたくない、そういうときはメソッドの拝借を使うと便利。
 
