@@ -293,43 +293,6 @@ TODO：よくわからない、ざっくり下記の感じ？
 部分適用 : f(値 1, 値 2, c) → g(c)
 ```
 
-### （番外編）this の不思議な動作
-
-#### その 1
-
-あるオブジェクト(`obj`)において、他のオブジェクトのメソッド(`otherObj.sayName`)を呼ぶと、その関数内の `this` は、`obj`でも`otherObj`でもなく、グローバルオブジェクトを指す。
-
-```js
-const otherObj = {
-  name: 'John',
-  sayName: function() {
-    console.log(this.name);
-  },
-};
-
-const obj = {
-  sayName: otherObj.sayName,
-};
-
-obj.sayName(); // undefined
-```
-
-#### その 2
-
-あるオブジェクト(`otherObj`)のメソッドをグローバル変数に代入すると、`this` はグローバルオブジェクトを指す。
-
-```js
-const obj = {
-  name: 'John',
-  sayName: function() {
-    console.log(this.name);
-  },
-};
-const someGlobal = obj.sayName;
-
-someGlobal(); // undefined
-```
-
 ## オブジェクト作成のパターン
 
 ### 名前空間パターン

@@ -28,35 +28,75 @@
 
 ## this
 
-this は**関数の呼び出され方**に依存している。「関数の宣言された場所」には依存しない。
+- `this` === the **Object** that is executing the current function
+  - つまり、ファンクションを実行しているオブジェクトを指す
+  - 関数の宣言された場所ではなく、**関数の呼び出され方**によって変わる
+
+### Method（オブジェクトに所属するファンクション）の場合
+
+thisはそのオブジェクトを指す。
 
 ```js
 const obj = {
   name: 'たなか',
   speak() {
-    return `私の名前は${this.name}です`;
+    console.log(this.name);
   },
 };
 
-obj.speak(); //=> 私の名前はたなかです
-
-const func = obj.speak;
-func(); //=> 私の名前はです
-
-window.name = 'グローバル';
-func(); //=> 私の名前はグローバルです
-
-// ちゃんとオブジェクトに束縛させればOK
-const obj2 = {
-  name: 'さとう',
-};
-obj2.speak = obj.speak;
-obj2.speak(); //=> "私の名前はさとうです"
+obj.speak(); //=> たなか
+// obj.speak.apply(obj) と等価
 ```
 
-## this の束縛(call, bind, アロー関数)
+### Method以外（Function Statement / Expression)の場合
 
-this は呼び出した時の状況によって参照先が変化してしまう。call、bind、アロー関数を使用することにより、常に指定したものを this として動作させることができる。
+thisは window / global を指す。
+
+```js
+function a() {
+  console.log(this);
+}
+a(); // => window / global
+```
+
+変数に代入した場合も同様
+
+```js
+const a = function(){
+  console.log(this);
+};
+a(); // => window / global
+```
+
+コールバックやIIFEもStatementにあたるので同様
+
+```js
+const obj = {
+  say() {
+    (function() {
+      console.log(this);
+    })();
+  },
+};
+obj.say(); // => window / global
+```
+
+あるオブジェクトのメソッドをグローバル変数に代入した場合も同様
+
+```js
+const obj = {
+  say: function() {
+    console.log(this);
+  },
+};
+const someGlobal = obj.say;
+
+someGlobal(); // => window / global
+```
+
+## this の束縛
+
+this は呼び出した時の状況によって参照先が変化してしまう。`apply`, `call`, `bind`, アロー関数を使用することにより、常に指定したものを this として動作させることができる。
 
 ## constructor
 
