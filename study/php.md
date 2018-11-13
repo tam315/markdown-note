@@ -730,8 +730,8 @@ PHP の方は、文脈によって自動的に決定される。例えば乗算�
 - 命名規則 →`\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*`
 - 値の代入
 
-  - デフォルトは値渡し（Object だけは例外で、参照渡し）
-  - 参照渡ししたい場合は、代入する値に`&`を使う。この場合、代入された側はただのエイリアスになる。
+  - デフォルトではすべて値渡し。Object についても、handle(object の実体への参照のようなもの)を値渡ししている。
+  - 参照渡ししたい場合は、代入する値に`&`を使う。これにより **エイリアス** （同じ向き先を持つ変数）が作成される。
   - `&`をつけることができる対象は、名前付き変数のみ(`&(1+2)`などは無効)
 
   ```php
@@ -822,7 +822,7 @@ test(); // 1
 test(); // 2
 ```
 
-static 変数を使って再帰処理を書くとこんな感じ。ちょっと筋が悪そう。
+static 変数を使って再帰処理を書くとこんな感じ。
 
 ```php
 function test()
@@ -1154,8 +1154,8 @@ foreach ($array as list($a, $b)) { echo "$a $b" };
 
 - 外部の PHP ファイルを読み込む
 - 読み込みに失敗した時、include は警告するだけだが、require は致命的エラーを投げる
-- `include`を記載した場所で利用可能な **Variable Scope** は、読み込まれた側のファイルですべて利用可能となる。逆に、読み込まれたファイル内の**変数**は、`include`の場所で宣言されたのと同じように振る舞う。
-- ただし、**ファンクションとクラス**については、グローバルとして読み込まれる。
+- `include`を記載した場所で利用可能な **Variable Scope** は、読み込まれた側のファイルですべて利用可能となる。
+- 逆に、読み込まれたファイル内の**変数**は、`include`の場所で宣言されたのと同じように振る舞う。ただし、**ファンクションとクラス**については、グローバルとして読み込まれる。
 
 ### `include_once / require_once`
 
@@ -1267,7 +1267,7 @@ list ($zero, $one, $two) = small_numbers();
 
 #### 参照を返す
 
-呼び出し側、呼び出され側の両方に`&`をつける。TODO:要調査
+呼び出し側、呼び出され側の両方に`&`をつける。[Referenceの項](#reference)を参照
 
 ```php
 function &returnsReference()
@@ -1335,7 +1335,7 @@ $foo->$funcname(); // => This is Bar
 
 #### 親スコープの変数を使う方法
 
-- `use`を使う。値渡しである。必要があれば`&message`に変えて、参照渡しにすること。
+- `use`を使う。値渡しである。必要があれば`&$message`に変えて、参照渡しにすること。
 - `use`した値は、ファンクションの宣言時の値で固定される。**ファンクションを呼んだ時の値ではない**ので注意する。
 
 ```php
@@ -1429,14 +1429,12 @@ class B
 }
 
 $a = new A();
-$a->foo(); // 非静的　defined
-
-A::foo(); // 静的　undefined
+$a->foo(); // インスタンスから呼び出した場合は、インスタンス自身を指す
+A::foo(); // クラスから静的に呼び出した場合は、undefined
 
 $b = new B();
-$b->bar(); // 非静的　undefined
-
-B::bar(); // 静的　undefined
+$b->bar(); // 他のクラスインスタンスから呼び出した場合は、undefined
+B::bar(); // 他のクラスから静的に呼び出した場合は、undefined
 ```
 
 #### new
@@ -1449,9 +1447,10 @@ $instance = new SimpleClass();
 
 クラス内では、`new self`,`new parent`とすることで自身を作成できる。
 
-インスタンスを代入すると、インスタンスの**実体への参照（handle）がコピー**される。
-これは、インスタンスを格納している変数への参照(エイリアス)ではないので注意する。
-詳細は[こちらのコメント](http://php.net/manual/en/language.oop5.basic.php#79856)を参照する。
+- Objectは、変数内に **オブジェクトの実体への参照（handle）** を保持している。これは、プリミティブが変数内にデータ自体を保持しているのと比べ、大きく異なる点である。
+- 普通にインスタンスを代入すると、 **handleがコピー（値渡し）** される。
+- `&`付きでインスタンスを代入すると、エイリアス(handleを格納している領域への参照を持つ、複数の変数)が作成される。
+- 詳細は[こちらのコメント](http://php.net/manual/en/language.oop5.basic.php#79856)を参照する。
 
 ```php
 $instance = new SimpleClass();
@@ -1499,14 +1498,15 @@ namespace NS {
 ### Properties
 
 - プロパティは`public`,`protected`,`private`のいずれかと、名前によって作成される。
-- メソッド内から non-static なプロパティにアクセスするには`this->property`の記法を使う。
+- メソッド内から non-static なプロパティにアクセスするには`$this->property`の記法を使う。
 - メソッド内から static なプロパティにアクセスするには、`self::$property`の記法を使う
 - `$this`はクラスインスタンス自体を指す。すべてのクラスメソッドから利用可能。ただし、メソッドが異なるコンテキストから呼ばれた場合は NULL になる。
 
 ### Class Constants
 
 - クラスレベルの定数を設定できる。
-- `public`,`private`の 2 つの Visibility がある。
+- 定数はスタティックであるので、呼び出しには`::`を使う。
+- `public`,`protected`,`private`の 3 つの Visibility がある。
 
 ```php
 class MyClass
@@ -1524,8 +1524,8 @@ echo MyClass::CONSTANT; // constant value
 echo "MyClass"::CONSTANT; // constant value
 
 $class = new MyClass();
-$class->showConstant();// constant value
 
+$class->showConstant();// constant value
 echo $class::CONSTANT; // constant value
 ```
 
@@ -1536,7 +1536,7 @@ echo $class::CONSTANT; // constant value
 ```php
 spl_autoload_register(function ($class_name) {
     include $class_name . '.php';
-    // => MyClass1.php, MyClass2.php, ITest.php
+    // => 自動的に、MyClass1.php, MyClass2.php, ITest.phpを読み込む
 });
 
 $obj  = new MyClass1();
@@ -1589,7 +1589,7 @@ class MyClass
 echo MyClass::CONST_VALUE;
 ```
 
-クラスメソッド内から、クラスのスタティックな値にアクセスする
+クラスメソッド内から、クラスのスタティックなメンバにアクセスする
 
 ```php
 class OtherClass extends MyClass
@@ -1658,7 +1658,7 @@ class X extends Y { }
 
 - インターフェースのメソッドは外部からアクセスするための定義なので、当然すべて public である。
 - `extends`を使えば、インターフェースがインターフェースを継承することもできる。
-- ある Object が特定のメソッドを持つことを保証したい時に使う。もっと具体的には、差し替える可能性のあるクラスに、インターフェースを実装しておくことで、[後を楽にする](http://php.net/manual/en/language.oop5.interfaces.php#107364)ためのもの。
+- ある Object が特定のメソッドを持つことを保証したい時に使う。もっと具体的には、あとで差し替える可能性のあるクラスにインターフェースを実装しておくことで、[後の変更を楽にする](http://php.net/manual/en/language.oop5.interfaces.php#107364)ためのもの。
 
 ```php
 interface ITemplate
@@ -1676,7 +1676,7 @@ class Template implements ITemplate
 
 ### Traits
 
-- コードを再利用するための方法
+- コードを再利用するための方法。Mixinに近い。
 - 好きな粒度でコードをグループ化できる
 - abstract, static, property, method などを予め作成しておき、クラスにコピペできる。
 - 詳細は[ドキュメントを参照](http://php.net/manual/en/language.oop5.traits.php)
@@ -1752,7 +1752,7 @@ foreach($class as $key => $value) {}
 foreach ($this as $key => $value) {}
 ```
 
-より細かい制御を行うには、`Iterator`インターフェースと配列の内部ポインタを用いて、手動で Iteration の設定を行うこと。詳細は[ドキュメント参照](http://php.net/manual/en/language.oop5.iterations.php)。
+より細かい制御を行うには、イテレータパターンを使った設定を手動で行う。詳細は[ドキュメント参照](http://php.net/manual/en/language.oop5.iterations.php)。
 
 ### Magic Methods
 
@@ -1884,7 +1884,7 @@ napespace ごとにファイルを分けることが望ましい。
 
 othernamespace\foo() // ファンクション
 othernamespace\foo::staticmethod() // クラスのスタティックメソッド
-echo subnamespace\FOO // 定数
+echo othernamespace\FOO // 定数
 ```
 
 絶対参照
@@ -1895,7 +1895,7 @@ echo subnamespace\FOO // 定数
 
 ### `namespace` operator
 
-自身のネームスペースを指す？なくてもいいような。使いみちがよくわからない。
+自身のネームスペースを指す。相対参照で事足りる気がするので、使いみちがよくわからない。
 
 ```php
 namespace myspace {
@@ -1930,18 +1930,16 @@ echo __NAMESPACE__;
 
 ```php
 namespace foo;
-use My\Full\Classname as Another;
 
-// this is the same as use My\Full\NSname as NSname
+// importing Class
 use My\Full\NSname;
+use My\Full\NSname as Another;
 
 // importing a global class
 use ArrayObject;
 
 // importing a function (PHP 5.6+)
 use function My\Full\functionName;
-
-// aliasing a function (PHP 5.6+)
 use function My\Full\functionName as func;
 
 // importing a constant (PHP 5.6+)
@@ -1977,15 +1975,14 @@ new ArrayObject(); // => エラー。`\ArrayObject()`にすればOK。
 
 ### PHP7 でのエラー
 
-- PHP7 のエラーは`Error`クラスになった？
-- Error クラス の特徴は以下の通り
+- PHP7 のエラーは`Error`クラスになったため、従来のエラー処理方法とはメカニズムが異なっている。Error クラス の特徴は以下の通り
   1.  `catch`ブロックにキャッチされるまでバブルアップする。
   1.  catch ブロックがなければ、`set_exception_hander()`でセットされたハンドラが呼ばれる
   1.  ハンドラもなければ、エラーは致命的エラーに変換され、従来と同じ方法で処理される
 - Error クラスと Exception クラスは、どちらも`Throwable`クラスを継承しているので、Throwable で両方キャッチできる。
 
   ```php
-  try {}catch(Throwable $t) {}
+  try {}catch(Throwable $e) {}
   ```
 
 ## Exceptions
@@ -2007,7 +2004,7 @@ try {
 ### Overview
 
 - Generator は簡単に Iterable な Object を作る方法。
-- 通常のファンクションと似ているが、処理途中の状態で値を取り出す（yield）ことができること、その状態を保持したまま何度も呼び出して処理を継続てきる点が異なる
+- 通常のファンクションと似ているが、処理途中の状態で値を取り出す（yield）ことができること、その状態を保持したまま何度も呼び出して処理を継続できる点が異なる
 
 たとえば range を generator で実装すると下記のようになる
 
@@ -2078,7 +2075,7 @@ foreach (countToTen() as $num) {
 
 ### Iterator との比較
 
-Iterator interface を実装したクラスを使うのと、Generator を使う場合の違い
+Iterator interface を実装したクラスを使う「イテレータパターン」と、Generator を使う場合の違い
 
 - Iterator の方は、`rewind`,`valid`などいろいろと実装しないといけない。一方 Generator はシンプル。
 - ただし、Generator は、一度スタートすると巻き戻しができない、また、繰り返し使用することはできない、などのデメリットも有る。
@@ -2095,8 +2092,8 @@ Iterator interface を実装したクラスを使うのと、Generator を使う
 #### 1. Assign by reference
 
 - PHP の変数は、向き先（Reference）と、向き先が持つ内容（Content）から成り立つ。
-  - 向き先を変える方法　`$a = &$b`
-  - コンテンツを変える方法　`$a = 1`
+  - 向き先を書き換える方法　`$a = &$b`
+  - コンテンツを書き換える方法　`$a = 1`
 
 例えば下記では、$a と$b が同じコンテンツを指すようになる。
 $a => コンテンツ、 $b => コンテンツであり、$a => $b ではないので注意。
@@ -2114,11 +2111,12 @@ $foo = &find_var();
 #### 2. Pass by reference
 
 引数に`&`をつけると、値として受け取るのではなく、向き先（Reference）として受け取る事ができる。
+下記の`$value`は、`$a`のエイリアスである。
 
 ```php
 function add(&$value)
 {
-    $value++; // 向き先のコンテンツをいじる
+    $value++; // コンテンツをいじる
 }
 
 $a=5;
