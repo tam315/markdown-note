@@ -1096,7 +1096,7 @@ if (validator.hasErrors()) console.log(validator.messages);
 
 ファサード＝建物の正面部分のこと。
 
-組み合わせて使われるメソッド群（あるいは設計がまずいメソッド群）を新しいメソッドで包んで、より便利なAPIを提供する方法。
+組み合わせて使われるメソッド群（あるいは設計がまずいメソッド群）を新しいメソッドで包んで、より便利な API を提供する方法。
 
 ```js
 // 一緒に呼ぶ
@@ -1133,12 +1133,12 @@ myobj = {
 
 ### プロキシ
 
-プログラムとAPIの間にプロキシをかませるパターン。下記のような目的で使う。
+プログラムと API の間にプロキシをかませるパターン。下記のような目的で使う。
 
 - 遅延初期化
   - 本当に必要になるまで、コストの掛かる作業をペンディングする
 - リクエストの集約
-  - bounce等を活用して、リクエストをまとめて送付することで効率を上げる
+  - bounce 等を活用して、リクエストをまとめて送付することで効率を上げる
 - cache
   - キャッシュがあればそれを使う
 
@@ -1152,54 +1152,54 @@ myobj = {
 
 Publish（発行）/Subscribe（購読）パターンともいう。オブザーブ可能なオブジェクトを作成することで、オブジェクト間を疎結合に保つ。
 
-- 発行者は、Publisher(又は Subject)と呼ばれる。RxのSubjectとは意味が異なるので注意。
+- 発行者は、Publisher(又は Subject)と呼ばれる。Rx の Subject とは意味が異なるので注意。
 - 購読者は、Subscriber(又は Observer)などと呼ばれる。
 
-Publisherは下記のメンバを持つ
+Publisher は下記のメンバを持つ
 
 - `subscribers`　行動者を保持する配列
 - `subscribe(type, cb)`又は`on(type, cb)` 購読者を追加する
 - `unsubscribe(type, cb)` 購読者を削除する
 - `publish(type, arg)` イベントを発行し、各購読者に通知する
 
-## DOMとブラウザのパターン
+## DOM とブラウザのパターン
 
 ### 関心の分離
 
 関心を下記の通りに分け、段階的強化（Progressive Enhansement）を行う、という考え方。
 
-- コンテンツはHTML
-- プレゼンテーションはCSS
-- 振る舞いはJavascript
+- コンテンツは HTML
+- プレゼンテーションは CSS
+- 振る舞いは Javascript
 
-### DOMスクリプティング
+### DOM スクリプティング
 
-結論：DOM走査は最小限に減らせ
+結論：DOM 走査は最小限に減らせ
 
 データの取得
 
 ```js
 // アンチパターン
-const padding = doument.getElementById('some').style.padding
-const margin = doument.getElementById('some').style.margin
+const padding = doument.getElementById('some').style.padding;
+const margin = doument.getElementById('some').style.margin;
 
 // よりよい方法
-const style = doument.getElementById('some').style
+const style = doument.getElementById('some').style;
 const padding = style.padding;
 const margin = style.margin;
 ```
 
-要素の追加（Fragentを新規に作り、下ごしらえ）
+要素の追加（Fragent を新規に作り、下ごしらえ）
 
 ```js
 const fragment = document.createDocumentFragment();
 fragment.appendChild(someChild);
 fragment.appendChild(someChild);
 
-document.body.appendChild(fragment)
+document.body.appendChild(fragment);
 ```
 
-要素の変更（クローンすることでFragmentを作り、下ごしらえ）
+要素の変更（クローンすることで Fragment を作り、下ごしらえ）
 
 ```js
 const oldNode = document.getElementById('some');
@@ -1211,60 +1211,56 @@ oldNode.parentNode.replaceChild(cloneNode, oldNode);
 ### イベント委譲
 
 ```html
-<div>
-  <a>button1</a>
-  <a>button2</a>
-  <a>button3</a>
-</div>
+<div><a>button1</a> <a>button2</a> <a>button3</a></div>
 ```
 
-上記のような要素があったとき、A要素にイベントを設定せず、DIV要素にイベントを設定して一括で処理すること。DIVのイベントハンドラで下記のように処理する。
+上記のような要素があったとき、A 要素にイベントを設定せず、DIV 要素にイベントを設定して一括で処理すること。DIV のイベントハンドラで下記のように処理する。
 
 ```js
-if(e.target.nodeName.toLowerCase() ==="a") doSomething();
+if (e.target.nodeName.toLowerCase() === 'a') doSomething();
 ```
 
 ### 重たい処理
 
 ブラウザをハングされるような重たい処理には、バックグラウンドで動作する WebWorker を使うと良い。
-worker側で`postMessage`して、ブラウザ側の`onmessage`で受け取る事ができる。
+worker 側で`postMessage`して、ブラウザ側の`onmessage`で受け取る事ができる。
 
 ```js
 // Browser
 const worker = new Worker('myWebWorker.js');
-worker.onmessage = (e) => console.log(e.data); // => 'hello' 'done!'
+worker.onmessage = e => console.log(e.data); // => 'hello' 'done!'
 
 // Web Worker
-postMessage('hello')
-setTimeout(()=>postMessage('done!'),1000);
+postMessage('hello');
+setTimeout(() => postMessage('done!'), 1000);
 ```
 
-### JSファイルの読み込み
+### JS ファイルの読み込み
 
-#### script要素をどこに書くか
+#### script 要素をどこに書くか
 
-script要素は他のダウンロードを阻害するので、可能な限りbody終了タグの近くに書く。HEADにすべてまとめるのは最悪のアンチパターン。
+script 要素は他のダウンロードを阻害するので、可能な限り body 終了タグの近くに書く。HEAD にすべてまとめるのは最悪のアンチパターン。
 
 #### 動的なスクリプトの読み込み
 
 ```js
 const script = document.createElement('script');
-script.src = "//www.google.com/some.js";
+script.src = '//www.google.com/some.js';
 
-const firstScriptNode =  document.getElementByTagName('script')[0];
-firstScriptNode.parentNode.insertBefore(script, firstScriptNode)
+const firstScriptNode = document.getElementByTagName('script')[0];
+firstScriptNode.parentNode.insertBefore(script, firstScriptNode);
 ```
 
-SCRIPT要素の前に挿入している理由は、BODY要素やHEAD要素は存在しない可能性があるが、script要素は絶対に存在する要素だから（なければこのコードは実行できないので）
+SCRIPT 要素の前に挿入している理由は、BODY 要素や HEAD 要素は存在しない可能性があるが、script 要素は絶対に存在する要素だから（なければこのコードは実行できないので）
 
 #### 遅延読み込み
 
-JSを、最低限必要なJSと、装飾的なJSに分けて、後者のみを`window.load`イベント以降に動的に読み込む方法。
+JS を、最低限必要な JS と、装飾的な JS に分けて、後者のみを`window.load`イベント以降に動的に読み込む方法。
 
 ```js
 window.onload = () => {
   /* 動的なJSの読み込み（前項のとおり） */
-}
+};
 ```
 
 #### オンデマンドで読み込む
@@ -1274,5 +1270,5 @@ window.onload = () => {
 ```js
 script.onload = () => {
   /* JSファイルの読み込み完了時に行いたい処理をここに。IEの場合は別の方法が必要 */
-}
+};
 ```
