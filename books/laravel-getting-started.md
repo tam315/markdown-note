@@ -600,6 +600,8 @@ class HelloServiceProvider extends ServiceProvider
 
 ```php
 // app/Http/Composers/HelloComposer.php  Composerフォルダの名前は変えてもOK
+namespace App\Http\Composers; // これを忘れると他のファイルから参照できない
+
 use Illuminate\View\View;
 
 class HelloComposer
@@ -621,6 +623,74 @@ class HelloServiceProvider extends ServiceProvider
     public function boot()
     {
         View::composer('hello.index', 'App\Http\Composers\HelloComposer');
+    }
+}
+```
+
+## リクエスト・レスポンスの補完
+
+### ミドルウェア
+
+- コントローラの前や後に割り込み、処理を行う
+- ミドルウェアは、ルーティング情報を記載する際に指定できる
+
+#### 雛形の作成
+
+```bash
+php artisan make:middleware HelloMiddleware
+```
+
+```php
+// app/Http/Middleware/HelloMiddleware.php
+namespace App\Http\Middleware;
+
+use Closure; // 無名クラスを表すクラス？
+
+class HelloMiddleware
+{
+    public function handle($request, Closure $next)
+    {
+        // リクエストに割り込む処理をここに
+        $response = $next($request);
+        // レスポンスに割り込む処理をここに
+        return $response;
+    }
+}
+```
+
+```php
+// ルーティング設定
+Route::get('/hello', 'HelloController@index')
+    ->middleware(HelloMiddleware::class)
+    ->middleware(SomeOtherMiddleware::class);
+```
+
+#### ミドルウェアからコントローラにデータを渡す
+
+`$request->merge(配列)`を使うと、リクエストオブジェクトにプロパティを追加できる。
+
+```php
+// ミドルウェア
+class HelloMiddleware
+{
+    public function handle($request, Closure $next)
+    {
+        $additionalData = [
+            ['name'=>'taro', 'mail'=>'taro@dot.com'],
+            ['name'=>'hanako', 'mail'=>'hanako@dot.com'],
+        ];
+        $request->merge(['additionalData' => $additionalData]);
+        return $next($request);
+    }
+}
+```
+
+```php
+// コントローラ
+class HelloController extends Controller
+{
+    public function index(Request $request) {
+        return view('hello.index', ['mydata'=>$request->additionalData]);
     }
 }
 ```
