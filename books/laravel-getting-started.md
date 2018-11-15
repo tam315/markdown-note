@@ -76,7 +76,15 @@ php artisan serve # テスト専用コマンドである。本番環境では使
 
 #### ルーティング設定
 
-テンプレートを使う。下記のように`view`でテンプレートを指定すると、`resources/views/welcome.blade.php`がレンダリングされる。
+生の HTML を返す
+
+```php
+Route::get('/hello', function() {
+  return '<h1>Some HTML!</h1>';
+});
+```
+
+テンプレートを指定する
 
 ```php
 // routes/web.php
@@ -84,14 +92,14 @@ php artisan serve # テスト専用コマンドである。本番環境では使
 Route::get('/', function() {
   return view('welcome');
 });
+// => `resources/views/welcome.blade.php`がレンダリングされる。
 ```
 
-生の HTML を返す
+コントローラを指定する
 
 ```php
-Route::get('/hello', function() {
-  return '<h1>Some HTML!</h1>';
-});
+Route::get('/hello', 'HelloController@index');
+Route::get('/hello', 'HelloController'); // シングルアクションコントローラの場合
 ```
 
 params を受け取る。任意の param には`?`をつける。任意の項目にはデフォルト値をセットしておくと良い。
@@ -224,6 +232,395 @@ EOF;
 - `$request->url()` クエリを含まない URL を返す
 - `$request->fullUrl()` クエリを含む URL を返す
 - `$request->path()` ドメインより下のパス部分だけを返す
+- `$request->QUERY_NAME` クエリを取得する（クエリ名が id なら、`$request->id`）
 - `$response->status()` ステータスコードを返す
 - `$response->content()` コンテンツを取得
 - `$response->setContent()` コンテンツを設定
+
+## ビューとテンプレート
+
+### PHP テンプレートの利用
+
+PHP テンプレートを使うには、`view(フォルダ名.ファイル名)`を呼ぶことで、テンプレートから Response インスタンスを作成する。
+
+```php
+Route::get('/hello', function(){
+    // resources/views/hello/index.phpというテンプレートを基に、Responseインスタンスが生成される
+    return view('hello.index');
+});
+```
+
+上記は、ルーティング設定に直接テンプレートを指定している。
+ルーティングにはコントローラを指定し、その中でテンプレートを使いたいときは次にようにする。
+
+```php
+class HelloController extends Controller
+{
+    public function index() {
+        return view('hello.index');
+    }
+}
+```
+
+テンプレートにデータを渡したいときは、view の第二引数に Array を渡す。
+
+```php
+// template
+<h1><?php echo $msg1 ?></h1>
+<h1><?php echo $msg2 ?></h1>
+```
+
+```php
+// controller
+class HelloController extends Controller
+{
+    public function index() {
+        $data = [
+            'msg1' => 'msg1です',
+            'msg2' => 'msg2です',
+        ];
+        return view('hello.index', $data);
+    }
+}
+```
+
+### Blade テンプレートの利用
+
+blade テンプレートを利用するには、`FILENAME.blade.php`の形式でテンプレートを作成する。
+PHP テンプレートと Blade テンプレートが両方存在する場合は blade が優先される。
+
+#### Form を実装してみる
+
+input 要素の name 属性が、そのまま`$request`のプロパティとして取り出せるようになる。
+
+```php
+// template
+<form method="POST" action="/hello">
+    {{ csrf_field() }} // 外部サイトからのフォーム送信を防ぐため、認証データを挿入
+    <input type="text" name="myname">
+    <input type="submit">
+</form>
+```
+
+```php
+// routing
+Route::post('/hello', 'HelloController@post');
+```
+
+```php
+// controller
+class HelloController extends Controller
+{
+    public function post(Request $request) {
+        // $request->myname に入力した値が入っている
+    }
+}
+```
+
+### Blade の構文
+
+#### 値の表示
+
+```php
+{{ 値など }}
+{{!! 値など !!}} // エスケープしたくない場合
+```
+
+#### 条件分岐
+
+```php
+@if()
+@elseif ()
+@else
+@endif
+
+@unless()
+@else
+@endunless
+
+@empty()
+@else
+@endempty
+
+@isset()
+@else
+@endisset
+```
+
+#### 繰り返し
+
+```php
+@for (i=1; i<10; i++)
+@endfor
+
+@foreach ($array as $value)
+@endforeach
+
+// foreach-else
+@forelse ($array as $value)
+// 配列がある場合の処理
+@empty
+// 配列が空の場合の処理
+@endforelse
+
+@while ()
+@endwhile
+
+@break // 繰り返しを終了
+@continue // 次のループへ
+```
+
+繰り返しの中では`$loop`という特殊なオブジェクトを使える。
+
+- `$loop->index` インデックス（0 スタート）
+- `$loop->iteration` 繰り返し数（1 スタート）
+- `$loop->remaining` 残り回数(このループを含まず)
+- `$loop->count` 繰り返しの元配列の要素数
+- `$loop->first` 最初のループかどうか
+- `$loop->last` 最後のループかどうか
+- `$loop->depth` 繰り返しのネスト数(1 スタート)
+- `$loop->parent` ネストしている場合に、親のループ変数を返す
+
+```php
+@foreach ([1,2,3] as $value)
+    {{$loop->index}}
+@endforeach
+// => 0,1,2
+```
+
+#### php ディレクティブ
+
+`@php`を使うと、blade テンプレートの中に php を記載できる。
+基本的にテンプレートの中にロジックを書くのはバッドプラクティスなので、
+あくまでビューに関する利用にとどめること。
+
+```php
+@php
+    $counter = 0;
+@endphp
+
+@while($counter < 3);
+    {{ $counter }}
+    @php
+        $counter += 1;
+    @endphp
+@endwhile
+```
+
+### レイアウトの作成
+
+#### ベースレイアウトと継承レイアウト
+
+ベース側において、`@yield()`, `@section() - @show`を使って場所を用意しておき、
+継承側で`@section()`, `@section()-@endsection`を使うことで内容を埋めていく方法。
+
+ベースレイアウト
+
+```php
+// resourses/views/layouts/helloapp.blade.php (layoutsというフォルダ名は変えてもいい)
+<body>
+    <h1>@yield('title')</h1>
+    @yield('content')
+    @section('menubar')
+        <p>メニュー</p>
+    @show
+    @yield('footer')
+</body>
+```
+
+継承レイアウト
+
+```php
+// resourses/views/hello.blade.php
+@extends('layouts.helloapp')
+
+@section('title', 'My Title')
+
+@section('content')
+    <p>ここが本文です。</p>
+@endsection
+
+@section('menubar')
+    @parent // ベースレイアウトの中身を継承したい時に使う
+    メニュー項目など
+@endsection
+
+@section('footer')
+    <p>copyright 2018</p>
+@endsection
+```
+
+#### コンポーネント
+
+- ヘッダ、フッタなど、パーツごとに作成する方法
+- コンポーネントの作成方法は通常のテンプレートと全く同じ
+
+コンポーネント
+
+```php
+// resources/views/components/message.blade.php (componentsというフォルダ名は変えてもいい)
+<p>これはコンポーネントです</p>
+<p>{{ $msg_title }}</p>
+<p>{{ $msg_content }}</p>
+```
+
+#### コンポーネントの利用（`@component`）
+
+- コンポーネントを読み込む方法
+- 値は`@slot()`で渡す
+- 親テンプレートで利用できる変数は、コンポーネント内からはアクセスできない。
+
+```php
+// resources/views/hello/index.blade.php
+
+@component('components.message')
+
+@slot('msg_title','タイトルやで')
+
+@slot('msg_content')
+コンテンツです
+@endslot
+
+@endcomponent
+```
+
+#### コンポーネントの利用（`@include`=サブビュー）
+
+- コンポーネントを利用するもう一つの方法
+- 値を渡すときは Array で渡す
+- 親テンプレートで利用できる変数は、何もせずに読み込んだコンポーネント内で利用できる。まさに、そこにテンプレートを継ぎ足したような挙動をするということ。
+
+```php
+@include('components.message',[
+    'msg_title' => 'タイトルです',
+    'msg_content' => '本文です'
+])
+```
+
+#### コレクションビュー(`@each`)
+
+- 繰り返しデータをコンポーネントで表示する方法
+- `@each(読み込むコンポーネント, 渡す変数, 渡す変数をマップするコンポーネント内の変数名)`
+
+```php
+// テンプレート側　$dataは現実のアプリではコントローラから受け取ることになる
+@php
+$data = [
+    ['name' =>'john', 'mail' => 'john@test.com'],
+    ['name' => 'jack', 'mail' => 'jack@test.com']
+]
+@endphp
+
+@each('components.item', $data, 'item')
+```
+
+```php
+// コンポーネント側　resources/views/components/item.blade.php
+<li>{{ $item['name'] }} - {{ $item['mail'] }}</li>
+```
+
+### ビューコンポーザー
+
+コントローラから、ビューに関するロジックを分離するために使う。
+特定のビューを表示する際に必要となる処理を実行し、結果などの情報をテンプレートに渡す役割を持つ。
+
+```txt
+Client <-> Controller <-Rendering <-- View Template
+                            ^
+                            └----- View Composer
+```
+
+#### サービスプロバイダの作成と登録
+
+- ビューコンポーザのセットアップは、サービスプロバイダという仕組みを使う。
+- サービスプロバイダを使うと、アプリケーション開始時に必要な処理を行うことができる。
+- まずは空のサービスプロバイダを登録する。
+
+```bash
+php artisan make:provider HelloServiceProvider
+```
+
+```php
+// app/Providers/HelloServiceProvider.php
+namespace App\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+class HelloServiceProvider extends ServiceProvider
+{
+    public function boot(){
+      // アプリケーションの起動時に行われる処理
+    }
+}
+```
+
+```php
+// config/app.php
+'providers' => [
+    // 下記の行を追加する
+    App\Providers\HelloServiceProvider::class,
+],
+```
+
+#### 無名関数を使用してセットアップ
+
+```php
+// app/Providers/HelloServiceProvider.php
+namespace App\Providers;
+
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
+
+class HelloServiceProvider extends ServiceProvider
+{
+    public function boot()
+    {
+        View::composer('hello.index', function($view){
+            $view->with('value_from_composer', 'this message is from view composer!');
+        });
+    }
+}
+
+```
+
+```php
+// resources/views/hello/index.blade.php
+{{ $value_from_composer }} // => 'this message is from view composer!'
+```
+
+- サービスプロバイダには、ビュー及びビューに対応する処理（無名関数 or クラス）を記載する。
+- 上記の例では、`resources/views/hello/index.blade.php`が呼ばれた際に、無名関数内に記載した処理を行うように設定している。
+- `$view`は View クラスのインスタンスで、これを使ってビューを操作する。`$view->with()`は、ビューに変数を追加する。
+
+#### クラスを使用してセットアップ
+
+先述の無名関数の部分をクラスとして実装する方法。
+ビューコンポーザクラスは、何も継承していないただのクラスである。
+`compose`というメソッドを実装してさえいれば OK。
+
+```php
+// app/Http/Composers/HelloComposer.php  Composerフォルダの名前は変えてもOK
+use Illuminate\View\View;
+
+class HelloComposer
+{
+    public function compose(View $view)
+    {
+        $view->with('value_from_composer',  'this message is from view composer!');
+    }
+}
+```
+
+クラスを作成したら、サービスプロバイダにおけるビューへの処理の割当を、クラスを使ったものに書き換える。
+
+```php
+// app/Providers/HelloServiceProvider.php
+class HelloServiceProvider extends ServiceProvider
+{
+    // アプリケーションの起動時に行われる処理
+    public function boot()
+    {
+        View::composer('hello.index', 'App\Http\Composers\HelloComposer');
+    }
+}
+```
