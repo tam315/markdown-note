@@ -144,7 +144,10 @@ class HelloController extends Controller {}; // コントローラ本体
 
 #### アクションの追加
 
-アクション＝コントローラに用意される処理のこと。名前を変えることで、複数設定できる。インスタンスメソッドとして実装する。
+- アクション＝コントローラに用意される処理のこと
+- 名前を変えることで、複数設定できる
+- インスタンスメソッドとして実装する
+- アクションは、HTML もしくはリクエストオブジェクトを Return する
 
 ```php
 // controller
@@ -193,17 +196,16 @@ Route::get('/hello', 'HelloController');
 #### アクションで params を受け取る
 
 ```php
-// controller
+// routes/web.php
+Route::get('/hello/{id?}/{pass?}', 'HelloController@index');
+```
 
+```php
+// controller
 class HelloController extends Controller
 {
     public function index($id='defualtId', $pass='defaultPass') { /* do something */}
 }
-```
-
-```php
-// routes/web.php
-Route::get('/hello/{id?}/{pass?}', 'HelloController@index');
 ```
 
 #### Request, Response の利用
@@ -237,6 +239,13 @@ EOF;
 - `$response->content()` コンテンツを取得
 - `$response->setContent()` コンテンツを設定
 
+なお、Laravel では、下記のデータが全てリクエストオブジェクトにぶっこまれる（Express のように、req.params や req.query などはなく、いきなり req.propertyName の形で追加される）。
+
+- params
+- query string
+- form data (input の name 属性)
+- ミドルウェアから渡された値（`$request->merge(配列)`など）
+
 ## ビューとテンプレート
 
 ### PHP テンプレートの利用
@@ -245,7 +254,8 @@ PHP テンプレートを使うには、`view(フォルダ名.ファイル名)`�
 
 ```php
 Route::get('/hello', function(){
-    // resources/views/hello/index.phpというテンプレートを基に、Responseインスタンスが生成される
+    // resources/views/hello/index.phpというテンプレートを基にする
+    // view()はResponseインスタンスを生成する
     return view('hello.index');
 });
 ```
@@ -265,12 +275,6 @@ class HelloController extends Controller
 テンプレートにデータを渡したいときは、view の第二引数に Array を渡す。
 
 ```php
-// template
-<h1><?php echo $msg1 ?></h1>
-<h1><?php echo $msg2 ?></h1>
-```
-
-```php
 // controller
 class HelloController extends Controller
 {
@@ -282,6 +286,12 @@ class HelloController extends Controller
         return view('hello.index', $data);
     }
 }
+```
+
+```php
+// template
+<h1><?php echo $msg1 ?></h1>
+<h1><?php echo $msg2 ?></h1>
 ```
 
 ### Blade テンプレートの利用
@@ -450,12 +460,10 @@ class HelloController extends Controller
 @endsection
 ```
 
-#### コンポーネント
+#### コンポーネントの作成
 
 - ヘッダ、フッタなど、パーツごとに作成する方法
 - コンポーネントの作成方法は通常のテンプレートと全く同じ
-
-コンポーネント
 
 ```php
 // resources/views/components/message.blade.php (componentsというフォルダ名は変えてもいい)
@@ -464,11 +472,10 @@ class HelloController extends Controller
 <p>{{ $msg_content }}</p>
 ```
 
-#### コンポーネントの利用（`@component`）
+#### コンポーネントの利用その 1(`@component`）
 
-- コンポーネントを読み込む方法
 - 値は`@slot()`で渡す
-- 親テンプレートで利用できる変数は、コンポーネント内からはアクセスできない。
+- 親テンプレートの変数スコープは、コンポーネントに引き継がれない。
 
 ```php
 // resources/views/hello/index.blade.php
@@ -484,11 +491,10 @@ class HelloController extends Controller
 @endcomponent
 ```
 
-#### コンポーネントの利用（`@include`=サブビュー）
+#### コンポーネントの利用その 2（`@include`=サブビュー）
 
-- コンポーネントを利用するもう一つの方法
 - 値を渡すときは Array で渡す
-- 親テンプレートで利用できる変数は、何もせずに読み込んだコンポーネント内で利用できる。まさに、そこにテンプレートを継ぎ足したような挙動をするということ。
+- 親テンプレートの変数スコープは、コンポーネントに引き継がれる。親テンプレートで利用できる変数は、何もせずに読み込んだコンポーネント内で利用できる。まさに、そこにテンプレートを継ぎ足したような挙動をするということ。
 
 ```php
 @include('components.message',[
@@ -500,10 +506,10 @@ class HelloController extends Controller
 #### コレクションビュー(`@each`)
 
 - 繰り返しデータをコンポーネントで表示する方法
-- `@each(読み込むコンポーネント, 渡す変数, 渡す変数をマップするコンポーネント内の変数名)`
+- `@each(読み込むコンポーネント, 渡す変数, コンポーネント内にマップする変数名)`
 
 ```php
-// テンプレート側　$dataは現実のアプリではコントローラから受け取ることになる
+// テンプレート側　$dataは現実のアプリではコントローラ等から受け取ることになる
 @php
 $data = [
     ['name' =>'john', 'mail' => 'john@test.com'],
@@ -532,7 +538,7 @@ Client <-> Controller <-Rendering <-- View Template
 
 #### サービスプロバイダの作成と登録
 
-- ビューコンポーザのセットアップは、サービスプロバイダという仕組みを使う。
+- ビューコンポーザのセットアップは、サービスプロバイダという仕組みを使って行う。
 - サービスプロバイダを使うと、アプリケーション開始時に必要な処理を行うことができる。
 - まずは空のサービスプロバイダを登録する。
 
@@ -588,9 +594,9 @@ class HelloServiceProvider extends ServiceProvider
 {{ $value_from_composer }} // => 'this message is from view composer!'
 ```
 
-- サービスプロバイダには、ビュー及びビューに対応する処理（無名関数 or クラス）を記載する。
+- サービスプロバイダ内で`View::composer()`を使って、ビューと対応する処理（無名関数 or クラス）を記載することでセットアップする。
 - 上記の例では、`resources/views/hello/index.blade.php`が呼ばれた際に、無名関数内に記載した処理を行うように設定している。
-- `$view`は View クラスのインスタンスで、これを使ってビューを操作する。`$view->with()`は、ビューに変数を追加する。
+- `$view`は View クラスのインスタンスで、これを使ってビューを操作する。上記例では、`$view->with()`を使ってビューに変数を追加している。
 
 #### クラスを使用してセットアップ
 
@@ -650,9 +656,9 @@ class HelloMiddleware
 {
     public function handle($request, Closure $next)
     {
-        // リクエストに割り込む処理をここに
+        // $requestを使って、リクエストに割り込む処理をここに書く
         $response = $next($request);
-        // レスポンスに割り込む処理をここに
+        // $responseを使って、レスポンスに割り込む処理をここに書く
         return $response;
     }
 }
@@ -664,6 +670,17 @@ Route::get('/hello', 'HelloController@index')
     ->middleware(HelloMiddleware::class)
     ->middleware(SomeOtherMiddleware::class);
 ```
+
+- ユーザからのリクエストがあると、最初のミドルウェアの`handle()`が実行される。
+- `handle()`の中の`$next`は下記のいずれかを呼ぶ。なお、下記はどちらもレスポンスオブジェクトを返す。
+  - 次のミドルウェアの`handle()`メソッド
+  - 次のミドルウェアが存在しない場合はコントローラのアクション
+- `$next`が次々に呼ばれていくので、再帰的に処理が実行されていく
+  - 最初のミドルウェアのリクエストに関する処理
+  - n 番目のミドルウェアのリクエストに関する処理
+  - コントローラのアクション
+  - n 番目のミドルウェアのレスポンスに関する処理
+  - 1 番目のミドルウェアのレスポンスに関する処理
 
 #### ミドルウェアからコントローラにデータを渡す
 
