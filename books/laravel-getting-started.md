@@ -762,43 +762,9 @@ Route::get('/hello', 'HelloController@index')
     ->middleware('myMiddlewares');
 ```
 
-### バリデーション(非推奨の方法)
+### バリデーション
 
-#### 基本的なセットアップ
-
-```php
-// Template
-<p>{{ $msg }}</p>
-<form action="/hello" method="POST">
-    name:<input type="text" name="name">
-    mail:<input type="text" name="mail">
-    age:<input type="text" name="age">
-    <input type="submit" value="send">
-</form>
-```
-
-```php
-// Controller
-class HelloController extends Controller
-{
-    public function index(Request $request) {
-        return view('hello.index', ['msg'=>'フォームを入力：']);
-    }
-
-    public function post(Request $request) {
-        $validate_rule = [
-            'name' => 'required',
-            'mail' => 'email',
-            'age' => 'numeric|between:0,150',
-        ];
-        $this->validate($request, $validate_rule);
-        return view('hello.index', ['msg'=>'正しく入力されています']);
-    }
-}
-```
-
-- POST に対応するアクション(`post()`)内で、`$this->validate(リクエスト,ルール)`を呼ぶことでバリデーションを行う。
-- バリデーションに失敗した場合は自動的に GET に対応するアクション(`index()`)が呼ばれる。
+バリデーションの設定方法の前に、バリデーション関係で共通する事項を記載しておく。
 
 #### エラーの表示
 
@@ -848,7 +814,45 @@ age:<input type="text" name="age" value="{{old('age')}}">
 
 [公式ドキュメント](https://laravel.com/docs/5.7/validation#available-validation-rules)を参照
 
-### バリデーション(推奨の方法)
+### バリデーション(コントローラの validate メソッドを使う方法)
+
+#### 基本的なセットアップ
+
+```php
+// Template
+<p>{{ $msg }}</p>
+<form action="/hello" method="POST">
+    name:<input type="text" name="name">
+    mail:<input type="text" name="mail">
+    age:<input type="text" name="age">
+    <input type="submit" value="send">
+</form>
+```
+
+```php
+// Controller
+class HelloController extends Controller
+{
+    public function index(Request $request) {
+        return view('hello.index', ['msg'=>'フォームを入力：']);
+    }
+
+    public function post(Request $request) {
+        $validate_rule = [
+            'name' => 'required',
+            'mail' => 'email',
+            'age' => 'numeric|between:0,150',
+        ];
+        $this->validate($request, $validate_rule);
+        return view('hello.index', ['msg'=>'正しく入力されています']);
+    }
+}
+```
+
+- POST に対応するアクション(`post()`)内で、`$this->validate(リクエスト,ルール)`を呼ぶことでバリデーションを行う。
+- バリデーションに失敗した場合は自動的に GET に対応するアクション(`index()`)が呼ばれる。
+
+### バリデーション(FormRequest を使う方法)
 
 前述の方法はコントローラが直接バリデーション機能を呼び出しており、あまりスマートでない。Laravel には、FormRequest という Request クラスを継承したクラスがある。これを使うことにより、コントローラの前段で自動的にバリデーションを実行することができる。
 
@@ -916,9 +920,9 @@ class HelloRequest extends FormRequest
 }
 ```
 
-#### バリデータの作成
+### バリデーション(バリデータオブジェクトを作成する方法)
 
-下記の目的などで使う。
+下記のことを行いたい場合は、バリデータオブジェクトを作成する。
 
 - エラー時に GET ページにリダイレクトせず、別の処理を行いたい
 - フォームの値以外でバリデーションしたい場合
@@ -965,7 +969,7 @@ class HelloController extends Controller
 
 #### クエリにバリデータを適用する
 
-バリデータを応用すれば、クエリを検証することも可能。
+バリデータオブジェクトを応用すれば、クエリを検証することも可能。
 
 ```php
 class HelloController extends Controller
@@ -1009,9 +1013,9 @@ class HelloController extends Controller
 }
 ```
 
-#### オリジナルの検証ルール 方法その 1
+### バリデーション(Validator クラス自体を上書きする方法)
 
-Validator クラス自体を上書きする方法
+オリジナルの検証ルールを作りたいときに使う方法。
 
 １．オリジナルのバリデータークラスを作り、その中に検証ルールを作る
 
@@ -1063,9 +1067,10 @@ $rules = [
 ];
 ```
 
-#### オリジナルの検証ルール 方法その 2
+### オリジナルの検証ルール
 
-`Validator::extend(ルール名, 無名関数)`を使う方法。その 1 の方法よりお手軽。
+オリジナルの検証ルールを作りたいが、Validator クラス自体を上書きするほどではないという場合は、
+`Validator::extend(ルール名, 無名関数)`を使う。お手軽。
 
 ```php
 // サービスプロバイダ
@@ -1082,3 +1087,84 @@ class HelloServiceProvider extends ServiceProvider
     }
 }
 ```
+
+### その他
+
+#### CSRF 対策を無効にする
+
+`Kernel.php`=>`$middlewareGroups`=>`web`の中から下記の行を削除
+
+```txt
+\App\Http\Middleware\VerifyCsrfToken::class,
+```
+
+#### CSRF 対策を一部のルートで無効にする
+
+`app\Http\Middleware\VerifyCsrfToken.php`に下記を追加する。
+
+```php
+protected $except = [
+    'hello', // somedomain.com/hello　で無効化
+    'hello/*', // somedomain.com/hello/　このパス以下のすべてのページで無効化
+];
+```
+
+#### クッキーの読み書き
+
+- `$request->hasCookie(クッキー名)` 指定したクッキーの有無を取得する
+- `$request->cookie(クッキー名)` 指定したクッキーを取得する
+- `$response->cookie(クッキー名, 値, 保存期間)` 指定したクッキーをセットする
+
+```php
+class HelloController extends Controller
+{
+    // クッキーの取得
+    public function index(Request $request) {
+        if($request->hasCookie('my-cookie-name'))
+        {
+            $msg = $request->cookie('my-cookie-name');
+        }
+        /* do something */
+    }
+
+    // クッキーの保存
+    public function post(HelloRequest $request) {
+        // 一度、Responseインスタンスを生成する必要がある
+        $response = new Response(view('hello.index'));
+        $response->cookie('my-cookie-name', $request->someValue, 100);
+        return $response;
+    }
+}
+```
+
+#### リダイレクト
+
+- `redirect(パス)` => RedirectResponse というオブジェクトを返す
+- `redirect()` => Redirector というオブジェクトを返す
+
+RedirectResponse の使い方
+
+- `->withInput()` フォームの値を付与したままリダイレクト
+- `->withErrors(<MessageProvider>)` エラーメッセージを付与してリダイレクト
+- `->withCookie(cookieの配列)` Cookie を付与してリダイレクト？
+
+Redirector の使い方
+
+- `->route(ルート名, 渡すデータの配列)` ルート名の部分は`/hello`など
+- `->action(アクション, 渡すデータの配列)` アクションの部分は`'SomeController@index'`など
+- `->view(ビュー名)` ビューを指定してリダイレクト
+- `->json(テキスト)` JSON データを返す
+- `->download(パス)` ファイルをダウンロード
+- `->file(パス)` ファイルを表示
+
+## データベース
+
+Laravel のデータベース操作には 2 つの方法がある。
+
+- DB クラス（クエリビルダ）
+- Eloquent(Object-Relational Mapping)
+
+### 準備
+
+- sqlite のインストール（system32 フォルダに dll をぶちこむ）
+- DB browser for sqlite のインストール
