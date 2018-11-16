@@ -682,9 +682,10 @@ Route::get('/hello', 'HelloController@index')
   - n 番目のミドルウェアのレスポンスに関する処理
   - 1 番目のミドルウェアのレスポンスに関する処理
 
-#### ミドルウェアからコントローラにデータを渡す
+#### リクエストを修正する
 
-`$request->merge(配列)`を使うと、リクエストオブジェクトにプロパティを追加できる。
+リクエストオブジェクトを操作することで、リクエスト内容に手を加えることができる。例えば下記では、
+`$request->merge(配列)`を使うことで、リクエストオブジェクトにプロパティを追加し、ミドルウェアからコントローラにデータを渡している。
 
 ```php
 // ミドルウェア
@@ -708,6 +709,376 @@ class HelloController extends Controller
 {
     public function index(Request $request) {
         return view('hello.index', ['mydata'=>$request->additionalData]);
+    }
+}
+```
+
+#### レスポンスを修正する
+
+レスポンスオブジェクトを操作することで、コントローラの作成したレスポンス内容に手を加えることができる。
+
+```php
+class HelloMiddleware
+{
+    public function handle($request, Closure $next)
+    {
+        $response = $next($request);
+        $content = $response->content();
+        $content = '<h1>some addition to the response</h1>'.$content;
+        $response->setContent($content);
+        return $response;
+    }
+}
+```
+
+#### グローバルミドルウェア
+
+ミドルウェアを、個別のコントローラではなく、アプリケーション全体に適用する方法
+
+```php
+// app/Http/Kernel.php
+protected $middleware = [
+    \App\Http\Middleware\HelloMiddleware::class,
+];
+```
+
+#### ミドルウェアグループ
+
+複数のミドルウェアをまとめて扱う方法
+
+```php
+// app/Http/Kernel.php
+protected $middlewareGroups = [
+    'myMiddlewares' => [
+        \App\Http\Middleware\HelloMiddleware1::class,
+        \App\Http\Middleware\HelloMiddleware2::class,
+    ],
+];
+```
+
+```php
+// routes/web.php
+Route::get('/hello', 'HelloController@index')
+    ->middleware('myMiddlewares');
+```
+
+### バリデーション(非推奨の方法)
+
+#### 基本的なセットアップ
+
+```php
+// Template
+<p>{{ $msg }}</p>
+<form action="/hello" method="POST">
+    name:<input type="text" name="name">
+    mail:<input type="text" name="mail">
+    age:<input type="text" name="age">
+    <input type="submit" value="send">
+</form>
+```
+
+```php
+// Controller
+class HelloController extends Controller
+{
+    public function index(Request $request) {
+        return view('hello.index', ['msg'=>'フォームを入力：']);
+    }
+
+    public function post(Request $request) {
+        $validate_rule = [
+            'name' => 'required',
+            'mail' => 'email',
+            'age' => 'numeric|between:0,150',
+        ];
+        $this->validate($request, $validate_rule);
+        return view('hello.index', ['msg'=>'正しく入力されています']);
+    }
+}
+```
+
+- POST に対応するアクション(`post()`)内で、`$this->validate(リクエスト,ルール)`を呼ぶことでバリデーションを行う。
+- バリデーションに失敗した場合は自動的に GET に対応するアクション(`index()`)が呼ばれる。
+
+#### エラーの表示
+
+- `$error` バリデーションに失敗した時に、エラーが格納されるオブジェクト
+- `$error->all()` すべてのエラーを配列にして受け取る
+
+```php
+// Template
+@if (count($errors) > 0)
+    @foreach($errors->all() as $error)
+        <p>{{ $error }}</p>
+    @endforeach
+@endif
+```
+
+#### 特定項目のエラーを表示
+
+- `$error->has(項目名)` 特定項目にエラーがあるかどうかを確認する
+- `$error->first(項目名)` 特定項目の最初のエラーを文字列で取得
+- `$error->get(項目名)` 特定項目のすべてのエラーを配列で取得
+
+```php
+@if($errors->has('email'))
+    // 最初のエラーだけを取得
+    <p>{{ $errors->first('email')}}</p>
+
+    // 又は配列で取得
+    @foreach($errors->get('email') as $error)
+    <p>{{ $error }}</p>
+    @endforeach
+@endif
+```
+
+#### 入力値の保持
+
+バリデーション後も値を保持しておくには、`old(項目名)`を value 属性に設定する。
+なお、バリデーションが成功した場合には`old()`には何も値は入らない。
+
+```php
+// Template
+name:<input type="text" name="name" value="{{old('name')}}">
+mail:<input type="text" name="mail" value="{{old('mail')}}">
+age:<input type="text" name="age" value="{{old('age')}}">
+```
+
+#### バリデーションルール
+
+[公式ドキュメント](https://laravel.com/docs/5.7/validation#available-validation-rules)を参照
+
+### バリデーション(推奨の方法)
+
+前述の方法はコントローラが直接バリデーション機能を呼び出しており、あまりスマートでない。Laravel には、FormRequest という Request クラスを継承したクラスがある。これを使うことにより、コントローラの前段で自動的にバリデーションを実行することができる。
+
+```bash
+php artisan make:request HelloRequest
+```
+
+```php
+// app/Http/Requests/HelloRequest.php
+
+namespace App\Http\Requests;
+use Illuminate\Foundation\Http\FormRequest;
+
+class HelloRequest extends FormRequest
+{
+    // このFormRequestを利用できるパスを限定している
+    public function authorize()
+    {
+        if($this->path() == 'hello') return true;
+        return false;
+    }
+
+    public function rules()
+    {
+        return [
+            'name' => 'required',
+            'mail' => 'email',
+            'age' => 'numeric|between:0,150',
+        ];
+    }
+}
+```
+
+```php
+// Controller
+class HelloController extends Controller
+{
+    public function index(Request $request) {
+        return view('hello.index', ['msg'=>'フォームを入力：']);
+    }
+
+    // RequestではなくHelloRequestにする
+    public function post(HelloRequest $request) {
+        return view('hello.index', ['msg'=>'正しく入力されています']);
+    }
+}
+```
+
+#### メッセージのカスタマイズ
+
+FormRequest クラスの`messages()`メソッドをオーバーライドすることで、エラーメッセージをカスタマイズできる。
+
+```php
+class HelloRequest extends FormRequest
+{
+    public function messages()
+    {
+        return [
+            'name.required' => '名前を入力してください',
+            'mail.email' => 'メールアドレスの形式が正しくありません',
+            'age.numeric' => '年齢は整数で入力してください',
+            'age.between' => '年齢が正しくありません',
+        ];
+    }
+}
+```
+
+#### バリデータの作成
+
+下記の目的などで使う。
+
+- エラー時に GET ページにリダイレクトせず、別の処理を行いたい
+- フォームの値以外でバリデーションしたい場合
+
+```php
+// Controller
+
+use Validator;
+
+class HelloController extends Controller
+{
+    public function post(Request $request) { // FormRequestではないので注意
+        $rules = [
+            'name' => 'required',
+            'mail' => 'email',
+            'age' => 'numeric|between:0,150',
+        ];
+
+        $messages = [
+            'name.required' => '名前を入力してください',
+            'mail.email' => 'メールアドレスの形式が正しくありません',
+            'age.numeric' => '年齢は整数で入力してください',
+            'age.between' => '年齢が正しくありません',
+        ];
+
+        // POSTデータを含む全てのデータ（$request->all() = 連想配列）を渡している
+        $validator = Validator::make($request->all(), $rules, $messages);
+        if($validator->fails()) {
+            return redirect('/hello')
+                ->withErrors($validator)
+                ->withInput();
+        }
+        return view('hello.index', ['msg'=>'正しく入力されています']);
+    }
+}
+```
+
+- `Validator::make(チェックしたい値の配列, ルールの配列[, メッセージの配列])` validator を作成する
+- `$validator->fails()` バリデーションが失敗かどうか
+- `$validator->passes()` バリデーションが成功かどうか
+- `redirect(リダイレクト先のパス)` リダイレクトする
+- `->withErrors($validator)` エラーをリダイレクト先に引き継ぐ
+- `->withInput()` 入力内容をリダイレクト先に引き継ぐ
+
+#### クエリにバリデータを適用する
+
+バリデータを応用すれば、クエリを検証することも可能。
+
+```php
+class HelloController extends Controller
+{
+    public function index(Request $request) {
+        $validator = Validator::make($request->query(), [ // query（連想配列）を渡している
+            'id' => 'required',
+            'pass' => 'required',
+        ]);
+        /* do something */
+    }
+}
+```
+
+#### バリデータに動的にルールを追加する
+
+フォームへの入力内容などによって動的にルールを変更したい場合は、下記を使う。
+無名関数の返値が**false の場合に適用される**ので注意。
+
+`$validator->sometimes(項目名, ルール, 適用するならfalseを返す無名関数)`
+
+```php
+class HelloController extends Controller
+{
+    public function post(Request $request) {
+        $rules = [
+            'name' => 'required',
+            'mail' => 'email',
+            'age' => 'numeric|between:0,150',
+        ];
+
+        $validator = Validator::make($request->all(), $rules);
+        $validator->sometimes('age', 'min:0', function($input){
+            return !is_int($input->age);
+        });
+        $validator->sometimes('age', 'max:150', function($input){
+            return !is_int($input->age);
+        });
+        /* do something */
+    }
+}
+```
+
+#### オリジナルの検証ルール 方法その 1
+
+Validator クラス自体を上書きする方法
+
+１．オリジナルのバリデータークラスを作り、その中に検証ルールを作る
+
+```php
+// app/Http/Validators/HelloValidator.php (Validatorsのフォルダ名は何でもOK)
+
+namespace App\Http\Validators;
+
+use Illuminate\Validation\Validator;
+
+class HelloValidator extends Validator
+{
+    // validate*** の *** の部分がルール名になる（この場合'hello'）
+    public function validateHello($attribute, $value, $parameters)
+    {
+        return $value % 2 === 0;
+    }
+}
+```
+
+２．サービスプロバイダを使ってアプリ起動時にバリデータを上書きする
+
+```php
+// サービスプロバイダ
+
+use Illuminate\Validation\Validator;
+use App\Http\Validators\HelloValidator;
+
+class HelloServiceProvider extends ServiceProvider
+{
+    // アプリケーションの起動時に行われる処理
+    public function boot()
+    {
+        $validator = $this->app['validator'];
+        $validator->resolver(function(...$args){
+            return new HelloValidator(...$args);
+        });
+    }
+}
+```
+
+３．検証ルールを設定する
+
+```php
+$rules = [
+    'name' => 'required',
+    'mail' => 'email',
+    'age' => 'numeric|between:0,150|hello',
+];
+```
+
+#### オリジナルの検証ルール 方法その 2
+
+`Validator::extend(ルール名, 無名関数)`を使う方法。その 1 の方法よりお手軽。
+
+```php
+// サービスプロバイダ
+
+use Validator;
+
+class HelloServiceProvider extends ServiceProvider
+{
+    public function boot()
+    {
+        Validator::extend('hello', function($attribute, $value, $parameters, $validator){
+            return $value % 2 == 0;
+        });
     }
 }
 ```
