@@ -1161,12 +1161,612 @@ Redirector の使い方
 
 ## データベース
 
-Laravel のデータベース操作には 2 つの方法がある。
+Laravel のデータベース操作にはいくつかの方法がある。
 
-- DB クラス（クエリビルダ）
+- DB クラスを使う（SQL 直打ち）
+- DB クラスを使う（クエリビルダ）
 - Eloquent(Object-Relational Mapping)
 
 ### 準備
 
-- sqlite のインストール（system32 フォルダに dll をぶちこむ）
+- sqlite のインストール（system32 フォルダにダウンロードした dll をぶちこむ）
 - DB browser for sqlite のインストール
+
+### DB との接続
+
+接続の設定は`config/database.php`で行われる。しかし、設定項目の多くは`env()`ヘルパを使って環境変数から読み込まれ、環境変数がない場合だけデフォルト値（`env()`の第二引数）を指定する形式なっている。このため、実際の設定は`.env`ファイル又は環境変数において行うほうがよい。
+
+例えば、sqlite の場合の設定は下記の通り
+
+```txt
+DB_CONNECTION=sqlite
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+DB_DATABASE="C:\Users\SomeUser\Desktop\my-first-laravel\database\database.sqlite"
+# DB_USERNAME=homestead
+# DB_PASSWORD=secret
+```
+
+### DB クラス
+
+#### select
+
+```php
+// コントローラ
+use Illuminate\Support\Facades\DB;
+
+class HelloController extends Controller
+{
+    public function index(Request $request) {
+        $items = DB::select('select * from people');
+
+        // or パラメータ結合を使う場合
+        $params = ['id' => 1234];
+        $items = DB::select('select * from people where id = :id', $params);
+    }
+}
+```
+
+#### insert
+
+- `/hello/add`に GET でアクセスした場合は、フォームを表示
+- `/hello/add`に POST でアクセスした場合は、DB にデータを追加してリダイレクト
+
+```php
+// ルーティング
+Route::get('/hello/add', 'HelloController@showAddForm');
+Route::post('/hello/add', 'HelloController@addNewData');
+```
+
+```php
+// コントローラ
+class HelloController extends Controller
+{
+    public function showAddForm(Request $request) {
+        return view('hello.add');
+    }
+
+    public function addNewData(Request $request) {
+        $param = [
+            'name' => $request->name,
+            'mail' => $request->mail,
+            'age' => $request->age,
+        ];
+        DB::insert('insert into people (name, mail, age) values (:name, :mail, :age)', $param);
+        return redirect('/hello');
+    }
+}
+```
+
+```html
+<!-- テンプレート -->
+<form action="/hello/edit" method="post">
+  {{ csrf_field() }}
+
+  <div>name:<input type="text" name="name" /></div>
+  <div>mail:<input type="text" name="mail" /></div>
+  <div>age:<input type="text" name="age" /></div>
+
+  <input type="submit" value="send" />
+</form>
+```
+
+#### update
+
+- /hello/edit に GET でアクセスした場合は、データを取得したのち、フォームを表示
+- /hello/edit に POST でアクセスした場合は、データを更新してリダイレクト
+
+```php
+// ルーティング
+Route::get('/hello/edit', 'HelloController@showEditForm');
+Route::post('/hello/edit', 'HelloController@updateData');
+```
+
+```php
+// コントローラ
+class HelloController extends Controller
+{
+    public function showEditForm(Request $request) {
+        $param = ['id' => $request->id];
+        $item = DB::select('select * from people where id = :id', $param);
+        return view('hello.edit', ['form' => $item[0]]);
+    }
+
+    public function updateData(Request $request) {
+        $param = [
+            'id' => $request->id,
+            'name' => $request->name,
+            'mail' => $request->mail,
+            'age' => $request->age,
+        ];
+        DB::update('update people set name = :name, mail = :mail, age = :age where id = :id', $param);
+        return redirect('/hello');
+    }
+}
+```
+
+```html
+<!-- テンプレート -->
+<form action="/hello/edit" method="post">
+  {{ csrf_field() }}
+
+  <!-- IDを保持しておく必要あり -->
+  <input type="hidden" name="id" value="{{$form->id}}" />
+
+  <div>name:<input type="text" name="name" value="{{$form->name}}" /></div>
+  <div>mail:<input type="text" name="mail" value="{{$form->mail}}" /></div>
+  <div>age:<input type="text" name="age" value="{{$form->age}}" /></div>
+
+  <input type="submit" value="send" />
+</form>
+```
+
+#### delete
+
+- /hello/delete に GET でアクセスした場合は、データを取得したのち、フォームを表示
+- /hello/delete に POST でアクセスした場合は、データを削除してリダイレクト
+
+```php
+// ルーティング
+Route::get('/hello/delete', 'HelloController@showDeleteForm');
+Route::post('/hello/delete', 'HelloController@removeData');
+```
+
+```php
+// コントローラ
+class HelloController extends Controller
+{
+    public function showDeleteForm(Request $request) {
+        $param = ['id' => $request->id];
+        $item = DB::select('select * from people where id = :id', $param);
+        return view('hello.delete', ['form' => $item[0]]);
+    }
+
+    public function removeData(Request $request) {
+        $param = [
+            'id' => $request->id,
+        ];
+        DB::delete('delete from people where id = :id', $param);
+        return redirect('/hello');
+    }
+}
+```
+
+```html
+<!-- テンプレート -->
+<form action="/hello/edit" method="post">
+  {{ csrf_field() }}
+
+  <!-- IDを保持しておく必要あり -->
+  <input type="hidden" name="id" value="{{$form->id}}" />
+
+  <div>name: {{$form->name}}</div>
+  <div>mail: {{$form->mail}}</div>
+  <div>age: {{$form->age}}</div>
+
+  <input type="submit" value="send" />
+</form>
+```
+
+### クエリビルダ
+
+`DB::table()`は、`Illuminate\Database\Query\Builder`クラスを返す。
+これを使うことでテーブルの操作を行える。
+
+#### select
+
+```php
+// コントローラ
+
+// 複数件を取得
+$items=DB::table('people')->get();
+$items=DB::table('people')->get(['id', 'name']); // カラムを指定する場合
+
+// 最初の1件を取得
+$items=DB::table('people')->first();
+
+// 条件を指定して取得
+$items=DB::table('people')->where('id', $request->id)->get();
+$items=DB::table('people')->where('id', $request->id)->first();
+$items=DB::table('people')->where('id', '<=', $request->id)->get();
+$items=DB::table('people')->where('name', 'like', '%John%')->get();
+
+// 条件指定（AND）
+$items=DB::table('people')->where()->where()->get();
+
+// 条件指定（or）
+$items=DB::table('people')->where()->orWhere()->get();
+
+// 条件指定(条件を配列で指定)
+$items=DB::table('people')->whereRaw('age >= ? and age <= ?', [10, 20])->get();
+
+// 並べ替え
+$items=DB::table('people')->orderBy('name', 'desc')->get();
+
+// ページネーションなど
+$items=DB::table('people')->offset($page * 10)->limit(10)->get();
+```
+
+#### insert
+
+```php
+$param = [
+    'name' => $request->name,
+    'mail' => $request->mail,
+    'age' => $request->age,
+];
+DB::table('people')->insert($param);
+```
+
+#### update
+
+```php
+$param = [
+    'id' => $request->id,
+    'name' => $request->name,
+    'mail' => $request->mail,
+    'age' => $request->age,
+];
+$item = DB::table('people')->where('id', $request->id)->update($param);
+```
+
+#### delete
+
+```php
+DB::table('people')->where('id', $request->id)->delete();
+```
+
+### マイグレーション
+
+マイグレーション＝ DB のバージョン管理機能のこと。雛形に基づいて DB を作成したり、削除したりする。
+
+使用できる Column については[公式ドキュメント](https://laravel.com/docs/5.7/migrations#columns)を参照
+
+```bash
+php artisan make:migration create_people_table
+```
+
+```php
+// database/migration/****_create_people_table.php
+
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+
+class CreatePeopleTable extends Migration
+{
+    // テーブル生成の処理
+    public function up()
+    {
+        Schema::create('people', function (Blueprint $table) {
+            $table->increments('id'); // primary key
+            $table->string('name');
+            $table->string('mail');
+            $table->integer('age');
+            $table->timestamps(); // created_at, updated_at
+        });
+    }
+
+    // テーブル削除の処理
+    public function down()
+    {
+        Schema::dropIfExists('people');
+    }
+}
+```
+
+```bash
+touch database/database.sqlite # 空のDBファイルを作成
+php artisan migrate
+```
+
+### シーディング
+
+シーディング＝シード（最初から用意しておくレコード）を作成する機能
+
+```bash
+php artisan make:seeder PeopleTableSeeder
+```
+
+```php
+// database/seeds/PeopleTableSeeder
+class PeopleTableSeeder extends Seeder
+{
+    public function run()
+    {
+        $param = [
+            'name' => 'taro',
+            'mail' => 'taro@taro.com',
+            'age' => 18,
+        ];
+        DB::table('people')->insert($param);
+        /* 必要に応じて更にデータを追加する */
+    }
+}
+```
+
+シーディングで実行されるファイルは`database/seeds/DatabaseSeeder.php`なので、ここに作成したシーダーを追記しておく。
+
+```php
+class DatabaseSeeder extends Seeder
+{
+    public function run()
+    {
+        $this->call(PeopleTableSeeder::class);
+    }
+}
+```
+
+```bash
+php artisan db:seed
+```
+
+## Eloquent ORM
+
+ORM ＝ DB のデータを、クラスやオブジェクトの形式で扱えるようにするために、PHP と DB を橋渡しする仕組み
+
+### セットアップ、データの取得
+
+```bash
+php artisan make:model Person # 単数形
+php artisan make:controller PersonController
+```
+
+```php
+// ルーティング
+Route::get('/person', 'PersonController@index');
+```
+
+```php
+// コントローラ
+public function index(Request $request) {
+    $items = Person::all();
+    return view('person.index', ['items'=>$items]);
+}
+```
+
+- `Person::all()`で全件取得できる。
+- `Person::all()`は、`Illuminate\Database\Eloquent\Collection`クラスのインスタンスを返す。このクラスはイテラブルであり、配列と同じように扱うことができる。
+
+#### クラスの拡張
+
+ORM と DB クラスとの相違点は、データが単なる配列ではなく**Person クラスのインスタンス**である点である。このため、クラスを拡張すればインスタンスの振る舞いも拡張することができる。
+
+```php
+// app/Person.php
+class Person extends Model
+{
+    public function getData() {
+        return $this->id.': '.$this->name.'('.$this->age.')';
+    }
+}
+```
+
+### 検索
+
+#### find(ID 検索)
+
+id フィールドが指定の値であるデータを 1 件だけ取得する。
+
+なお、もし id フィールドの名前が`id`でない場合は、モデルクラスに`$primaryKey`というプロパティを用意し、これにフィールド名を設定すること。
+
+```php
+// コントローラ
+$item = Person::find($request->id);
+```
+
+#### where
+
+```php
+$items = Person::where('name', 'John')->get();
+$items = Person::where('name', 'John')->first();
+```
+
+`where()`は`Illuminate\Database\Eloquent\Builder`クラスのインスタンスを返す。DB クラスのビルダとは異なるものの、機能はほとんど同じ。
+
+### スコープ
+
+- スコープ＝予め設定しておいた検索条件の雛形。組み合わせて使うこともできる。
+- グローバルスコープとローカルスコープがある
+
+#### ローカルスコープ
+
+`scope****`という名前で定義する。
+
+```php
+// モデル
+class Person extends Model
+{
+    public function scopeNameEqual($query, $str) {
+        return $query->where('name', $str);
+    }
+
+    public function scopeAgeGreaterThan($query, $age) {
+        return $query->where('age', '>', $age);
+    }
+
+    public function scopeAgeLessThan($query, $age) {
+        return $query->where('age', '<', $age);
+    }
+}
+```
+
+- 使うときは`scope`はつけない。
+- 複数のスコープを組み合わせる場合は、チェーンして使う。
+
+```php
+// コントローラ
+$item = Person::nameEqual('taro')
+    ->ageGreaterThan(10)
+    ->ageLessThan(20)
+    ->where('mail', 'taro@taro.com')
+    ->first();
+```
+
+#### グローバルスコープ(無名関数で指定)
+
+特に指定しなくてもスコープを適用したい場合は、グローバルスコープを使う。
+グローバルスコープは、モデルクラスの`boot()`という静的メソッド内部で定義する。
+
+```php
+// モデル
+
+use Illuminate\Database\Eloquent\Builder;
+
+class Person extends Model
+{
+    protected static function boot(){
+        parent::boot();
+
+        static::addGlobalScope('age', function (Builder $builder){
+            $builder->where('age', '>', 17);
+        });
+    }
+}
+```
+
+#### グローバルスコープ(スコープクラスで指定)
+
+- 前項をスコープクラスで行う方法。
+- Scope クラスは、`apply()`ファンクションをもつ`Scope`インターフェースを実装する。
+
+```php
+// app/Scopes/ScopePerson.php (Scopesのフォルダ名はなんでもOK)
+
+namespace App\Scopes;
+
+use Illuminate\Database\Eloquent\Scope;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+
+class ScopePerson implements Scope{
+    public function apply(Builder $builder, Model $model) {
+        $builder->where('age', '>', 10);
+    }
+}
+```
+
+```php
+// モデル
+class Person extends Model
+{
+    protected static function boot(){
+        parent::boot();
+        static::addGlobalScope(new ScopePerson());
+    }
+}
+```
+
+### データの追加・更新・削除
+
+以下、Create, Update, Delete のやり方を記載。なお、テンプレートのコードは[DB クラスを使ったコード](#db-クラス)とほぼ同じなため記載省略。
+
+#### 追加
+
+- Auto Increment な項目など、値を用意しないプロパティには`$guarded`を設定しておく。
+- モデルクラスのスタティックプロパティにバリデーションルールを持っておくと後々便利。
+
+```php
+class Person extends Model
+{
+    protected $guarded = ['id'];
+
+    public static $rules = [
+        'name' => 'required',
+        'mail' => 'email',
+        'age' => 'integer|min:0|max:150',
+    ];
+}
+```
+
+```php
+// ルーティング
+Route::get('/person/add', 'PersonController@add');
+Route::post('/person/add', 'PersonController@create');
+```
+
+```php
+class PersonController extends Controller
+{
+    public function add(Request $request) {
+        return view('person.add');
+    }
+
+    public function create(Request $request) {
+        // バリデートする。失敗したらGETのルーティングにリダイレクトされる。
+        $this->validate($request, Person::$rules);
+
+        // インスタンスを作成
+        $person = new Person();
+
+        // 【方法1】リクエストにぶら下がっている値をインスタンスにセットし、DBに保存
+        $postData = $request->all();
+        $person->fill($postData)->save();
+
+        // 【方法2】リクエストのデータをインスタンスに一つずつセットして、DBに保存
+        $person->name = $request->name;
+        $person->mail = $request->mail;
+        $person->age = $request->age;
+        $person->save();
+
+        return redirect('/hello');
+    }
+}
+```
+
+#### 更新
+
+```php
+// ルーティング
+Route::get('/person/edit', 'PersonController@edit');
+Route::post('/person/edit', 'PersonController@update');
+```
+
+```php
+// コントローラ
+class PersonController extends Controller
+{
+    public function edit(Request $request) {
+        $person = Person::find($request->id);
+        return view('person.edit', ['form'=> $person]);
+    }
+
+    public function update(Request $request) {
+        // バリデートする。失敗したらGETのルーティングにリダイレクトされる。
+        $this->validate($request, Person::$rules);
+
+        // インスタンスを作成
+        $person = Person::find($request->id);
+
+        // リクエストにぶら下がっている値をインスタンスにセットし、DBに保存
+        $postData = $request->all();
+        $person->fill($postData)->save();
+
+        return redirect('/person');
+    }
+}
+```
+
+#### 削除
+
+```php
+// ルーティング
+Route::get('/person/delete', 'PersonController@delete');
+Route::post('/person/delete', 'PersonController@remove');
+```
+
+```php
+// コントローラ
+class PersonController extends Controller
+{
+    public function delete(Request $request) {
+        $person = Person::find($request->id);
+        return view('person.delete', ['form'=> $person]);
+    }
+
+    public function remove(Request $request) {
+        $person = Person::find($request->id)->delete();
+        return redirect('/person');
+    }
+}
+```
