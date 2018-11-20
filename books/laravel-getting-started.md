@@ -1423,7 +1423,7 @@ DB::table('people')->where('id', $request->id)->delete();
 使用できる Column については[公式ドキュメント](https://laravel.com/docs/5.7/migrations#columns)を参照
 
 ```bash
-php artisan make:migration create_people_table
+php artisan make:migration create_people_table # people がテーブル名になる
 ```
 
 ```php
@@ -1470,6 +1470,9 @@ php artisan make:seeder PeopleTableSeeder
 
 ```php
 // database/seeds/PeopleTableSeeder
+
+use Illuminate\Support\Facades\DB;
+
 class PeopleTableSeeder extends Seeder
 {
     public function run()
@@ -1519,6 +1522,9 @@ Route::get('/person', 'PersonController@index');
 
 ```php
 // コントローラ
+
+use App\Person;
+
 public function index(Request $request) {
     $items = Person::all();
     return view('person.index', ['items'=>$items]);
@@ -1769,4 +1775,126 @@ class PersonController extends Controller
         return redirect('/person');
     }
 }
+```
+
+### リレーション
+
+- 主テーブル（キーを提供するテーブル。顧客マスタなど。）
+- 従テーブル（キーを利用するテーブル。顧客訪問履歴など。）
+
+#### hasOne
+
+テーブルが 1:1 で結びつく関係。
+
+例）person と board が 1:１で結びつく場合
+
+```php
+class Person extends Model
+{
+    // 単数形
+    public function board() {
+        return $this->hasOne('App\Board');
+    }
+}
+```
+
+```php
+class Board extends Model
+{
+    protected $guarded = ['id'];
+
+    public static $rules = [
+        'person_id' => 'required', // 「テーブル名_id」というキーで自動的に結び付けられる
+        'title' => 'required',
+        'message' => 'required',
+    ];
+}
+```
+
+```php
+// personインスタンスからは、`board()`ではなく`board`のようにプロパティでアクセスできる。
+// hasOneの場合は、オブジェクトが返る。
+echo $person->board->message;
+```
+
+#### hasMany
+
+テーブルが 1:N で結びつく関係。
+
+例）person と board が 1:N で結びつく場合
+
+```php
+class Person extends Model
+{
+    // 複数形
+    public function boards() {
+        return $this->hasMany('App\Board');
+    }
+}
+```
+
+```php
+class Board extends Model
+{
+    protected $guarded = ['id'];
+
+    public static $rules = [
+        'person_id' => 'required', // 「テーブル名_id」というキーで自動的に結び付けられる
+        'title' => 'required',
+        'message' => 'required',
+    ];
+}
+```
+
+```php
+// personインスタンスからは、`board()`ではなく`board`のようにプロパティでアクセスできる。
+// hasManyの場合は、オブジェクトではなくイテラブルが返る。
+@foreach ($person->boards as $board)
+  echo $board->message;
+@endforeach
+```
+
+#### belongsTo
+
+従テーブルから主テーブルを取得する時に使う。hasOne や hasMany とは逆の方向。
+
+例）board が person に所属する場合
+
+```php
+class Board extends Model
+{
+    public static $rules = [
+        'person_id' => 'required', // このキーを基にルックアップする
+        'title' => 'required',
+        'message' => 'required',
+    ];
+
+    public function person() {
+        return $this->belongsTo('App\Person');
+    }
+
+    public function getData() {
+        // $this->personで主テーブルにアクセスできる
+        return $this->id.': '.$this->title.'('.$this->person->name.')';
+    }
+}
+```
+
+#### リレーションの有無で検索する
+
+例えば、person と board が 1:N で関連する場合、board（リレーション）を持つ person とそうでない person が生まれる。これを検索するための便利なメソッドとして、`has()`と`doesntHave()`がある。
+
+```php
+Person::has('boards')->get(); // => iterable
+Person::doesntHave('boards')->get(); // => iterable
+```
+
+#### with による Eager ローディング
+
+前述の例は、実はあまり効率的でない。たとえば、`Person::all()`とした時、「Person を取得、その後 Person1 件ごとに、関連付けられた Board を取得」という動作になっている。（N+1 問題）
+
+これを、「Person を取得、その後、関連する Board を 1 回で取得」という方法にするには、`with()`を使う。
+
+```php
+Person::with('boards')->get();
 ```
