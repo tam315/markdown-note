@@ -34,7 +34,7 @@ php artisan serve # テスト専用コマンドである。本番環境では使
 | `.env`, `.env.example`           | DB の認証情報など、動作に関する設定ファイル |
 | `artisan`                        | `php artisan ***`のようにして使う           |
 | `composer.json`, `composer.lock` | composer がつかう                           |
-| `phpunit.xml`                    | ユニットテストに関するファイル              |
+| `phpunit.xml`                    | ユニットテストに関する設定ファイル          |
 | `server.php`                     | サーバ本体                                  |
 | `webpack.min.js`                 | webpack の設定ファイル                      |
 
@@ -1901,4 +1901,329 @@ Person::doesntHave('boards')->get(); // => iterable
 Person::with('boards')->get();
 ```
 
-## RESTful
+## その他
+
+### RESTful
+
+- リソースフルなコントローラを作成する（Resourceful = RESTful + データ追加用フォーム + データ編集用フォーム）
+- 作成したコントローラを、`Route::resource`に渡してやる。
+- これだけで CRUD の基本的な機能が自動作成・設定される。
+
+```php
+php artisan make:controller RestappController --resource
+```
+
+```php
+Route::resource('/rest', 'RestappController');
+```
+
+| http method | route         | method name | REST |
+| ----------- | ------------- | ----------- | :--: |
+| GET         | /route        | index()     |  \*  |
+| GET         | /route/create | create()    |      |
+| POST        | /route        | store()     |  \*  |
+| GET         | /route/1      | show()      |  \*  |
+| GET         | /route/1/edit | edit()      |      |
+| PUT/PATCH   | /route/1      | update()    |  \*  |
+| DELETE      | /route/1      | #()         |  \*  |
+
+#### データの取得
+
+- laravel では、アクション内で配列を Return すると自動的に JSON に変換してクライアントに返してくれる。
+- よって、単に DB を検索して、配列に変換して Return してやれば OK
+
+```php
+class RestappController extends Controller
+{
+    public function index()
+    {
+        $items = Restdata::all();
+        return $items->toArray();
+    }
+
+    public function show($id)
+    {
+        $item = Restdata::find($id);
+        return $item->toArray();
+    }
+}
+```
+
+#### データの追加
+
+```php
+class RestappController extends Controller
+{
+    public function create()
+    {
+        return view('rest.create');
+    }
+
+    public function store(Request $request)
+    {
+        $restdata = new Restdata();
+        $postData = $request->all();
+        $restdata->fill($postData)->save();
+        return redirect('/rest');
+    }
+}
+```
+
+#### データの更新・削除
+
+省略
+
+### セッション
+
+- クライアント側にセッション ID を、サーバ側に ID に紐づくデータを保存することで、ユーザを識別する方法
+- サーバ側の保存手法には、ファイル利用（デフォルト。`storage/framework/sessions`）、メモリ利用、データベース利用などいくつかの方法がある。
+
+```php
+// 保存
+$request->session()->put('msg', $msg);
+
+// 取得
+$request->session()->get('msg');
+```
+
+#### 保存先を DB にする
+
+セッションの設定は`config/session.php`で行われる。多くの設定は env ヘルパにより環境変数から読み込まれるため、`.env`を編集する。
+
+```php
+// .env
+SESSION_DRIVER=database
+```
+
+session 用のテーブルを作成する。手作業ではなく、マイグレーションを使用する。
+
+```bash
+php artisan session:table # マイグレーションファイルの作成
+php artisan migrate # マイグレーションの実行
+```
+
+### ページネーション
+
+`all()`や`with()`の替わりに、`simplePaginate()`を使うことで簡単にページネーションを実装できる。
+
+```php
+//コントローラ
+
+// DBクラスの場合
+$items=DB::table('people')->simplePaginate(5);
+$items=DB::table('people')->orderBy('age')->simplePaginate(5);
+// モデルの場合
+$items=Person::simplePaginate(4);
+$items=Person::orderBy('age')->simplePaginate(4);
+
+return view('hello.index', ['items'=>$items]);
+```
+
+```php
+// テンプレート
+
+// 前後ページへのリンクを自動生成する
+{{ $items->links() }}
+
+// 前後ページへのリンクに対して追加のクエリを付与したい場合は、appends()を挟む
+{{ $items->appends(['sort'=>$sort])->links() }} // => /some?sort=***&page=2
+```
+
+#### ページ番号のリンクを表示する
+
+`simplePaginate()`の替わりに`paginate()`を使うと、自動生成されるリンクに、ページ番号も含まれる様になる。
+
+#### カスタムレイアウト
+
+- `links()`に引数を指定することで、ページネーションのレイアウトをカスタムできる。
+- 下記コマンドで雛形を生成できるので、適宜利用する
+- 詳細は本書 p.313 を確認
+
+```bash
+php artisan vendor:publish --tag=laravel-pagination
+```
+
+### CSS
+
+- Laravel には標準で CSS が用意されている。この CSS は Bootstrap を内包している。
+- Pagination などは、この CSS ファイルでスタイリングされている。
+
+```html
+<head>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+```
+
+### ユーザ認証
+
+#### セットアップ
+
+```bash
+php artisan make:auth
+php artisan migrate
+```
+
+`Auth::user()` ユーザ情報の取得
+
+```php
+// コントローラ
+use Illuminate\Support\Facades\Auth;
+
+class HelloController extends Controller　{
+  $user = Auth::user();
+  return view('some.view', ['user' => $user]);
+}
+```
+
+`Auth::check()` ユーザがログインしているかどうか
+
+```php
+// テンプレート
+@if (Auth::check())
+    <p>{{$user->name}}</p>
+    <p>{{$user->email}}</p>
+@else
+    <p>ログインしていません</p>
+    <a href="/login">ログイン</a>|
+    <a href="/register">登録</a>
+@endif
+```
+
+#### 既製のルーティング
+
+- `/login` ログイン
+- `/register` サインアップ
+- `/home` アカウント管理画面
+
+#### ログインの強制
+
+`auth`というミドルウェアを使うことで、特定のルートを閲覧する際にログインを矯正できる。ログインしていない場合は`/login`にリダイレクトされる。
+
+```php
+Route::get('/hello', 'HelloController@index')
+    ->middleware('auth');
+```
+
+#### ログインのマニュアル実装
+
+```php
+if(Auth::attempt(['email'=>$mail, 'password'=>$pass])){
+  /* on success */
+} else {
+  /* on fail */
+}
+```
+
+### ユニットテスト
+
+テストは`TestCase`クラスを継承したクラスに対し、`test****()`というメソッドを実装することで行う。
+
+#### 設定ファイル
+
+テストに関する設定は`phpunit.xml`で行う。
+
+```xml
+<!-- テスト用のデータベースを指定 -->
+<env name="DB_DATABASE" value="database\database_test.sqlite"/>
+```
+
+#### ダミーレコードの用意
+
+テスト用のダミーデータを作成するには、`database/factories`の中にある Model Factories を使う。
+
+```php
+// database/factories/ModelFactory.php
+$factory->define(App\Person::class, function (Faker $faker) {
+    return [
+        'name' => $faker->name,
+        'email' => $faker->safeEmail,
+        'age' => $faker->random_int(1,99),
+    ];
+});
+```
+
+#### テストファイルの作成と実行
+
+```bash
+php artisan make:test HelloTest
+```
+
+```php
+// tests/Feature/HelloTest.php
+class HelloTest extends TestCase
+{
+    public function testExample()
+    {
+        $this->assertTrue(true);
+
+        $arr = [];
+        $this->assertEmpty($arr);
+
+        $msg = 'Hello';
+        $this->assertEquals($msg, 'Hello');
+
+        $number = random_int(0, 100);
+        $this->assertLessThan(100, $number);
+    }
+}
+```
+
+```bash
+vendor/bin/phpunit
+```
+
+#### ルーティングや認証をテストする
+
+```php
+class HelloTest extends TestCase
+{
+    use DatabaseMigrations;
+
+    public function testExample()
+    {
+        // ルーティングのテスト
+        $response = $this->get('/');
+        $response->assertStatus(200);
+
+        $response = $this->get('/hello');
+        $response->assertStatus(302);
+
+        $response = $this->get('/no_routes');
+        $response->assertStatus(404);
+
+        // 認証のテスト
+        $user = factory(User::class)->create();
+        $response = $this->actingAs($user)->get('/hello');
+        $response->assertStatus(200);
+    }
+}
+```
+
+`factory(クラス名)->create()` ファクトリの設定を基にインスタンスを生成して DB に保存する
+
+#### データベースのテスト
+
+```php
+class HelloTest extends TestCase
+{
+    // テスト開始前にマイグレーションを実行し、終了後にまっさらに戻す
+    use DatabaseMigrations;
+
+    public function testExample()
+    {
+        $dummyPerson = [
+            'name' => 'XXX',
+            'mail' => 'YYY@ZZZ.COM',
+            'age' => 123,
+        ];
+
+        // ファクトリの設定を一部上書きしてインスタンスを生成しDBに保存
+        factory(Person::class)->create($dummyPerson);
+
+        // 指定した数のインスタンスをDBに保存
+        factory(Person::class, 10)->create();
+
+        $this->assertDatabaseHas('people', $dummyPerson);
+    }
+}
+```
