@@ -8,7 +8,7 @@
 
 - Composer をインストール
 - `C:/Users/Shota/AppData/Roaming/Composer/vendor/bin`にパスを通す
-- `composer global require "laravel/installer=~1.1"`
+- `composer global require "laravel/installer"`
 
 ### 基本
 
@@ -308,7 +308,7 @@ input 要素の name 属性が、そのまま`$request`のプロパティとし�
 ```php
 // template
 <form method="POST" action="/hello">
-    {{ csrf_field() }} // 外部サイトからのフォーム送信を防ぐため、認証データを挿入
+    @csrf // 外部サイトからのフォーム送信を防ぐため、認証データを挿入
     <input type="text" name="myname">
     <input type="submit">
 </form>
@@ -1241,7 +1241,7 @@ class HelloController extends Controller
 ```html
 <!-- テンプレート -->
 <form action="/hello/edit" method="post">
-  {{ csrf_field() }}
+  @csrf
 
   <div>name:<input type="text" name="name" /></div>
   <div>mail:<input type="text" name="mail" /></div>
@@ -1288,7 +1288,7 @@ class HelloController extends Controller
 ```html
 <!-- テンプレート -->
 <form action="/hello/edit" method="post">
-  {{ csrf_field() }}
+  @csrf
 
   <!-- IDを保持しておく必要あり -->
   <input type="hidden" name="id" value="{{$form->id}}" />
@@ -1335,7 +1335,7 @@ class HelloController extends Controller
 ```html
 <!-- テンプレート -->
 <form action="/hello/edit" method="post">
-  {{ csrf_field() }}
+  @csrf
 
   <!-- IDを保持しておく必要あり -->
   <input type="hidden" name="id" value="{{$form->id}}" />
