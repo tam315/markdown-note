@@ -1152,7 +1152,7 @@ myobj = {
 
 Publish（発行）/Subscribe（購読）パターンともいう。オブザーブ可能なオブジェクトを作成することで、オブジェクト間を疎結合に保つ。
 
-- 発行者は、Publisher(又は Subject)と呼ばれる。Rx の Subject とは意味が異なるので注意。
+- 発行者は、Publisher(又は Subject, node では EventEmitter など)と呼ばれる。Rx の Subject とは意味が異なるので注意。
 - 購読者は、Subscriber(又は Observer)などと呼ばれる。
 
 Publisher は下記のメンバを持つ
@@ -1160,7 +1160,7 @@ Publisher は下記のメンバを持つ
 - `subscribers`　行動者を保持する配列
 - `subscribe(type, cb)`又は`on(type, cb)` 購読者を追加する
 - `unsubscribe(type, cb)` 購読者を削除する
-- `publish(type, arg)` イベントを発行し、各購読者に通知する
+- `publish|emit(type, arg)` イベントを発行し、各購読者に通知する
 
 ## DOM とブラウザのパターン
 

@@ -1534,16 +1534,34 @@ public function index(Request $request) {
 - `Person::all()`で全件取得できる。
 - `Person::all()`は、`Illuminate\Database\Eloquent\Collection`クラスのインスタンスを返す。このクラスはイテラブルであり、配列と同じように扱うことができる。
 
-#### クラスの拡張
+#### モデルの雛形
 
-ORM と DB クラスとの相違点は、データが単なる配列ではなく**Person クラスのインスタンス**である点である。このため、クラスを拡張すればインスタンスの振る舞いも拡張することができる。
+- デフォルトでは、モデル名（person）の複数形（people）が自動的にテーブル名として設定される。
+  テーブル名を手動で設定したい場合は、`$table`プロパティにテーブル名をもたせておく。
+- Auto Increment な項目など、値をサーバ側で自動設定するプロパティには`$guarded`を設定しておく。
+- モデルクラスのスタティックプロパティにバリデーションルールを持っておくと後々便利。
+- ORM と DB クラスとの相違点は、データが単なる配列ではなく**Person クラスのインスタンス**である点である。このため、クラスを拡張すればインスタンスの振る舞いも拡張することができる。
 
 ```php
 // app/Person.php
 class Person extends Model
 {
+    // テーブル名を手動設定する場合は下記の行をコメントアウト
+    // protected $table = 'people';
+
+    // guard
+    protected $guarded = ['id'];
+
+    // validation rules
+    public static $rules = [
+        'name' => 'required',
+        'mail' => 'email',
+        'age' => 'integer|min:0|max:150',
+    ];
+
+    // クラスの拡張
     public function getData() {
-        return $this->id.': '.$this->name.'('.$this->age.')';
+        return $this->id.':'.$this->message.'('.$this->url.')';
     }
 }
 ```
@@ -1668,22 +1686,6 @@ class Person extends Model
 以下、Create, Update, Delete のやり方を記載。なお、テンプレートのコードは[DB クラスを使ったコード](#db-クラス)とほぼ同じなため記載省略。
 
 #### 追加
-
-- Auto Increment な項目など、値を用意しないプロパティには`$guarded`を設定しておく。
-- モデルクラスのスタティックプロパティにバリデーションルールを持っておくと後々便利。
-
-```php
-class Person extends Model
-{
-    protected $guarded = ['id'];
-
-    public static $rules = [
-        'name' => 'required',
-        'mail' => 'email',
-        'age' => 'integer|min:0|max:150',
-    ];
-}
-```
 
 ```php
 // ルーティング
@@ -1893,8 +1895,10 @@ Person::doesntHave('boards')->get(); // => iterable
 
 前述の例は、実はあまり効率的でない。たとえば、`Person::all()`とした時、「Person を取得、その後 Person1 件ごとに、関連付けられた Board を取得」という動作になっている。（N+1 問題）
 
-これを、「Person を取得、その後、関連する Board を 1 回で取得」という方法にするには、`with()`を使う。
+これを、「Person を取得、その後、関連する Board を 1 回で取得」という方法にするには、`all()`の替わりに`with()`を使う。
 
 ```php
 Person::with('boards')->get();
 ```
+
+## RESTful
