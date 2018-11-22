@@ -1,4 +1,4 @@
-# Laravel 入門
+# Laravel
 
 [[toc]]
 
@@ -23,11 +23,9 @@ php artisan serve # テスト専用コマンドである。本番環境では使
 
 `/my-app/public`を`/`にマップしたい（エイリアスを作りたい）場合は、本書 P20 に記載の設定を Apache の `httpd.conf` に入れること。
 
-## ルーティングとコントローラ
+### ファイル・フォルダ構成
 
-### ルーティング
-
-#### ファイル構成
+#### ルートファイル
 
 | name                             | description                                 |
 | -------------------------------- | ------------------------------------------- |
@@ -38,22 +36,22 @@ php artisan serve # テスト専用コマンドである。本番環境では使
 | `server.php`                     | サーバ本体                                  |
 | `webpack.min.js`                 | webpack の設定ファイル                      |
 
-#### フォルダ構成
+#### ルートフォルダ
 
 `*`マークはよく使うフォルダ。
 
-| name        | description                   |
-| ----------- | ----------------------------- |
-| `app`       | \* アプリケーションの本体     |
-| `bootstrap` | 起動時の処理                  |
-| `config`    | 設定                          |
-| `database`  | \* DB 関係                    |
-| `public`    | そのまま公開するファイル群    |
-| `resources` | \* テンプレートなどのリソース |
-| `routes`    | \* ルーティング情報           |
-| `storage`   | ログなどのファイルの保存場所  |
-| `tests`     | ユニットテスト関係            |
-| `vendor`    | Laravel 本体のプログラム      |
+| name        | description                                                             |
+| ----------- | ----------------------------------------------------------------------- |
+| `app`       | \* アプリケーションの本体                                               |
+| `bootstrap` | 起動時の処理                                                            |
+| `config`    | 設定                                                                    |
+| `database`  | \* DB 関係                                                              |
+| `public`    | そのまま公開するファイル群。パスを取得したいときは`asset()`ヘルパを使う |
+| `resources` | \* テンプレートや、ビルドすべき JS/CSS などのリソース                   |
+| `routes`    | \* ルーティング情報                                                     |
+| `storage`   | ログなどのファイルの保存場所                                            |
+| `tests`     | ユニットテスト関係                                                      |
+| `vendor`    | Laravel 本体のプログラム                                                |
 
 #### app フォルダ
 
@@ -74,37 +72,51 @@ php artisan serve # テスト専用コマンドである。本番環境では使
 | `console.php`  | コンソールプログラムのためのルーティング？                                |
 | `web.php`      | 一般的な Web ページとしてアクセスするときのルーティング。**一番良く使う** |
 
-#### ルーティング設定
+## ルーティングとコントローラ
+
+### ルーティング
 
 ルーティングの設定は`routes/web.php`に記載する。
 
-生の HTML を返す
+#### 生の HTML を返す
 
 ```php
 Route::get('/hello', function() {
   return '<h1>Some HTML!</h1>';
 });
+
+// GET以外のメソッドの場合
+Route::post();
+Route::put();
+Route::delete();
 ```
 
-テンプレートを指定する
+#### テンプレートを指定する
+
+（実際は`view()`は Response オブジェクトを返す）
 
 ```php
 // routes/web.php
 
 Route::get('/', function() {
   return view('welcome');
-});
-// => `resources/views/welcome.blade.php`がレンダリングされる。
+});　// => `resources/views/welcome.blade.php`
+
+Route::get('/hello', function() {
+  return view('hello.index');
+});　// => `resources/views/hello/index.blade.php`
 ```
 
-コントローラを指定する
+#### コントローラを指定する
 
 ```php
 Route::get('/hello', 'HelloController@index');
 Route::get('/hello', 'HelloController'); // シングルアクションコントローラの場合
 ```
 
-params を受け取る。任意の param には`?`をつける。任意の項目にはデフォルト値をセットしておくと良い。
+#### params を受け取る
+
+任意の param には`?`をつける。任意の項目にはデフォルト値をセットしておくと良い。
 
 ```php
 Route::get('/hello/{msg}/{id}', function($msg, $id){ // 順に渡されるので名前は違ってもOK
@@ -114,6 +126,12 @@ Route::get('/hello/{msg}/{id}', function($msg, $id){ // 順に渡されるので
 Route::get('/hello/{msg?}/{id?}', function($msg='a', $id='b'){
     return "<h1>Hello! $msg $id</h1>";
 });
+```
+
+#### ルートの一覧を表示する
+
+```bash
+php artisan route:list
 ```
 
 ### コントローラ
@@ -129,10 +147,12 @@ User <-> Controller <-┬-> View  <-> Templates
 #### コントローラの作成
 
 ```bash
+# 空のコントローラを作成する
 php artisan make:controller HelloController
-```
 
-これで下記のコントローラが作成される
+# リソースフル(典型的なメソッドをあらかじめ持っている)なコントローラを作成する
+php artisan make:controller HelloController --resource
+```
 
 ```php
 // app/Http/Controllers/HelloController.php
@@ -194,6 +214,29 @@ class HelloController extends Controller
 // routes/web.php
 Route::get('/hello', 'HelloController');
 ```
+
+#### リソースフル
+
+- Resourceful = RESTful に加え、追加・編集・削除用フォーム等、リソースを扱うために必要なすべての機能を備えていること
+- 下記の手順でリソースフルなコントローラを作成し、作成したコントローラを`Route::resource`に渡してやることで、アクションを個別に作成することなく、簡単にリソースフルなコントローラを使い始めることができる。
+
+```php
+php artisan make:controller RestappController --resource
+```
+
+```php
+Route::resource('/rest', 'RestappController');
+```
+
+| http method | route         | action    | RESTful | Resourceful |
+| ----------- | ------------- | --------- | :-----: | :---------: |
+| GET         | /route        | index()   |   \*    |     \*      |
+| GET         | /route/create | create()  |         |     \*      |
+| POST        | /route        | store()   |   \*    |     \*      |
+| GET         | /route/1      | show()    |   \*    |     \*      |
+| GET         | /route/1/edit | edit()    |         |     \*      |
+| PUT/PATCH   | /route/1      | update()  |   \*    |     \*      |
+| DELETE      | /route/1      | destroy() |   \*    |     \*      |
 
 #### アクションで params を受け取る
 
@@ -262,8 +305,8 @@ Route::get('/hello', function(){
 });
 ```
 
-上記は、ルーティング設定に直接テンプレートを指定している。
-ルーティングにはコントローラを指定し、その中でテンプレートを使いたいときは次にようにする。
+上記は、ルーティング設定にテンプレートを指定している。
+ルーティング設定にコントローラを指定した場合は、次にようにする。
 
 ```php
 class HelloController extends Controller
@@ -281,19 +324,25 @@ class HelloController extends Controller
 class HelloController extends Controller
 {
     public function index() {
+        // compact等を使って、渡すデータを一つづつ指定する方法
+        $title = 'my title';
+        $msg = 'my msg';
+        return view('hello.index', compact('title', 'msg'));
+
+        // 配列を使って、まるごとデータを渡す方法
         $data = [
             'msg1' => 'msg1です',
             'msg2' => 'msg2です',
         ];
-        return view('hello.index', $data);
+        return view('hello.index2', $data);
     }
 }
 ```
 
 ```php
 // template
-<h1><?php echo $msg1 ?></h1>
-<h1><?php echo $msg2 ?></h1>
+<h1>{{ $title . $msg }}</h1>
+<h1>{{ $msg1 . $msg2 }}</h1>
 ```
 
 ### Blade テンプレートの利用
@@ -425,6 +474,8 @@ class HelloController extends Controller
 
 ベース側において、`@yield()`, `@section() - @show`を使って場所を用意しておき、
 継承側で`@section()`, `@section()-@endsection`を使うことで内容を埋めていく方法。
+
+Nuxt.js の Layouts と同じような使い方をすればいいんだと思う。
 
 ベースレイアウト
 
@@ -1365,6 +1416,9 @@ $items=DB::table('people')->get(['id', 'name']); // カラムを指定する場�
 // 最初の1件を取得
 $items=DB::table('people')->first();
 
+// 最初の3件を取得
+$items=DB::table('people')->take(3);
+
 // 条件を指定して取得
 $items=DB::table('people')->where('id', $request->id)->get();
 $items=DB::table('people')->where('id', $request->id)->first();
@@ -1423,6 +1477,10 @@ DB::table('people')->where('id', $request->id)->delete();
 使用できる Column については[公式ドキュメント](https://laravel.com/docs/5.7/migrations#columns)を参照
 
 ```bash
+# Eloquentのモデル作成時に、マイグレーションファイルを一緒に作成する方法
+php artisan make:model Person -m
+
+# マイグレーションを単体で作成する方法
 php artisan make:migration create_people_table # people がテーブル名になる
 ```
 
@@ -1458,6 +1516,7 @@ class CreatePeopleTable extends Migration
 ```bash
 touch database/database.sqlite # 空のDBファイルを作成
 php artisan migrate
+php artisan migrate:fresh # すべてのテーブルをドロップして再作成
 ```
 
 ### シーディング
@@ -1508,11 +1567,14 @@ php artisan db:seed
 
 ORM ＝ DB のデータを、クラスやオブジェクトの形式で扱えるようにするために、PHP と DB を橋渡しする仕組み
 
-### セットアップ、データの取得
+### セットアップ
 
 ```bash
-php artisan make:model Person # 単数形
-php artisan make:controller PersonController
+php artisan make:controller PersonController # 複数形にすること
+
+php artisan make:model Person # 単数形にすること
+# or
+php artisan make:model Person -m # -mをつけるとマイグレーションファイルも生成される
 ```
 
 ```php
@@ -1520,39 +1582,28 @@ php artisan make:controller PersonController
 Route::get('/person', 'PersonController@index');
 ```
 
-```php
-// コントローラ
+### モデルクラス
 
-use App\Person;
+モデルと DB を紐付けるための各種設定や、モデルを便利に扱うためのクラスの拡張をここで行う。
 
-public function index(Request $request) {
-    $items = Person::all();
-    return view('person.index', ['items'=>$items]);
-}
-```
-
-- `Person::all()`で全件取得できる。
-- `Person::all()`は、`Illuminate\Database\Eloquent\Collection`クラスのインスタンスを返す。このクラスはイテラブルであり、配列と同じように扱うことができる。
-
-#### モデルの雛形
-
-- デフォルトでは、モデル名（person）の複数形（people）が自動的にテーブル名として設定される。
-  テーブル名を手動で設定したい場合は、`$table`プロパティにテーブル名をもたせておく。
-- Auto Increment な項目など、値をサーバ側で自動設定するプロパティには`$guarded`を設定しておく。
-- モデルクラスのスタティックプロパティにバリデーションルールを持っておくと後々便利。
-- ORM と DB クラスとの相違点は、データが単なる配列ではなく**Person クラスのインスタンス**である点である。このため、クラスを拡張すればインスタンスの振る舞いも拡張することができる。
+ORM と DB クラスとの相違点は、データが単なる配列ではなく**Person クラスのインスタンス**である点である。このため、クラスを拡張すればインスタンスの振る舞いも拡張することができる。
 
 ```php
 // app/Person.php
 class Person extends Model
 {
-    // テーブル名を手動設定する場合は下記の行をコメントアウト
-    // protected $table = 'people';
+    // テーブル名を手動設定する場合(default: モデル名の複数形)
+    protected $table = 'people';
 
-    // guard
+    // primary keyを手動設定する場合(default: id)
+    public $primaryKey = 'id';
+
+    // Auto Increment な項目など、値をサーバ側で
+    // 設定するプロパティはここで明示しておくこと
     protected $guarded = ['id'];
 
-    // validation rules
+    // モデルクラスのスタティックプロパティにバリデーションルールを
+    // 持っておくと後々便利
     public static $rules = [
         'name' => 'required',
         'mail' => 'email',
@@ -1566,27 +1617,38 @@ class Person extends Model
 }
 ```
 
-### 検索
+### データの取得
 
-#### find(ID 検索)
+#### all()
+
+```php
+$items = Person::all();
+```
+
+全件取得できる。`Person::all()`は、`Illuminate\Database\Eloquent\Collection`クラスのインスタンスを返す。このインスタンスは配列と同じように扱うことができる。
+
+#### find()
+
+```php
+$item = Person::find($request->id);
+```
 
 id フィールドが指定の値であるデータを 1 件だけ取得する。
 
 なお、もし id フィールドの名前が`id`でない場合は、モデルクラスに`$primaryKey`というプロパティを用意し、これにフィールド名を設定すること。
 
-```php
-// コントローラ
-$item = Person::find($request->id);
-```
-
-#### where
+#### where()
 
 ```php
 $items = Person::where('name', 'John')->get();
 $items = Person::where('name', 'John')->first();
 ```
 
-`where()`は`Illuminate\Database\Eloquent\Builder`クラスのインスタンスを返す。DB クラスのビルダとは異なるものの、機能はほとんど同じ。
+`where()`は`Illuminate\Database\Eloquent\Builder`クラスのインスタンスを返す。DB クラスのクエリビルダとは異なるものの、機能はほとんど同じ。
+
+#### その他
+
+その他のメソッドは基本的に[クエリビルダ](#クエリビルダ)と同じ。
 
 ### スコープ
 
@@ -1901,50 +1963,86 @@ Person::doesntHave('boards')->get(); // => iterable
 Person::with('boards')->get();
 ```
 
+### Tinker
+
+モデルを使って DB を操作できる、REPL のようなもの。
+
+```bash
+php artisan tinker
+```
+
+```txt
+App\Post::count()
+App\Post::all()
+App\Post::where('title','Post1')->get()
+App\Post::find($id)->delete()
+
+$post = new App\Post()
+$post->title = 'Post1'
+$post->body = 'Post1 body'
+$post->save()
+```
+
+## フロントエンド
+
+### セットアップ
+
+下記コマンドを実行することで、`resouces/js|css`のファイルがコンパイルされ、`public/js|css`に配置される。
+
+```bash
+yarn
+yarn dev # 1回きりのコンパイル
+yarn watch # ファイルの変更を監視してコンパイル
+```
+
+### CSS
+
+- Laravel のプロジェクトには、`resources/sass`の中に標準で CSS が用意されている。
+- この CSS は Bootstrap を内包している。
+- Pagination のパーツなどはこの CSS ファイルを前提にでスタイリングされている。
+
+```html
+<head>
+  <link rel="stylesheet" href="{{ asset('css/app.css') }}" />
+</head>
+```
+
 ## その他
 
-### RESTful
+### RESTful API
 
-- リソースフルなコントローラを作成する（Resourceful = RESTful + データ追加用フォーム + データ編集用フォーム）
-- 作成したコントローラを、`Route::resource`に渡してやる。
-- これだけで CRUD の基本的な機能が自動作成・設定される。
+#### セットアップ
 
-```php
-php artisan make:controller RestappController --resource
+まず、`--api`オプションにより、RESTful なコントローラを作成する。（逆に、Resourceful なコントローラを作るときは`--resource`オプションを使う）
+
+REST API では create()や edit()アクションは必要ないので作成されない。
+
+```bash
+php artisan make:controller RestappContoller --api
 ```
 
-```php
-Route::resource('/rest', 'RestappController');
-```
+作成したコントローラを`Route::apiResources()`に渡す。`Route::resources()`と異なり、create()や edit()のためのルートは必要ないので作成されない。
 
-| http method | route         | method name | REST |
-| ----------- | ------------- | ----------- | :--: |
-| GET         | /route        | index()     |  \*  |
-| GET         | /route/create | create()    |      |
-| POST        | /route        | store()     |  \*  |
-| GET         | /route/1      | show()      |  \*  |
-| GET         | /route/1/edit | edit()      |      |
-| PUT/PATCH   | /route/1      | update()    |  \*  |
-| DELETE      | /route/1      | #()         |  \*  |
+```php
+Route::apiResources('/rest', 'RestappController');
+```
 
 #### データの取得
 
-- laravel では、アクション内で配列を Return すると自動的に JSON に変換してクライアントに返してくれる。
-- よって、単に DB を検索して、配列に変換して Return してやれば OK
+- laravel では、アクション内で**配列 | Eloquent の Collection | モデルのインスタンス**を Return すると自動的に JSON に変換してクライアントに返してくれる。
+- よって、単に DB を検索して Return してやれば OK
 
 ```php
 class RestappController extends Controller
 {
     public function index()
     {
-        $items = Restdata::all();
-        return $items->toArray();
+        return Restdata::all();
     }
 
     public function show($id)
     {
-        $item = Restdata::find($id);
-        return $item->toArray();
+        return Restdata::find($id);
     }
 }
 ```
@@ -2037,21 +2135,9 @@ return view('hello.index', ['items'=>$items]);
 
 - `links()`に引数を指定することで、ページネーションのレイアウトをカスタムできる。
 - 下記コマンドで雛形を生成できるので、適宜利用する
-- 詳細は本書 p.313 を確認
 
 ```bash
 php artisan vendor:publish --tag=laravel-pagination
-```
-
-### CSS
-
-- Laravel には標準で CSS が用意されている。この CSS は Bootstrap を内包している。
-- Pagination などは、この CSS ファイルでスタイリングされている。
-
-```html
-<head>
-  <link rel="stylesheet" href="/css/app.css" />
-</head>
 ```
 
 ### ユーザ認証
@@ -2226,4 +2312,16 @@ class HelloTest extends TestCase
         $this->assertDatabaseHas('people', $dummyPerson);
     }
 }
+```
+
+### 環境変数やコンフィグの取得
+
+コントローラやテンプレート内で、環境変数等を取得する方法
+
+```php
+// 環境変数の取得
+env('APP_NAME');
+
+// コンフィグの取得
+config('app.name');
 ```
