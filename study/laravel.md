@@ -384,7 +384,7 @@ class HelloController extends Controller
 
 ```php
 {{ 値など }}
-{{!! 値など !!}} // エスケープしたくない場合
+{!! 値など !!} // HTMLエスケープしたくない場合
 ```
 
 #### 条件分岐
@@ -1017,8 +1017,9 @@ class HelloController extends Controller
 - `$validator->fails()` バリデーションが失敗かどうか
 - `$validator->passes()` バリデーションが成功かどうか
 - `redirect(リダイレクト先のパス)` リダイレクトする
-- `->withErrors($validator)` エラーをリダイレクト先に引き継ぐ
-- `->withInput()` 入力内容をリダイレクト先に引き継ぐ
+- `->withErrors($validator)` エラー（`$errors`）とともにリダイレクト
+- `->withInput()` 入力内容（`old()`）とともにリダイレクト
+- `->with(セッション値名前、セッション値)` session 値とともにリダイレクト
 
 #### クエリにバリデータを適用する
 
@@ -2100,6 +2101,40 @@ php artisan session:table # マイグレーションファイルの作成
 php artisan migrate # マイグレーションの実行
 ```
 
+#### リダイレクト時にセッションを使ってエラーメッセージを表示する
+
+下記のような、メッセージ表示用コンポーネントを作成して、マスターレイアウトに include しておく。
+
+```php
+// 'success'というセッション値があった場合
+@if (session('success'))
+    <div class="alert alert-success">
+        {{ session('success')}}
+    </div>
+@endif
+
+// 'error'というセッション値があった場合
+@if (session('error'))
+    <div class="alert alert-danger">
+        {{ session('error')}}
+    </div>
+@endif
+
+// ついでに、バリデーション失敗時のエラーも表示
+@if (count($errors) > 0)
+    @foreach ($errors->all() as $error)
+        <div class="alert alert-danger">{{ $error }}</div>
+    @endforeach
+@endif
+```
+
+コントローラでリダイレクトする際にセッション値をセットする。
+
+```php
+return redirect('/posts')
+  ->with('success', 'Post Created');
+```
+
 ### ページネーション
 
 `all()`や`with()`の替わりに、`simplePaginate()`を使うことで簡単にページネーションを実装できる。
@@ -2324,4 +2359,35 @@ env('APP_NAME');
 
 // コンフィグの取得
 config('app.name');
+```
+
+### ckeditor
+
+[ckeditor](https://ckeditor.com/docs/ckeditor4/latest/guide/dev_installation.html)と、無害化のための
+[Purifier](https://github.com/mewebstudio/Purifier)を組み合わせて使う。
+
+chkeditor の設定
+
+```html
+<textarea name="sometextarea"></textarea>
+
+<script src="https://cdn.ckeditor.com/4.11.1/standard/ckeditor.js"></script>
+<script>
+  CKEDITOR.replace('sometextarea');
+</script>
+```
+
+Purifier の設定
+
+```bash
+composer require mews/purifier
+php artisan vendor:publish --provider="Mews\Purifier\PurifierServiceProvider"
+```
+
+コントローラ
+
+```php
+use Mews\Purifier\Facades\Purifier;
+// .....
+Purifier::clean($request->someInputValue);
 ```
