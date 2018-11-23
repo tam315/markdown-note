@@ -238,6 +238,18 @@ Route::resource('/rest', 'RestappController');
 | PUT/PATCH   | /route/1      | update()  |   \*    |     \*      |
 | DELETE      | /route/1      | destroy() |   \*    |     \*      |
 
+#### フォームから PUT や DELETE を送るには
+
+- リソースフルなルートを設定した場合は、更新や削除の処理を`PUT`や`DELETE`といったメソッドで行う必要がある。
+- しかし、フォームから遅れるのは`POST`メソッドだけである。
+- このため、`PUT`や`DELETE`を使う際は、`_method`という隠し属性にメソッドを記述しておく必要がある。
+
+```php
+<form action="/posts/1234/delete" method="POST">
+    <input type="hidden" name="_method" value="PUT" />
+</form>
+```
+
 #### アクションで params を受け取る
 
 ```php
@@ -1306,13 +1318,15 @@ class HelloController extends Controller
 #### update
 
 - /hello/edit に GET でアクセスした場合は、データを取得したのち、フォームを表示
-- /hello/edit に POST でアクセスした場合は、データを更新してリダイレクト
+- /hello/update に POST でアクセスした場合は、データを更新してリダイレクト
 
 ```php
 // ルーティング
 Route::get('/hello/edit', 'HelloController@showEditForm');
-Route::post('/hello/edit', 'HelloController@updateData');
+Route::post('/hello/update', 'HelloController@updateData');
 ```
+
+- `old('mail', $form->mail)`とすることで、バリデーション失敗時に値を保持しておくことができる。第二引数はデフォルト値であり、初回表示の際に使用される。
 
 ```php
 // コントローラ
@@ -1345,9 +1359,23 @@ class HelloController extends Controller
   <!-- IDを保持しておく必要あり -->
   <input type="hidden" name="id" value="{{$form->id}}" />
 
-  <div>name:<input type="text" name="name" value="{{$form->name}}" /></div>
-  <div>mail:<input type="text" name="mail" value="{{$form->mail}}" /></div>
-  <div>age:<input type="text" name="age" value="{{$form->age}}" /></div>
+  <div>
+    name:<input
+      type="text"
+      name="name"
+      value="{{ old('name', $form->name) }}"
+    />
+  </div>
+  <div>
+    mail:<input
+      type="text"
+      name="mail"
+      value="{{ old('mail', $form->mail) }}"
+    />
+  </div>
+  <div>
+    age:<input type="text" name="age" value="{{ old('age', $form->age) }}" />
+  </div>
 
   <input type="submit" value="send" />
 </form>
@@ -1518,6 +1546,25 @@ class CreatePeopleTable extends Migration
 touch database/database.sqlite # 空のDBファイルを作成
 php artisan migrate
 php artisan migrate:fresh # すべてのテーブルをドロップして再作成
+```
+
+#### あとからカラムを追加する
+
+```php
+class AddUserIdToPosts extends Migration
+{
+    public function up() {
+        Schema::table('posts', function (Blueprint $table) {
+            $table->integer('user_id');
+        });
+    }
+
+    public function down() {
+        Schema::table('posts', function (Blueprint $table) {
+            $table->dropColumn('user_id');
+        });
+    }
+}
 ```
 
 ### シーディング
@@ -2083,6 +2130,9 @@ $request->session()->put('msg', $msg);
 
 // 取得
 $request->session()->get('msg');
+
+// セッション情報とともにリダイレクト
+redirect('/home')->with('somekey', 'somevalue');
 ```
 
 #### 保存先を DB にする
@@ -2180,7 +2230,10 @@ php artisan vendor:publish --tag=laravel-pagination
 #### セットアップ
 
 ```bash
+# 関連するRoute, View, Controllerを生成する
 php artisan make:auth
+
+# 認証に使うテーブルを作成する
 php artisan migrate
 ```
 
@@ -2361,10 +2414,10 @@ env('APP_NAME');
 config('app.name');
 ```
 
-### ckeditor
+### WYSIWYG
 
-[ckeditor](https://ckeditor.com/docs/ckeditor4/latest/guide/dev_installation.html)と、無害化のための
-[Purifier](https://github.com/mewebstudio/Purifier)を組み合わせて使う。
+WYSIWYG エディタを実装するには、[ckeditor](https://ckeditor.com/docs/ckeditor4/latest/guide/dev_installation.html)と、無害化のための
+[Purifier](https://github.com/mewebstudio/Purifier)を組み合わせる。
 
 chkeditor の設定
 
