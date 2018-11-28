@@ -104,7 +104,11 @@ for l in "hello":
   print(l)
 ```
 
-### range
+### Built-in Functions
+
+[公式ドキュメント](https://docs.python.org/3/library/functions.html)
+
+#### range()
 
 - `range(終了値)`
 - `range(開始値, 終了値, 刻み)`
@@ -115,11 +119,44 @@ range(5) # [0, 1, 2, 3, 4]
 range(10, 0, -2) # [10, 8, 6, 4, 2]
 ```
 
+#### sorted()
+
+`sorted()`は、dict の key や、Set を、ソートされたリストにして返す。
+
+```python
+dict = {'e': 0, 'd': 0, 'c': 0, 'b': 0, 'a': 0}
+sorted(dict) # => [a,b,c,d,e]
+
+for key in sorted(dict):
+  do_something(dict[key])
+
+my_set = {'b','c','a'}
+sorted(my_set) # => ['a','b','c']
+```
+
+#### list(), set()
+
+list や set を作る。
+
+```python
+list('john')
+set('hello')
+```
+
+#### type()
+
+タイプを判定する
+
 ## リストデータ
+
+- 順序は保証される
 
 ```python
 # リテラルで作成
 numbers = [1, 2, 3, 4, 5]
+
+# ビルトイン関数で作成
+list('john')
 
 # 長さを調べる
 len(numbers)
@@ -175,8 +212,11 @@ for はリストやスライスを理解できるので、そのまま渡して�
 
 ## 構造化データ
 
+### Dictionary
+
 - 構造を持つデータには Dictionary(key-value ペア)を使う。
 - C++, Java ではマップと呼ばれ、Ruby ではハッシュと呼ばれるものに相当。
+- 順序は保証されない
 
 ```python
 # 作成
@@ -193,19 +233,7 @@ for key in some_dictionary:
   print(some_dictionary[key])
 ```
 
-### sorted()
-
-`sorted()`は、dict の key をソートされたリストにして返す。
-
-```python
-dict = {'e': 0, 'd': 0, 'c': 0, 'b': 0, 'a': 0}
-sorted(dict) # => [a,b,c,d,e]
-
-for key in sorted(dict):
-  do_something(dict[key])
-```
-
-### メソッド
+#### メソッド
 
 `items()` key-value ペアのリストを返す
 
@@ -226,4 +254,89 @@ dict.setdefault('somekey', 'somevalue')
 # これは下記と等価
 if 'somekey' not in dict:
   dict['somekey'] = 'somevalue'
+```
+
+### Set
+
+- Set(集合)とは、ユニークな値のあつまりのこと
+- 差集合、積集合、和集合などの操作を行うことができる
+- 順序は保証されない
+
+```python
+# リテラルで作成
+vowels1 = {'a', 'e', 'e', 'i', 'o', 'u', 'u'}
+
+# ビルトイン関数で作成
+vowels2 = set('aeeiouu')
+```
+
+#### 結合 union
+
+オリジナルと比較対象を足したもの
+
+```python
+original = {'a', 'e',  'i', 'o', 'u'}
+u = sorted(original.union(set('hello')))
+print(u)  # ['a', 'e', 'h', 'i', 'l', 'o', 'u']
+```
+
+#### 差分 difference
+
+オリジナルにあって、比較対象にないもの
+
+```python
+original = {'a', 'e',  'i', 'o', 'u'}
+u = sorted(original.difference(set('hello')))
+print(u)  # ['a', 'i', 'u']
+```
+
+#### 共通 intersection
+
+オリジナルにも、比較対象にもあるもの
+
+```python
+original = {'a', 'e',  'i', 'o', 'u'}
+u = sorted(original.intersection(set('hello')))
+print(u)  # ['e', 'o']
+```
+
+### Tuple
+
+- 変更できないリストのこと
+- 変更できないかわりに、低いオーバーヘッドを得られる
+- 順序は保証される
+
+```python
+# リテラルで作る
+my_tuple = ('a', 'e', 'i', 'o', 'u')
+
+# 要素が1つの場合は`,`をつけないと文字列として判定されるので注意
+my_tuple = ('single',)
+
+# ビルトインファンクションで作る
+my_tuple = tuple('aeiou')
+```
+
+### その他
+
+複雑なオブジェクトをきれいにコンソールに出力するには、`pprint()`を使う。
+
+```python
+import pprint
+pprint.pprint(some_ugly_dictionary)
+```
+
+## 関数
+
+### 関数の基本
+
+- Python のコード再利用は、関数に始まり関数に終わる
+- 関数＝コードに名前をつけたもの
+- モジュール＝関数をパッケージ化したもの
+
+```python
+def some_function(some_argument):
+    """関数の説明をここに書く"""
+    # コードがここにくる
+    return some_value
 ```
