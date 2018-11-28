@@ -1555,12 +1555,14 @@ class AddUserIdToPosts extends Migration
 {
     public function up() {
         Schema::table('posts', function (Blueprint $table) {
+            // 列を追加する
             $table->integer('user_id');
         });
     }
 
     public function down() {
         Schema::table('posts', function (Blueprint $table) {
+            // ロールバック時には列を削除する
             $table->dropColumn('user_id');
         });
     }
@@ -2229,12 +2231,11 @@ php artisan vendor:publish --tag=laravel-pagination
 
 #### セットアップ
 
-```bash
-# 関連するRoute, View, Controllerを生成する
-php artisan make:auth
+下記コマンドで関連するファイルが自動生成される。生成されたファイルをベースに移植を行うとお手軽である。
 
-# 認証に使うテーブルを作成する
-php artisan migrate
+```bash
+php artisan make:auth　# 関連するRoute, View, Controllerを生成する
+php artisan migrate # 認証に使うテーブルを作成
 ```
 
 `Auth::user()` ユーザ情報の取得
