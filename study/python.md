@@ -85,6 +85,14 @@ else:
 'a|b|c'.split('|') # => ['a', 'b', 'c']
 ```
 
+### f-string
+
+```py
+a = 1
+b = 'wow'
+print(f'{a} and {b}') # => '1 and wow'
+```
+
 ### Docstring
 
 - `"""`を使うと docstring(heredoc)を書ける
@@ -383,7 +391,92 @@ my_tuple = ('single') # => 'single'
 my_tuple = tuple('aeiou') # => ('a', 'e', 'i', 'o', 'u')
 ```
 
+### 内包表記
+
+- メリット
+  - 書きやすい
+  - 文ではなく式として使うことができる（そのまま代入できる）
+  - 通常の for 文と比較し、処理が最適化されて高速になる
+- リスト内包表記（listcomp）、辞書内包表記（dictcomp）、集合内包表記（setcomp）がある。タプル内包表記は存在しない。
+
+#### リスト内包表記
+
+```py
+numbers = [1, 2, 3, 4, 5]
+
+big_numbers1 = []
+for n in numbers:
+    big_numbers1.append(n*10)
+
+# 上記は下記の1行と等価
+
+big_numbers2 = [n * 10 for n in numbers]
+
+print(big_numbers1)  # [10, 20, 30, 40, 50]
+print(big_numbers2)  # [10, 20, 30, 40, 50]
+
+# 特定の条件に当てはまるものだけを抜き出す場合はifを使う
+big_numbers2 = [n * 10 for n in numbers if n == 1]
+```
+
+`[]`を`()`に置き換えると、ジェネレータになる。リスト内包表記は全ての処理が終わるまで次に進まないが、ジェネレータであれば 1 つの処理が終わるごとに逐次実行される。
+
+```py
+import requests
+
+urls = [
+    'https://www.google.co.jp',
+    'https://www.yahoo.co.jp',
+    'https://www.microsoft.com',
+]
+
+for res in [requests.get(u) for u in urls]:
+    # 結果がいっぺんに表示される
+    print(res.status_code)
+
+for res in (requests.get(u) for u in urls):
+    # 結果が時間差で表示される
+    print(res.status_code)
+```
+
+#### 辞書内包表記
+
+```py
+old_dict = {
+    'key1': 'val1',
+    'key2': 'val2',
+}
+
+new_dict = {'new_'+k: 'new_'+v for k, v in old_dict.items()}
+
+print(new_dict)  # => {'new_key1': 'new_val1', 'new_key2': 'new_val2'}
+
+# 特定の条件に当てはまるものだけを抜き出す場合はifを使う
+new_dict = {'new_'+k: 'new_'+v for k, v in old_dict.items() if v == 'something'}
+```
+
+#### 集合内包表記
+
+辞書内包表記に見えるけど`:`がない、ならばそれは集合内包表記である
+
+```py
+vowels = {'a', 'e', 'i', 'o', 'u'}
+phrase = 'hello'
+
+found = {v for v in vowels if v in phrase}
+
+print(found) # => {'e','o'}
+```
+
 ### その他
+
+#### unpacking
+
+リストや配列の要素を分解して抽出できる。
+
+```py
+a, b, c = [1, 2, 3]
+```
 
 #### 空のデータ構造
 
@@ -608,6 +701,24 @@ print(b) # error
 print(c) # error
 ```
 
+### ジェネレータ関数
+
+- 何回もリターンできる関数
+- `for`文などで配列の替わりに指定することでループ処理できる
+
+```py
+def some_func():
+    sleep(1)
+    yield 1
+    sleep(1)
+    yield 2
+    sleep(1)
+    yield 3
+
+for i in some_func():
+    print(i) # 1 2 3 が1秒毎に表示される
+```
+
 ## Flask
 
 ### 基本
@@ -749,7 +860,7 @@ def getuser()->str:
     return 'User値の現在値: '+session['user']
 ```
 
-### フォームデータへのアクセス
+### フォームデータ
 
 フォームデータにアクセスするには、`request` オブジェクトを使う。
 
@@ -825,7 +936,9 @@ with open('todos.txt') as tasks:
   for line in tasks:
     do_something()
   # or
-  content = tasks.readlines() # 文字列のリストとして一気に読み込む
+  content = tasks.read() # 全体を文字列として一気に読み込む
+  content = tasks.readline() # 1行だけ読み込む
+  content = tasks.readlines() # 全体を1行1要素のリストとして一気に読み込む
 ```
 
 ## データベース
@@ -935,6 +1048,13 @@ a.increase()
 CountFromBy.increase(a)
 ```
 
+### 継承
+
+```py
+class ChildClass(ParentClass):
+  pass
+```
+
 ### 特殊メソッド
 
 - 全てのクラスは、object クラスを継承している
@@ -970,7 +1090,11 @@ print(a.val) # 130
 
 前処理-本処理-後処理というパターンを上手く扱うためのプロトコルである。このプロトコルを実装したクラスであれば、`with`とともに使うことができる。
 
-### 必要なメソッド
+### メソッド
+
+#### \_\_init\_\_(オプション)
+
+enter よりも前に行う必要のある初期化作業を行う。
 
 #### \_\_enter\_\_
 
@@ -978,11 +1102,7 @@ print(a.val) # 130
 
 #### \_\_exit\_\_
 
-後処理を行う。
-
-#### \_\_init\_\_(オプション)
-
-enter よりも前に行う必要のある初期化作業を行う。
+後処理を行う。`__init__`や`__enter__`が失敗した場合には実行されない。
 
 ### データベース操作の例
 
@@ -1005,6 +1125,14 @@ class UseDatabase:
         self.conn.commit()
         self.cursor.close()
         self.conn.close()
+
+        # with内で例外が起こった場合の処理
+        # (特定のエラーを捕捉)
+        if exc_type is RuntimeError:
+            raise RuntimeError
+        # (その他全てのエラーを捕捉)
+        elif exc_type:
+            raise exc_type(exc_value)
 ```
 
 #### クラスを with で使う
@@ -1023,6 +1151,11 @@ with UseDatabase(dbconfig) as cursor:
     data = cursor.fetchall()
     print(data)
 ```
+
+### 例外処理
+
+- `__init__`や`__enter__`の中で起こったエラーは、通常通り未補足のままで raise される。
+- `__init__`や`__enter__`が成功した後において、`with`の中で起こったエラーは、一旦`__exit__`で補足される。第二引数以降にエラーのデータが入る。
 
 ## 関数デコレータ
 
@@ -1067,3 +1200,56 @@ def some_func():
 - `wrapper`という名前は慣習なので変えるな。
 
 ## 例外処理
+
+- Python は、実行時に問題が発生すると Exception（例外）を投げる。
+- 例外は階層化されている
+- 全ての例外は`Exception`クラスを継承している
+
+[Built-in Exeptions の一覧](https://docs.python.org/3/library/exceptions.html)
+
+### try-except
+
+- 例外が発生する可能性のあるコードは`try`で囲み、`except`でエラーを補足する。
+- 全補足を行うときは、単に`except:`とせず、Exception クラスと`as err`を使ってエラーを正しく報告すること
+
+```py
+try:
+    with open('dummy.txt') as file:
+        print(file.read())
+except FileNotFoundError:
+    print('ファイルが見つかりません')
+except PermissionError:
+    print('権限がありません')
+# 全補足する場合は、Exceptionで拾って適切に処理すること
+except Exception as err:
+    print('未知のエラー: ', err)
+```
+
+### カスタム例外
+
+- カスタム例外は、`Exception`クラスを継承することで簡単に作成できる。
+- 文脈に応じてより具体的な例外を定義したり、特定の事柄に寄り過ぎた例外を抽象化する場合などに使う。
+
+```py
+class MyCustomError(Exceptin):
+  pass
+
+try:
+  raise MyCustomError('カスタムエラーです')
+except MyCustomError as err:
+  print(err) # => 'カスタムエラーです'
+```
+
+## スレッド
+
+- ある重たい処理を行う際、本スレッドの処理を止まらせることなく、別スレッドで実行する方法。
+- 乱用すると誰もデバッグできないコードになるので注意する。
+
+```py
+from threading import Thread
+
+t = Thread(target=some_func, args=(arg1, arg2))
+t.start()
+
+print('tがどんなに重たい処理でもここは即時に実行される')
+```
