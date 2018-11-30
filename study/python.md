@@ -85,6 +85,11 @@ else:
 'a|b|c'.split('|') # => ['a', 'b', 'c']
 ```
 
+### Docstring
+
+- `"""`を使うと docstring(heredoc)を書ける
+- 複数行に渡って書くことができる。
+
 ### コレクション
 
 | type       | description                  |
@@ -183,6 +188,10 @@ set('hello')
 
 タイプを判定する
 
+#### id()
+
+変数のメモリアドレス表現する一意の数値を取得する
+
 #### str()
 
 オブジェクトを文字列にして返す
@@ -194,7 +203,7 @@ set('hello')
 - そのコードが、Python で直接実行されたとき=>`__main__`
 - そのコードが、モジュールとしてインポートされたとき=>モジュール名
 
-下記のコードは'dunder name dunder main'と呼ばれる
+下記のコードは'dunder name dunder main'と呼ばれる。コードが直接実行されているか、又はインポートされているかを調べる。
 
 ```py
 if __name__ == '__main__':
@@ -310,6 +319,8 @@ if 'somekey' not in dict:
   dict['somekey'] = 'somevalue'
 ```
 
+`pop('キー名')` キー名の要素を抜き出して返す。辞書からは削除する。
+
 ### Set
 
 - Set(集合)とは、ユニークな値のあつまりのこと
@@ -401,12 +412,7 @@ def some_function(some_argument):
     return some_value
 ```
 
-### Docstring
-
-- `"""`を使って docstring(heredoc)を書く。
-- 複数行に渡って書くことができる。
-
-### Annotation
+### アノテーション
 
 アノテーションは、人間が楽にコードを読めるようにするためのもの。
 Python はアノテーションを完全に無視する。
@@ -416,15 +422,19 @@ Python はアノテーションを完全に無視する。
 def search_for_vowels(word: str) -> set:
 ```
 
+### シグネチャ
+
+引数の数と型のこと？
+
 ### 引数のデフォルト値
 
 ```python
 def search_for_vowels(word: str = "aeiou") -> set:
 ```
 
-### キーワードでの引数の受け渡し
+### キーワード引数を渡す
 
-キーワードでの引数の受け渡しを使うと、順番を気にせずに引数を渡すことができる。
+キーワードで引数を渡すと、順番を気にせずに引数を渡すことができる。
 
 ```python
 def search_for_vowels(word, letter) -> set:
@@ -433,15 +443,14 @@ def search_for_vowels(word, letter) -> set:
 search_for_vowels(letter='letter', word='word')
 ```
 
-#### dictionary を展開して引数を渡す
+### 辞書でキーワード引数を渡す
 
-`**some_dict`を使うと、辞書の中身を分解して、キーワードとして引数を渡せる
+`**`を使うと、dictionary を展開して、キーワード引数として渡す事ができる。
 
 ```py
 def test(name, age):
     print(name)
     print(age)
-
 
 person = {
     'name': 'John',
@@ -451,6 +460,62 @@ person = {
 test(**person)
 # 上記は下記と等価
 test(name=person['name'], age=person['age'])
+```
+
+### 辞書でキーワード引数を受け取る
+
+`**`を使うと、複数のキーワード引数を dictionary として受け取ることができる。
+
+引数名には`kwargs`を使うのが慣例。
+
+```py
+def test(**kwargs):
+    print(kwargs['name'])
+    print(kwargs['age'])
+
+test(name='John', age=28)
+```
+
+### リストで引数を渡す
+
+引数を渡す際に`*`を使うことで、配列の各要素を引数として渡すことができる。JS の`...`に相当する。
+
+```python
+def some_func(a, b, c):
+    print(a, b, c)
+
+values = [1, 2, 3]
+some_func(*values) # => 1,2,3
+```
+
+### リストで引数を受け取る
+
+引数を受け取る際に`*`を使うことで、複数の引数をリスト（正確にはタプル）として一括で受け取ることができる。JS の`...`に相当する。
+
+引数名には`args`を使うのが慣例。
+
+```python
+def some_func(*args):
+  pass
+
+some_func() # arg => ()
+some_func(1) # arg => (1,)
+some_func(1,2) # arg=> (1,2)
+```
+
+### ジェネリクス型関数
+
+任意の数のあらゆる型の引数を受け取ることのできる関数のこと。
+
+```py
+def god(*args, **kwargs):
+    pass
+
+# 以下のいずれの呼び出しもValidである
+god()
+god(1, 2, 3)
+god(a=10, b=20, c=30)
+god(1, 2, 3, a=10, b=20, c=30)
 ```
 
 ### モジュールの作成
@@ -498,35 +563,32 @@ python setup.py　sdist # dist/MODULE_NAME.tar.gzとして作成される
 pip install dist/MODULE_NAME.tar.gz
 ```
 
-### 参照渡し・値渡し
+### 共有渡し
 
-- Python の変数は全て「オブジェクト参照（メモリアドレス）」である
-- つまり、変数に格納されるのは、メモリアドレス
-- つまり、関数に渡されるのは、メモリアドレス
+Python の引数渡しの方法は、共有渡し(call by reference)と呼ぶのが最も妥当らしい。
 
-関数では、アドレスの参照先の型によって下記の処理を行う
+Python では全てがオブジェクトであり、変数へ代入したり関数の引数へ渡すたびに内容をコピーしていたのではナンセンスである。このため、変数は全て「オブジェクトの実体への参照（メモリアドレス）」を格納している。
 
-- 可変値（List, Dictionary, Set）なら参照渡し
-- 不変値（String, Integer, Tuple）なら値渡し
+関数には、このメモリアドレスが値として渡される。
 
-ただし、関数内で**代入文**を使う場合は注意が必要である。代入文では、右辺の値が、**新たな変数**として左辺に代入されるので、意図しない結果になる場合がある。
+ただし、引数への再代入だけは注意が必要である。これを行うと、右辺の計算結果が**新たに用意された左辺の変数**に代入される。
 
 ```py
 def update(arg):
     arg = ['new data']
 
-mutable = [0, 1, 2]
-update(mutable)
-print(mutable)  # => [0, 1, 2] wtf?
+original = [0, 1, 2]
+update(original)
+print(original)  # => [0, 1, 2] wtf?
 ```
 
 ```py
 def update(arg):
     arg.append('new data')
 
-mutable = [0, 1, 2]
-update(mutable)
-print(mutable)  # => [0, 1, 2, 'new data']
+original = [0, 1, 2]
+update(original)
+print(original)  # => [0, 1, 2, 'new data']
 ```
 
 ### スコープ
@@ -570,6 +632,18 @@ app.run()
 
 - `templates` テンプレートファイルを配置する
 - `static` 静的ファイルを配置する。`/static/**`でアクセスする。
+
+### 設定情報
+
+コンフィグ設定は`app.config`という辞書に保持するとよい。
+
+```py
+# 設定時
+app.config['dbconfig'] = {　}
+
+# 利用時
+if(app.config['dbconfig'] == 'something'):
+```
 
 ### デコレータ
 
@@ -651,6 +725,28 @@ app.run(debug=True)
 @app.route('/alias1')
 @app.route('/alias2')
 # some function goes here
+```
+
+### セッション
+
+`session['キー名']`でセッション値を設定・取得できる。
+
+```py
+from flask import Flask, session
+
+app = Flask(__name__)
+
+# Flaskにシークレットキーを設定する
+app.secret_key = 'my_secret'
+
+@app.route('/setuser/<user>')
+def setuser(user: str) -> str:
+    session['user'] = user
+    return 'User値を設定: '+session['user']
+
+@app.route('/getuser')
+def getuser()->str:
+    return 'User値の現在値: '+session['user']
 ```
 
 ### フォームデータへのアクセス
@@ -738,7 +834,7 @@ with open('todos.txt') as tasks:
 - この仕様に沿って、各ドライバは作成されている。
 
 ```txt
-Python Code <-> DB-API（に準拠したドライバ） <-> Database Specific Logic <-> DB
+Python Code <-> DB-API（に準拠したドライバ）<-> DB
 ```
 
 ### 手順
@@ -827,16 +923,15 @@ a = CountFromBy()
 b = CountFromBy()
 ```
 
-### メソッド呼び出しのし動き
+### メソッド呼び出しの動き
 
-- クラスインスタンスからメソッドを呼び出したとき、下記のような変換が行われる。
-- メソッドの定義が、`def some_func(self)`のように self を取る様になっているのはこのためである。
+クラスインスタンスからメソッドを呼び出したとき、下記のような変換が行われる。メソッドの定義が、`def some_func(self)`のように self を取るのはこのためである。
 
 ```py
 a = CountFromBy()
 
 a.increase()
-# これは下記と等価
+# これは下記に変換して呼び出される
 CountFromBy.increase(a)
 ```
 
@@ -866,3 +961,109 @@ a.increase()
 a.increase()
 print(a.val) # 130
 ```
+
+#### \_\_repr\_\_
+
+オブジェクトを`print`したときなどに使われる。オブジェクトを表現する文字列を返すこと。
+
+## コンテキストマネジメントプロトコル
+
+前処理-本処理-後処理というパターンを上手く扱うためのプロトコルである。このプロトコルを実装したクラスであれば、`with`とともに使うことができる。
+
+### 必要なメソッド
+
+#### \_\_enter\_\_
+
+前処理を行う。`with`に値を返すことができる。
+
+#### \_\_exit\_\_
+
+後処理を行う。
+
+#### \_\_init\_\_(オプション)
+
+enter よりも前に行う必要のある初期化作業を行う。
+
+### データベース操作の例
+
+#### プロトコルを実装したクラス
+
+```py
+import mysql.connector
+
+class UseDatabase:
+    def __init__(self, config: dict) -> None:
+        self.config = config
+
+    def __enter__(self) -> 'cursor':
+        self.conn = mysql.connector.connect(**self.config)
+        self.cursor = self.conn.cursor()
+
+        return self.cursor
+
+    def __exit__(self, exc_type, exc_value, exc_trace) -> None:
+        self.conn.commit()
+        self.cursor.close()
+        self.conn.close()
+```
+
+#### クラスを with で使う
+
+```py
+dbconfig = {
+    'host': '127.0.0.1',
+    'user': 'root',
+    'password': '123456',
+    'database': 'vsearchlogDB'
+}
+
+with UseDatabase(dbconfig) as cursor:
+    _SQL = """show tables"""
+    cursor.execute(_SQL)
+    data = cursor.fetchall()
+    print(data)
+```
+
+## 関数デコレータ
+
+- 既存の関数のコードを全く変更せずに、関数の振る舞いを変更するためのもの。
+- コピペを減らし、コードの見通しを良くする効果がある。
+- React の HOC と同じ動き
+
+### デコレータのテンプレート
+
+```py
+from flask import session
+from functools import wraps
+
+def check_logged_in(func):
+    # このデコレータは、様々な問題を自動で解決してくれる、おまじないと思え
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        # 前処理
+
+        # デコレートされる関数を呼び出す場合の処理をここに書く
+        # 必要なら値を返す
+        if true:
+          func()
+          return 'some thing'
+
+        # デコレートされる関数を呼び出さない場合の処理をここに書く
+        # 必要なら値を返す
+        return 'another thing'
+
+    return wrapper
+```
+
+```py
+@check_logged_in
+def some_func():
+  pass
+```
+
+### デコレータ作成時の注意
+
+- デコレータはデコレートされる関数と同じシグネチャを持たなければならない。よって、ジェネリクス型関数にする。
+- `wrapper`という名前は慣習なので変えるな。
+
+## 例外処理
