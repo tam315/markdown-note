@@ -68,14 +68,14 @@ func main() {
 
 ```go
 func split(sum int) (x, y int) {
-	x = sum / 2
-	y = sum - x
-	return
+  x = sum / 2
+  y = sum - x
+  return
 }
 
 func main() {
-	a, b := split(20)
-	fmt.Println(a, b)
+  a, b := split(20)
+  fmt.Println(a, b)
 }
 ```
 
@@ -88,8 +88,8 @@ func main() {
 var a, b, c bool
 
 func main() {
-	var d int
-	fmt.Println(a, b, c, d) // => false false false 0
+  var d int
+  fmt.Println(a, b, c, d) // => false false false 0
 }
 ```
 
@@ -209,7 +209,7 @@ const Big = 1 << 100
 func needFloat(x float64) float64 { return x * 0.1 }
 
 func main() {
-	fmt.Println(needFloat(Big)) // ここで初めて型が決まる(float64)
+  fmt.Println(needFloat(Big)) // ここで初めて型が決まる(float64)
 }
 ```
 
@@ -297,8 +297,8 @@ case b == 2:
 
 ```go
 func main() {
-	defer fmt.Println("world")
-	fmt.Println("hello")
+  defer fmt.Println("world")
+  fmt.Println("hello")
 } // => "hello world"
 ```
 
@@ -343,12 +343,12 @@ fmt.Println(*pointer) // => 456
 
 ```go
 type Vertex struct {
-	X int
-	Y int
+  X int
+  Y int
 }
 
 func main() {
-	fmt.Println(Vertex{1, 2})
+  fmt.Println(Vertex{1, 2})
 } // => {1 2}
 ```
 
@@ -356,14 +356,14 @@ struct の値にはドットでアクセスできる。
 
 ```go
 type Vertex struct {
-	X int
-	Y int
+  X int
+  Y int
 }
 
 func main() {
-	v := Vertex{1, 2}
-	v.X = 4
-	fmt.Println(v) // => {4 2}
+  v := Vertex{1, 2}
+  v.X = 4
+  fmt.Println(v) // => {4 2}
 }
 ```
 
@@ -373,18 +373,18 @@ struct のポインタは、`*(pointer).X`としなくても、`pointer.X`で値
 
 ```go
 type Vertex struct {
-	X int
-	Y int
+  X int
+  Y int
 }
 
 func main() {
-	var v Vertex
-	var pointer *Vertex
+  var v Vertex
+  var pointer *Vertex
 
-	v = Vertex{1, 2}
-	pointer = &v
-	pointer.X = 123
-	fmt.Println(v) // => {123 2}
+  v = Vertex{1, 2}
+  pointer = &v
+  pointer.X = 123
+  fmt.Println(v) // => {123 2}
 }
 ```
 
@@ -411,7 +411,7 @@ p := &Vertex{1, 2} // has type *Vertex
 
 ### Arrays
 
-`[n]T`で、長さ n で型が T の配列を作成できる。配列の長さは型の一部であり、変更できない。
+`[n]T`で、長さ n で型が T の配列を作成できる。配列の長さは**型の一部**であり、変更できない。
 
 ```go
 var a [3]int
@@ -422,8 +422,22 @@ a[2] = 300
 b := [6]int{2, 3, 5, 7, 11, 13}
 ```
 
+Array の変数は配列全体を指す。C 言語のように配列の先頭を指すポインタではない。このため、代入を行うと配列全体がコピーされる。
+
+```go
+a := [3]int{1, 2, 3}
+b := a
+b[0] = 999
+
+fmt.Printf("%v", a) // [1 2 3]
+fmt.Printf("%v", b) // [999 2 3]
+```
+
 ### Slices
 
+詳細は[このブログ](https://blog.golang.org/go-slices-usage-and-internals)を参照
+
+- スライスは Array の上に構築されている。Go では配列よりもスライスをよく使う。
 - `[]T`で型が T のスライスを宣言できる
 - `someArray[1:4]`で、要素 1 から要素 3 までを含むスライスを作成できる
 
@@ -439,7 +453,7 @@ fmt.Println(slice) // => 2,3,4
 - スライスは配列への参照のようなもの
 - スライスはどんなデータも格納しておらず、単に元の配列の一部分を指し示しているだけ
 - スライスの要素を変更すると、その元となる配列の対応する要素が変更される
-- 同じ元となる配列を共有している他のスライスは、それらの変更が反映されます。
+- 同じ元となる配列を共有しているスライスは、お互いの変更が反映される
 
 ```go
 array := [6]int{1, 2, 3, 4, 5, 6}
@@ -454,7 +468,7 @@ fmt.Println(slice1) // => 123, 2, 3
 fmt.Println(slice2) // => 123, 2, 3
 ```
 
-#### Slice literals
+#### Creating a slice with literals
 
 - いきなりスライスを作成するリテラル
 - 長さを指定しない配列リテラルのような書き方をする
@@ -468,13 +482,31 @@ fmt.Println(slice2) // => 123, 2, 3
 []bool{true, false, false}
 ```
 
+#### Creating a slice with make
+
+- `make(スライス, length, capacity)`関数を使ってスライスを作成することで、動的にサイズ変更できる配列を取得できる。
+- 配列の各要素は Zero Values で埋められる
+
+```go
+a := make([]int, 5) // [0:5]
+// len=5 cap=5 [0 0 0 0 0]
+
+b := make([]int, 1, 5) // [0:1]
+// len=1 cap=5 [0]
+
+c := b[:2] // [0:2]
+// len=2 cap=5 [0 0]
+
+d := c[2:5] // [2:5]
+// len=3 cap=3 [0 0 0]
+```
+
 #### Slice default
 
 スライスを作るときの上限・下限の値は省略できる
 
 ```go
-var a [10]int
-// 下記はどれも等価
+// 長さが11のArrayがあったとすると、下記はどれも等価
 a[0:10]
 a[:10]
 a[0:]
@@ -501,6 +533,18 @@ s = s[2:]
 // len=2 cap=4 [5 7]
 ```
 
+スライスのスタートを後から遡って変更することはできない。一方、エンドポイントは cap の値まで拡張できる。
+
+```go
+a := []int{1, 2, 3, 4, 5}
+
+b := a[2:4]
+fmt.Printf("%v", b) // [3 4]
+
+c := b[0:cap(b)]
+fmt.Printf("%v", c) // [3 4 5]
+```
+
 #### Nil slices
 
 - スライスの Zero Values は`nil`である
@@ -508,25 +552,6 @@ s = s[2:]
 
 ```go
 var s []int // s==nil len(s)==0 cap(s)==0
-```
-
-#### Creating a slice with make
-
-- `make(スライス, length, capacity)`関数を使ってスライスを作成することで、動的にサイズ変更できる配列を取得できる。
-- 配列の各要素は Zero Values で埋められる
-
-```go
-a := make([]int, 5) // [0:5]
-// len=5 cap=5 [0 0 0 0 0]
-
-b := make([]int, 1, 5) // [0:1]
-// len=1 cap=5 [0]
-
-c := b[:2] // [0:2]
-// len=2 cap=5 [0 0]
-
-d := c[2:5] // [2:5]
-// len=3 cap=3 [0 0 0]
 ```
 
 #### Slices of slices
@@ -544,12 +569,17 @@ board[0][0] = "X"
 
 #### appending to a slice
 
-- `append()`でスライスに要素を追加できる。
-- スライスの背後にある配列の大きさが足りなくなったときは、新しい配列が作成され、スライスはその配列を指す様になる。このとき、多少余分に配列の長さが確保される場合がある（どの程度余分に確保されるかは環境によって異なるかも？）。
+- `append()`を使うことで、簡単にスライス（配列）に要素を追加できる
+- スライスの背後にある配列の大きさが足りなくなったとき
+  - 新しい配列が作成される。このとき、余分に配列の長さが確保される。
+  - 古い配列の内容が新しい配列にコピーされる
+  - 新しいスライスは新しい配列を指す
 
 ```go
-var s []int
-s = append(s, 0)
-s = append(s, 1)
-s = append(s, 2, 3, 4)
+s := []int{1,2,3,4} // cap == 4
+s = append(s, 5) // cap == 8
+s = append(s, 6) // cap == 8
+s = append(s, 7) // cap == 8
+s = append(s, 8) // cap == 8
+s = append(s, 9) // cap == 16
 ```
