@@ -1,3 +1,7 @@
+---
+category: python
+---
+
 # Python
 
 [[toc]]
@@ -10,7 +14,8 @@
 
 ### ドキュメント
 
-[https://docs.python.org/3/](https://docs.python.org/3/)
+- [https://docs.python.org/3/](https://docs.python.org/3/)
+- [udemy](http://nbviewer.jupyter.org/github/Pierian-Data/Complete-Python-3-Bootcamp/tree/master/)
 
 ### 用語
 
@@ -27,8 +32,8 @@
 
 ### ライブラリ
 
-- ライブラリ -> モジュール(`os`, `datetime`など)の集まり。既定で用意されているものを標準ライブラリと呼ぶ。
-- モジュール -> 関数の集まり
+- モジュール(`os`, `datetime`など)-> 関数の集まり
+- ライブラリ -> モジュールの集まり。特に、デフォルトで用意されているライブラリを標準ライブラリと呼ぶ。
 
 ```python
 import os
@@ -85,7 +90,26 @@ else:
 'a|b|c'.split('|') # => ['a', 'b', 'c']
 ```
 
-### f-string
+#### format by placeholder
+
+- `%s` `str()`で出力。特殊文字はそのまま出力される。
+- `%r` `repr()`で出力。特殊文字はただの文字列にエスケープされる。
+- `%d` 整数で出力
+- `%1.0f` float で出力
+
+```py
+print("I'm going to inject %s text here, and %s text here." % (x, y))
+```
+
+#### format by `format()`
+
+```py
+print('The {2} {1} {0}'.format('fox', 'brown', 'quick'))
+print('First Object: {a}, Second Object: {b}, Third Object: {c}'.format(
+    a=1, b='Two', c=12.3))
+```
+
+#### format by f-string
 
 ```py
 a = 1
@@ -150,7 +174,7 @@ print('a', 'b', 'c', sep=',') # => 'a,b,c'
 
 #### pprint()
 
-複雑なオブジェクトをきれいにコンソールに出力するには、`pprint()`を使う。
+オブジェクトをきれいにコンソールに出力する
 
 ```python
 import pprint
@@ -229,7 +253,7 @@ if __name__ == '__main__':
 numbers = [1, 2, 3, 4, 5]
 
 # ビルトイン関数で作成
-list('john')
+list('john') # => ['j','o','h','n']
 
 # 長さを調べる
 len(numbers)
@@ -263,8 +287,9 @@ numbers.insert(0, "first-element")
 # 削除する(インデックス値ではなく、削除したい値自体を渡す。最初に見つかった値が削除される)
 numbers.remove(2)
 
-# 末尾の要素を削除する
+# 末尾や特定位置の要素を削除する
 numbers.pop()
+numbers.pop(2)
 ```
 
 #### スライス表記
@@ -309,8 +334,10 @@ for key in some_dictionary:
 `items()` key-value ペアのリストを返す
 
 ```python
-dict = {'e': 0, 'd': 0, 'c': 0, 'b': 0, 'a': 0}
-dict.items() # => [('e', 0), ('d', 0), ('c', 0), ('b', 0), ('a', 0)]
+some_dict = {'e': 0, 'd': 0, 'c': 0, 'b': 0, 'a': 0}
+some_dict.items()
+# => [('e', 0), ('d', 0), ('c', 0), ('b', 0), ('a', 0)]
+# => 上記はdict_itemsという特殊な型
 
 for key, value in some_dict.items():
 # or
@@ -320,11 +347,11 @@ for key, value in sorted(some_dict.items()):
 `setdefault()` キーが未初期化だった場合に初期化を行う
 
 ```python
-dict.setdefault('somekey', 'somevalue')
+some_dict.setdefault('somekey', 'somevalue')
 
 # これは下記と等価
-if 'somekey' not in dict:
-  dict['somekey'] = 'somevalue'
+if 'somekey' not in some_dict:
+  some_dict['somekey'] = 'somevalue'
 ```
 
 `pop('キー名')` キー名の要素を抜き出して返す。辞書からは削除する。
@@ -340,7 +367,7 @@ if 'somekey' not in dict:
 vowels1 = {'a', 'e', 'e', 'i', 'o', 'u', 'u'}
 
 # ビルトイン関数で作成
-vowels2 = set('aeeiouu')
+vowels2 = set('aeeiouu') # => {'u', 'e', 'i', 'o', 'a'}
 ```
 
 #### 結合 union
@@ -447,12 +474,12 @@ old_dict = {
     'key2': 'val2',
 }
 
-new_dict = {'new_'+k: 'new_'+v for k, v in old_dict.items()}
+new_dict = {f'new_{k}': f'new_{v}' for k, v in old_dict.items()}
 
 print(new_dict)  # => {'new_key1': 'new_val1', 'new_key2': 'new_val2'}
 
 # 特定の条件に当てはまるものだけを抜き出す場合はifを使う
-new_dict = {'new_'+k: 'new_'+v for k, v in old_dict.items() if v == 'something'}
+new_dict = {f'new_{k}': f'new_{v}' for k, v in old_dict.items() if v == 'something'}
 ```
 
 #### 集合内包表記
@@ -656,37 +683,27 @@ python setup.py　sdist # dist/MODULE_NAME.tar.gzとして作成される
 pip install dist/MODULE_NAME.tar.gz
 ```
 
-### 共有渡し
-
-Python の引数渡しの方法は、共有渡し(call by reference)と呼ぶのが最も妥当らしい。
-
-Python では全てがオブジェクトであり、変数へ代入したり関数の引数へ渡すたびに内容をコピーしていたのではナンセンスである。このため、変数は全て「オブジェクトの実体への参照（メモリアドレス）」を格納している。
-
-関数には、このメモリアドレスが値として渡される。
-
-ただし、引数への再代入だけは注意が必要である。これを行うと、右辺の計算結果が**新たに用意された左辺の変数**に代入される。
-
-```py
-def update(arg):
-    arg = ['new data']
-
-original = [0, 1, 2]
-update(original)
-print(original)  # => [0, 1, 2] wtf?
-```
-
-```py
-def update(arg):
-    arg.append('new data')
-
-original = [0, 1, 2]
-update(original)
-print(original)  # => [0, 1, 2, 'new data']
-```
-
 ### スコープ
 
-関数はスコープを形成するので、外部から関数内の変数にはアクセスできない。ただし、関数内内から外部の変数にはアクセスできる。
+関数内から外部の変数にアクセスできる。この際、LEGB Rule (local, enclosing functions, global,
+built-in)の順にアクセスする。
+
+```py
+global_val = 0
+
+def lv1():
+    lv1_val = 1
+
+    def lv2():
+        lv2_val = 2
+
+        print(lv2_val) # local
+        print(lv1_val) # enclosing funcitons
+        print(global_val) # global
+        print(len([1, 2, 3])) # build-in
+```
+
+関数はスコープを形成するので、外部から関数内の変数にはアクセスできない。
 
 ```py
 original = 1
@@ -699,6 +716,34 @@ test(original)
 print(a) # error
 print(b) # error
 print(c) # error
+```
+
+### 共有渡し
+
+Python の引数渡しの方法は、共有渡し(call by sharing)と呼ぶのが最も妥当らしい。つまりは関数（メソッド）の呼び出し元と呼び出し先で同じオブジェクトを「共有」する方法である。
+
+Python では全てがオブジェクトであり、変数へ代入したり関数の引数へ渡すたびに内容をコピーしていたのではナンセンスである。このため、変数は全て「オブジェクトの実体への参照（メモリアドレス）」を格納している。関数を呼び出すときも、このメモリアドレスが引数として渡されるため、オブジェクトは「共有」されることになる。
+
+ただし、引数への再代入を行った瞬間にそのルールは崩れる。再代入では、右辺の計算結果が**新たに用意された左辺の変数**に代入されるため、もはや呼び出し元と呼び出し先で同じオブジェクトを共有しなくなる。これにより、表面上は値渡しをしているように見える場合がある。
+
+```py
+def update(arg):
+    # 再代入しなければ、呼び出し元の変数を操作できる
+    arg.append('new data')
+
+original = [0, 1, 2]
+update(original)
+print(original)  # => [0, 1, 2, 'new data']
+```
+
+```py
+def update(arg):
+    # 再代入すると、呼び出し元の変数はもはや操作できなくなる
+    arg = ['new data']
+
+original = [0, 1, 2]
+update(original)
+print(original)  # => [0, 1, 2] まるで値渡しをしているように見えるが、実際は異なる
 ```
 
 ### ジェネレータ関数
@@ -717,6 +762,20 @@ def some_func():
 
 for i in some_func():
     print(i) # 1 2 3 が1秒毎に表示される
+```
+
+### lambda 式
+
+Expression として関数を書く方法。
+
+```py
+lambda num: num ** 2
+```
+
+上記は JavaScript でいう下記と一緒
+
+```js
+num => num ** 2;
 ```
 
 ## Flask
@@ -755,10 +814,6 @@ app.config['dbconfig'] = {　}
 # 利用時
 if(app.config['dbconfig'] == 'something'):
 ```
-
-### デコレータ
-
-既存の関数のコードを変更することなく、機能を追加する構文。
 
 ### テンプレート
 
