@@ -8,7 +8,7 @@
 
 ## Setup
 
-```sh
+```bash
 git config --global user.name "my name"
 git config --global user.email "my-address@goes.here"
 git config --global core.editor "notepad++"
@@ -34,7 +34,7 @@ cat ~/.gitconfig
 
 ### Add
 
-```sh
+```bash
 git add . # all files under current directory
 git add -A # all files
 git add -u # all files except new files (u = update)
@@ -44,33 +44,33 @@ git add . --dry-run # pre test
 
 ### Commit
 
-```sh
+```bash
 git commit -m "commit message"
 git commit -am "commit message" # add & commit at same time
 ```
 
 ### List tracked files
 
-```sh
+```bash
 git ls-files
 ```
 
 ### Unstage
 
-```sh
+```bash
 git reset [HEAD]
 git reset [HEAD] somefile.txt
 ```
 
 ### Discard changes
 
-```sh
+```bash
 git checkout [--] somefile.txt
 ```
 
 ### Move files
 
-```sh
+```bash
 git mv file1.txt file2.txt
 ```
 
@@ -78,13 +78,13 @@ the difference between `mv` and`git move` is that `git mv` automatically stages 
 
 ### Delete files
 
-```sh
+```bash
 git rm file1.txt
 ```
 
 ### Show logs
 
-```sh
+```bash
 git log --all --oneline --graph --decorate
 git log f8vk34...1ffai8
 git log somefile.txt
@@ -95,7 +95,7 @@ git show fi8vd2
 
 ## Alias
 
-```sh
+```bash
 git config --global alias.h "log --oneline"
 git h # => equiv with "git log --oneline"
 ```
@@ -104,7 +104,7 @@ or edit .gitconfig directly.
 
 ## Merge & Diff tools
 
-```sh
+```bash
 git config --global merge.tool p4merge
 git config --global mergetool.p4merge.path "C:/Program Files/Perforce/p4merge.exe"
 
@@ -118,13 +118,13 @@ All followning `diff`s can be replaced with `difftool`
 
 ### HEAD vs Working directory
 
-```sh
+```bash
 git diff
 ```
 
 ### HEAD vs Staging area
 
-```sh
+```bash
 git diff --staged
 #or
 git diff --cached
@@ -132,13 +132,13 @@ git diff --cached
 
 ### HEAD vs All changes(staged & unstaged)
 
-```sh
+```bash
 git diff HEAD
 ```
 
 ### HEAD vs Specific commit
 
-```sh
+```bash
 git diff fj38v87 [HEAD]
 git diff HEAD^ [HEAD]
 ```
@@ -147,19 +147,19 @@ Note that args should be lined old commit first. Otherwise result will be opposi
 
 ### Between specific commits
 
-```sh
+```bash
 git diff fj38v87 ow8vjq3
 ```
 
 ### Between branches
 
-```sh
+```bash
 git diff mainbranch topicbranch
 ```
 
 ### Local vs Remote
 
-```sh
+```bash
 git diff origin/remoteBranchName localBranchName
 ```
 
@@ -167,46 +167,46 @@ git diff origin/remoteBranchName localBranchName
 
 ### Show branch
 
-```sh
+```bash
 git branch -a # show remote & local branch
 ```
 
 ### Create branch
 
-```sh
+```bash
 git branch somename
 git checkout -b somename # create branch & checkout
 ```
 
 ### Rename branch
 
-```sh
+```bash
 git branch -m some_name some_new_name
 ```
 
 ### Delete branch
 
-```sh
+```bash
 git branch -d somename
 git branch -D somename # delete unmerged branch
 ```
 
 ### Merge branch (Fast-Forward)
 
-```sh
+```bash
 git merge somebranch
 ```
 
 ### Merge branch (Non Fast-Forward)
 
-```sh
+```bash
 git merge --no-ff somebranch
 git merge --no-ff somebranch -m "commit message"
 ```
 
 ### Resolving conflicts
 
-```sh
+```bash
 git merge somebranch
 git mergetool
 git commit -m "this is merge commit message"
@@ -214,11 +214,22 @@ git commit -m "this is merge commit message"
 
 .orig file (backup file) may be created when resolving conflicts. remove or ignore it.
 
+## Remote Branch
+
+```bash
+# ローカルブランチをリモートにプッシュ
+git push origin some_localbranch:remote_branch
+git push -u origin some_localbranch:remote_branch # 設定を記憶しておく
+
+git branch -v # ブランチ一覧
+git branch -vv # ブランチ一覧（リモートとの対応つき）
+```
+
 ## Rebase
 
 ### from local branch
 
-```sh
+```bash
 git checkout -b myfeature
 git rebase master
 git mergetool # if there is conflicts, fix it
@@ -228,7 +239,7 @@ git rebase --abort # cancel rebasing
 
 ### from remote branch
 
-```sh
+```bash
 git fetch origin/master
 git checkout master
 git rebase origin/master
@@ -240,7 +251,7 @@ git pull --rebase origin master
 
 ## Stash
 
-```sh
+```bash
 git stash [save "this is stash message"]
 git stash -u # include new file (u = untracked)
 git stash list
@@ -261,13 +272,13 @@ git stash branch newbranchname
 
 Tags can be used as params.
 
-```sh
+```bash
 git diff mytag HEAD
 ```
 
 ### Lightweight tag
 
-```sh
+```bash
 git tag mytag
 git tag mytag 870f3c
 git tag mytag 870f3c -f # force to move tag point
@@ -280,21 +291,21 @@ git tag --delete mytag
 Annotated tag has Tagger(author), date&time, tag message.
 Rest is same as lightweight tag.
 
-```sh
+```bash
 git tag -a v-1.0
 git show v-1.0
 ```
 
 ### push tags to remote
 
-```sh
+```bash
 git push origin master --tags # transfer all tag
 git push origin :mytag # delete tag
 ```
 
 ## Reflog
 
-```sh
+```bash
 git reflog
 git reset 357vef9 # back to this reflog
 ```
