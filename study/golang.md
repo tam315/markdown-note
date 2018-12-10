@@ -7,7 +7,7 @@
 ### Packages
 
 - Go のプログラムはパッケージで成り立っている
-- `main`パッケージからプログラムが始まる
+- `main`パッケージの`main`関数からプログラムが始まる
 - パッケージ名はインポートパスの最後の要素と同じ名前である(`math/rand`なら`rand`)
 
 ### Imports
@@ -153,6 +153,7 @@ complex64 complex128
 - 文字列なら`""`(空文字列)
 - ポインタなら`nil`
 - スライスなら`nil`
+- マップなら`nil`
 
 ```go
 var a int     // => 0
@@ -190,10 +191,10 @@ c := 0.867 + 0.5i // complex128
 - `:=`記法は使えない
 
 ```go
-const Pi = 3.14
+const Pi float64 = 3.14
 const (
-  A = 123
-  B = "hello"
+  A int = 123
+  B string = "hello"
 )
 ```
 
@@ -204,6 +205,7 @@ const (
 - untyped な数値定数は、実行時の文脈で型が決まる
 
 ```go
+// タイプを指定していない
 const Big = 1 << 100
 
 func needFloat(x float64) float64 { return x * 0.1 }
@@ -217,8 +219,8 @@ func main() {
 
 ### for
 
-- 3 つの要素
-  - init statement：初回のみ実行
+- 3 つの要素を記載できる
+  - init statement：初回のみ実行。ここで定義した変数は for の中でのみ有効。
   - condition expression：毎回繰り返しの冒頭で**評価**
   - post statement：毎回繰り返しの最後で**実行**
 - `()`は不要
@@ -240,7 +242,7 @@ for { }
 ### if
 
 - `()`は不要
-- statement を記載することができる。ここで定義した変数は if の中でのみ有効。
+- init statement を記載することができる。ここで定義した変数は if の中でのみ有効。
 
 ```go
 if x < 0 {
@@ -258,7 +260,7 @@ if x := 100; x < 0 {
 
 ### switch
 
-- statement を記載することができる。ここで定義した変数は switch の中でのみ有効。
+- init statement を記載することができる。ここで定義した変数は switch の中でのみ有効。
 - 上から順に評価され、最初に当てはまった１つのケースだけ実行される。`break`は不要。
 
 ```go
@@ -314,7 +316,7 @@ for i := 0; i < 10; i++ {
 
 ### Pointers
 
-ポインタ＝「変数のメモリアドレス」を保持する変数
+ポインタ＝「変数の内容が存在するメモリ上のアドレス」を保持する変数
 
 `*タイプ`でポインタを宣言できる
 
@@ -322,14 +324,14 @@ for i := 0; i < 10; i++ {
 var pointer *int
 ```
 
-`&変数名`で「変数のメモリアドレス」を取得できる
+`&変数`でメモリアドレスを取得できる
 
 ```go
 i := 123
 pointer = &i
 ```
 
-`*ポインタ名`で「変数のメモリアドレス」の中身を参照できる。これを、dereferencing(値参照) や indirecting(遠回し？)という。
+`*ポインタ`で「そのメモリアドレスに存在する内容」を参照できる。これを、dereferencing(値参照) や indirecting(遠回し？)という。
 
 ```go
 fmt.Println(*pointer) // => 123
@@ -342,50 +344,30 @@ fmt.Println(*pointer) // => 456
 `struct`は、複数フィールドから作成される型である。
 
 ```go
-type Vertex struct {
-  X int
-  Y int
+type Car struct {
+  Name string
+  Age  int
 }
-
-func main() {
-  fmt.Println(Vertex{1, 2})
-} // => {1 2}
+car := Car{"bmw", 15}
+fmt.Println(car) // => {bmw 15}
 ```
 
 struct の値にはドットでアクセスできる。
 
 ```go
-type Vertex struct {
-  X int
-  Y int
-}
-
-func main() {
-  v := Vertex{1, 2}
-  v.X = 4
-  fmt.Println(v) // => {4 2}
-}
+car.Name = "nissan"
+fmt.Println(car) // => {nissan 15}
 ```
 
 #### Pointers to structs
 
-struct のポインタは、`*(pointer).X`としなくても、`pointer.X`で値を参照できる。
+- struct のポインタで値参照する場合は、単純に`pointer.Name`のようにすればできる。
+- `*(pointer).Name`などとする必要はない
 
 ```go
-type Vertex struct {
-  X int
-  Y int
-}
-
-func main() {
-  var v Vertex
-  var pointer *Vertex
-
-  v = Vertex{1, 2}
-  pointer = &v
-  pointer.X = 123
-  fmt.Println(v) // => {123 2}
-}
+car := Car{"bmw", 15}
+pointer := &car
+fmt.Println(pointer.Name) // => {bmw 15}
 ```
 
 #### Struct Literals
@@ -393,25 +375,25 @@ func main() {
 全てのフィールド値を順番に記述する方法
 
 ```go
-v = Vertex{1, 2}
+car := Car{"bmw", 15}
 ```
 
 `name: value`構文を使って、一部の値だけを記述する方法（指定しなかったフィールドには zero values が設定される）
 
 ```go
-v := Vertex{X: 1}  // Y:0 is implicitly
-v := Vertex{}      // X:0 and Y:0 implicitly
+car := Car{Name: "bmw"}  // Age:0 implicitly
+car := Car{}      // Name:"" and Age:0 implicitly
 ```
 
 `&`を頭につけると、作成された struct へのポインタを取得できる。
 
 ```go
-p := &Vertex{1, 2} // has type *Vertex
+p := &Car{} // has type *Car
 ```
 
 ### Arrays
 
-`[n]T`で、長さ n で型が T の配列を作成できる。配列の長さは**型の一部**であり、変更できない。
+`[n]T`で、長さ n で型が T の配列を作成できる。配列の長さも**型の定義に含まれる**。長さは後から変更できない。
 
 ```go
 var a [3]int
@@ -422,7 +404,7 @@ a[2] = 300
 b := [6]int{2, 3, 5, 7, 11, 13}
 ```
 
-Array の変数は配列全体を指す。C 言語のように配列の先頭を指すポインタではない。このため、代入を行うと配列全体がコピーされる。
+Array 型の変数は、配列全体を表現している。C 言語のように配列の先頭を指すポインタではない。このため、代入を行うと配列全体がコピーされる。
 
 ```go
 a := [3]int{1, 2, 3}
@@ -439,6 +421,8 @@ fmt.Printf("%v", b) // [999 2 3]
 
 - スライスは Array の上に構築されている。Go では配列よりもスライスをよく使う。
 - `[]T`で型が T のスライスを宣言できる
+- スタートを前にずらすことはできない。後ろにずらすことはできる。
+- エンドは、前後にずらすことができる。
 - `someArray[1:4]`で、要素 1 から要素 3 までを含むスライスを作成できる
 
 ```go
@@ -506,7 +490,7 @@ d := c[2:5] // [2:5]
 スライスを作るときの上限・下限の値は省略できる
 
 ```go
-// 長さが11のArrayがあったとすると、下記はどれも等価
+// 長さが10のArrayがあったとすると、下記はどれも等価
 a[0:10]
 a[:10]
 a[0:]
@@ -582,4 +566,121 @@ s = append(s, 6) // cap == 8
 s = append(s, 7) // cap == 8
 s = append(s, 8) // cap == 8
 s = append(s, 9) // cap == 16
+```
+
+### Range
+
+Array や Slice は`range()`でループ処理できる。
+
+```go
+for index, value := range my_slice {}
+// 省略するときは`_`にするか、削除する
+for index := range slice {}
+for _, value := range slice {}
+```
+
+### Map
+
+- key-value ペア。
+- `make()`を使うことでマップを作成することができる。
+- `map[T]T`で宣言する
+
+#### `make()`でつくる
+
+マップは宣言だけでは使えるようにはならない。必ず make で初期化をしてから使う必要がある。
+
+```go
+var my_map1 map[string]int
+my_map1 = make(map[string]int)
+
+my_map1["hello"] = 123
+fmt.Println(my_map1["hello"]) // 123
+```
+
+#### リテラルでつくる
+
+リテラルを使うと、宣言、初期化、代入を一気に行うことができる。
+
+```go
+my_map2 := map[string]int{
+  "john": 33,
+  "jim":  25,
+}
+fmt.Println(my_map2["jim"])   // 25
+```
+
+#### struct を値にする
+
+```go
+cars := map[string]Car{
+  "bmw": Car{
+    "sedan", 2003,
+  },
+  "hino": Car{
+    "truck", 1985,
+  },
+}
+
+// 型名は省略もできる
+cars := map[string]Car{
+  "bmw": {
+    "sedan", 2003,
+  },
+  "hino": {
+    "truck", 1985,
+  },
+}
+```
+
+#### 要素の削除
+
+```go
+delete(my_map, key)
+```
+
+#### 要素の取り出し
+
+- `ok`は、要素が存在すれば`true`、なければ`false`になる
+- `elem`は、要素が存在すればその要素、なければ Zero Value が入る
+
+```go
+elem, ok := my_map[key]
+```
+
+### Function Values
+
+関数は値でもある。変数に代入したり、引数や返値として使うこともできる。
+
+```go
+func compute(fn func(string)) {
+  fn("hello")
+}
+
+func main() {
+  callback := func(message string) {
+    fmt.Println(message)
+  }
+  compute(callback)
+}
+```
+
+### Function Closures
+
+JavaScript のクロージャと同じようなことができる。
+
+```go
+func adder() func(int) int {
+  sum := 0
+  return func(x int) int {
+    sum += x
+    return sum
+  }
+}
+
+func main() {
+  pos, neg := adder(), adder()
+  fmt.Println(pos(1), neg(-1)) // 1 -1
+  fmt.Println(pos(1), neg(-1)) // 2 -2
+  fmt.Println(pos(1), neg(-1)) // 3 -3
+}
 ```
