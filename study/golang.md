@@ -684,3 +684,90 @@ func main() {
   fmt.Println(pos(1), neg(-1)) // 3 -3
 }
 ```
+
+## Methods and interfaces
+
+### Methods
+
+- Go ではクラスがない代わりに、型に対してメソッドを定義することができる
+- メソッドは、「レシーバ」を引数にとる関数を使って定義する
+- レシーバは、`func`と関数名の間に記載する
+
+#### struct をレシーバで受け取る
+
+```go
+type Car struct {
+	Brand string
+	Model string
+}
+
+// `(c Car)` がレシーバ
+func (c Car) SayHello() string {
+	return "My name is " + c.Brand + " " + c.Model
+}
+
+func main() {
+	car := Car{"bmw", "3series"}
+	fmt.Println(car.SayHello())
+}
+```
+
+メソッドは単なる関数であることを忘れずに。上記コードは下記と等価である。
+
+```go
+func SayHello(c Car) string {
+	return "My name is " + c.Brand + " " + c.Model
+}
+
+func main() {
+	car := Car{"bmw", "3series"}
+	fmt.Println(SayHello(car))
+}
+```
+
+#### struct 以外 をレシーバで受け取る
+
+- struct 以外の型にもメソッドを追加できる。
+- ただし、型が同一のパッケージ内で定義されている場合に限る
+- built-in types(`int`など)に直接メソッドを追加することはできない。あくまでカスタムの型を定義し、その型にメソッドをアタッチすること。
+
+```go
+type MyInt int
+
+func (f MyInt) Abs() int {
+  if f < 0 {
+    return int(-f)
+  }
+  return int(f)
+}
+
+func main() {
+  f := MyInt(-123)
+  fmt.Println(f.Abs()) // => 123
+}
+```
+
+#### Value Receiver と Pointer Receiver
+
+前述のレシーバは Value Receiver と呼ばれ、値渡しである。メソッドを使って呼び出し元の変数等の値を変更したい場合は、Pointer Receiver を使う。
+
+メソッドはレシーバの値を変更するために作られる場合が多いので、Pointer Receiver は Value Receiver よりも、よく使われる。
+
+```go
+type MyInt int
+
+// `*T`とすることで、呼び出し元の変数をポインタとして受け取ることができる
+func (f *MyInt) Abs() {
+	if *f < 0 {
+		*f = -(*f)
+		return
+	}
+	return
+}
+
+func main() {
+	f := MyInt(-123)
+	f.Abs()
+	fmt.Println(f) // => 123
+}
+```
