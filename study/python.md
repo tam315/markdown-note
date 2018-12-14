@@ -144,6 +144,25 @@ False と判定されるものは下記のとおり。これ以外はすべて`T
 - `{}`
 - `None`
 
+#### Falsy な値に関する注意
+
+下記の 2 つは、異なるものである。
+
+- `if cond is not None:` => `None`であった場合のみ何もしない
+- `if cond:` => `None`,`0`,`''`,`[]`,`{}`であった場合に何もしない
+
+コンディションを書くときは常に **「None 以外の falsy な値(0 や空文字列)であった時に、何かする必要があるか」** を考えること。
+
+例えば、`if somedict.get('some_key'):`だと、None だけでなく、値が 0 や空文字列の場合にも実行されない。
+
+「None ではなく、空文字列でもない、文字列」を保障するには下記のようになる。
+
+```py
+if cond is not None and \
+   cond != '' and \
+   type(cond) == str:
+```
+
 ### 制御
 
 #### for
@@ -355,6 +374,37 @@ if 'somekey' not in some_dict:
 ```
 
 `pop('キー名')` キー名の要素を抜き出して返す。辞書からは削除する。
+
+#### 値へのアクセス
+
+- キーの存在が確実である場合（なければならない場合）
+  - `dict['somekey']`
+- キーの存在が不確実である場合
+  - `dict.get('somekey')` => キーが存在しなければ None を返す
+  - `dict.get('somekey', 'default value')` => キーが存在しなければ`default value`を返す
+
+#### キーの存在確認と None 確認は両方必要
+
+「意味のある値がセットされている場合に限って何かをしたい」ときは、キーの存在確認と、値が None であるかの確認は両方必要となる。
+
+あたりまえだけど、Key は存在するものの、値が None ということはありえる。
+
+```py
+my_dict = {'i_am_none': None}
+
+# キーの存在確認
+bool('i_am_none' in my_dict)
+
+# 値のnullチェック
+bool(my_dict['i_am_none'] is not None)
+
+# （必要に応じて）空文字などのチェック
+bool(my_dict['i_am_none'] != '')
+
+# 又は、キーの存在チェックを省く方法
+my_dict.get('i_am_none') is not None and \
+my_dict.get('i_am_none') != ''
+```
 
 ### Set
 
