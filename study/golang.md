@@ -697,18 +697,18 @@ func main() {
 
 ```go
 type Car struct {
-	Brand string
-	Model string
+  Brand string
+  Model string
 }
 
 // `(c Car)` がレシーバ
 func (c Car) SayHello() string {
-	return "My name is " + c.Brand + " " + c.Model
+  return "My name is " + c.Brand + " " + c.Model
 }
 
 func main() {
-	car := Car{"bmw", "3series"}
-	fmt.Println(car.SayHello())
+  car := Car{"bmw", "3series"}
+  fmt.Println(car.SayHello())
 }
 ```
 
@@ -716,12 +716,12 @@ func main() {
 
 ```go
 func SayHello(c Car) string {
-	return "My name is " + c.Brand + " " + c.Model
+  return "My name is " + c.Brand + " " + c.Model
 }
 
 func main() {
-	car := Car{"bmw", "3series"}
-	fmt.Println(SayHello(car))
+  car := Car{"bmw", "3series"}
+  fmt.Println(SayHello(car))
 }
 ```
 
@@ -767,17 +767,17 @@ type MyInt int
 
 // `*T`とすることで、呼び出し元の変数をポインタとして受け取ることができる
 func (f *MyInt) Abs() {
-	if *f < 0 {
-		*f = -(*f)
-		return
-	}
-	return
+  if *f < 0 {
+    *f = -(*f)
+    return
+  }
+  return
 }
 
 func main() {
-	f := MyInt(-123)
-	f.Abs()
-	fmt.Println(f) // => 123
+  f := MyInt(-123)
+  f.Abs()
+  fmt.Println(f) // => 123
 }
 ```
 
@@ -785,11 +785,140 @@ func main() {
 
 ```go
 func (f MyInt) Abs() {
-	fmt.Println(f) // 2. 値で受け取っている
+  fmt.Println(f) // 2. 値で受け取っている
 }
 
 func main() {
-	p := &MyInt(123)
-	fmt.Println(p) // １．ポインタで渡しても
+  p := &MyInt(123)
+  fmt.Println(p) // １．ポインタで渡しても
+}
+```
+
+### Interface
+
+- インターフェースは型の一種である。メソッドの組み合わせで定義される。
+- 下記の変数`counter`は、`PlusOne()`というメソッドを持つ変数であれば何でも代入できる。
+
+```go
+type Counter interface {
+  PlusOne() int
+}
+var counter Counter
+```
+
+下記の`MyInt`型は、`Counter`型が持つべき`PlusOne()`というメソッドを持っている。
+このため、`Counter`型の変数に代入できる
+
+```go
+type MyInt int
+
+func (f MyInt) PlusOne() int {
+  return int(f) + 1
+}
+
+func main() {
+  var counter Counter
+  counter = MyInt(1)
+}
+```
+
+struct でも考え方は基本的に同じ。下記の`Point`型は、`Counter`型が持つべき`PlusOne()`というメソッドを持っている。このため、`Counter`型の変数に代入できる。
+
+struct の場合、変数が値型かポインタ型かでメソッドの定義方法が異なるので注意する。
+
+```go
+type Point struct {
+  X, Y int
+}
+```
+
+```go
+// Value Receiver
+func (v Point) PlusOne() int {
+  return v.X + 1 + v.Y + 1
+}
+
+func main() {
+  var counter Counter
+  // 値型の場合は、Value Receiverにメソッドが実装されていること
+  counter = Point{12, 23}
+}
+```
+
+```go
+// Pointer Receiver
+func (v *Point) PlusOne() int {
+  return v.X + 1 + v.Y + 1
+}
+
+func main() {
+  var a Counter
+  // ポインタ型の場合は、Pointer Receiverにメソッドが実装されていること
+  a = &Point{12, 23}
+  fmt.Println(a.PlusOne())
+}
+```
+
+#### インターフェースは暗黙に実装される
+
+インターフェースを実装している型を定義したいとき、明示的に何かを行う必要はない。
+
+```go
+type Counter interface {
+  PlusOne() int
+}
+
+type MyInt int
+
+// MyInt型はCounter型を実装していると言えるが、明示的に何も書く必要はない
+func (v MyInt) PlusOne() int {
+  return int(v) + 1
+}
+
+func main() {
+  // 明示的に何も書かなくてもGoが自動で判別してくれる（代入が可能）
+  var i Counter = MyInt(1)
+}
+```
+
+#### インターフェースの持つ値
+
+インターフェースの持つ値はタプルと考えられる。そのタプルは、「値, 具体的な型」からなる。
+
+```go
+
+type MyInterface interface {
+  SayHello()
+}
+
+type MyType struct {
+  Content string
+}
+
+func (t MyType) SayHello() {
+  fmt.Println(t.Content)
+}
+
+type MyInt int
+
+func (i MyInt) SayHello() {
+  fmt.Println(i)
+}
+
+func main() {
+  var i1, i2 MyInterface
+
+  i1 = MyType{"hello"}
+  i2 = MyInt(123)
+
+  describe(i1) // &{hello}, *main.MyType
+  describe(i2) // 123, main.MyInt
+
+  i1.SayHello() // hello
+  i2.SayHello() // 123
+}
+
+func describe(i MyInterface) {
+  fmt.Printf("%v, %T\n", i, i)
 }
 ```
