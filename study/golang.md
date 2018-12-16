@@ -883,7 +883,7 @@ func main() {
 
 #### インターフェースの持つ値
 
-インターフェースの持つ値はタプルと考えられる。そのタプルは、「値, 具体的な型」からなる。
+インターフェースの持つ値は、 **具体的な値と具体的な型** で構成されるタプルと考えられる。（「具体的」＝インターフェースを実装している実際の変数の、の意）
 
 ```go
 
@@ -919,6 +919,42 @@ func main() {
 }
 
 func describe(i MyInterface) {
+  // インターフェースの持つ具体的な値と型を表示
   fmt.Printf("%v, %T\n", i, i)
+}
+```
+
+#### 具体的な値が nil だった場合
+
+インターフェースの背後にある具体的な値が`nil`だった場合は、レシーバにも`nil`が渡される。
+
+```go
+type MyInterface interface {
+	SayHello()
+}
+
+type MyType struct {
+	Content string
+}
+
+func (t *MyType) SayHello() {
+	if t == nil {
+		fmt.Println("this is nil")
+		return
+	}
+	fmt.Println(t.Content)
+}
+
+func main() {
+	var i MyInterface
+
+	var myType *MyType
+	i = myType
+	describe(i)  // <nil>, *main.MyType
+	i.SayHello() // this is nil
+}
+
+func describe(i MyInterface) {
+	fmt.Printf("%v, %T\n", i, i)
 }
 ```
