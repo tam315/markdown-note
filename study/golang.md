@@ -359,6 +359,25 @@ car.Name = "nissan"
 fmt.Println(car) // => {nissan 15}
 ```
 
+#### Zero Values
+
+Struct の各フィールドには Zero Values がセットされる
+
+```go
+type MyType struct {
+  MyString string
+  MyInt    int
+  MyFloat  float64
+}
+
+func main() {
+  var t MyType
+  fmt.Printf("%T %v\n", t.MyString, t.MyString) // => ''
+  fmt.Printf("%T %v\n", t.MyInt, t.MyInt) // => 0
+  fmt.Printf("%T %v\n", t.MyFloat, t.MyFloat) // => 0
+}
+```
+
 #### Pointers to structs
 
 - struct のポインタで値参照する場合は、単純に`pointer.Name`のようにすればできる。
@@ -685,15 +704,13 @@ func main() {
 }
 ```
 
-## Methods and interfaces
-
-### Methods
+## Methods
 
 - Go ではクラスがない代わりに、型に対してメソッドを定義することができる
 - メソッドは、「レシーバ」を引数にとる関数を使って定義する
 - レシーバは、`func`と関数名の間に記載する
 
-#### struct をレシーバで受け取る
+### struct をレシーバで受け取る
 
 ```go
 type Car struct {
@@ -725,7 +742,7 @@ func main() {
 }
 ```
 
-#### struct 以外 をレシーバで受け取る
+### struct 以外 をレシーバで受け取る
 
 - struct 以外の型にもメソッドを追加できる。
 - ただし、型が同一のパッケージ内で定義されている場合に限る
@@ -747,7 +764,7 @@ func main() {
 }
 ```
 
-#### Value Receiver と Pointer Receiver
+### Value Receiver と Pointer Receiver
 
 前述のレシーバは Value Receiver と呼ばれ、値渡しである。メソッドを使って呼び出し元の変数等の値を変更したい場合は、Pointer Receiver を使う。
 
@@ -758,7 +775,7 @@ func main() {
 
 一般的に、メソッドはレシーバの値を変更するために作られる場合が多いので、Pointer Receiver は Value Receiver よりも、よく使われる。
 
-#### レシーバによる自動変換
+### レシーバによる自動変換
 
 レシーバがポインタを受け取る場合に、呼び出し側で「値」を渡した（`&f`のようにしなかった）としても、自動的にポインタに変換される。
 
@@ -794,7 +811,7 @@ func main() {
 }
 ```
 
-### Interface
+## Interfaces
 
 - インターフェースは型の一種である。メソッドの組み合わせで定義される。
 - 下記の変数`counter`は、`PlusOne()`というメソッドを持つ変数であれば何でも代入できる。
@@ -859,7 +876,7 @@ func main() {
 }
 ```
 
-#### インターフェースは暗黙に実装される
+### インターフェースは暗黙に実装される
 
 インターフェースを実装している型を定義したいとき、明示的に何かを行う必要はない。
 
@@ -881,7 +898,7 @@ func main() {
 }
 ```
 
-#### インターフェースの持つ値
+### インターフェースの持つ値
 
 インターフェースの持つ値は、 **具体的な値と具体的な型** で構成されるタプルと考えられる。（「具体的」＝インターフェースを実装している実際の変数の、の意）
 
@@ -894,13 +911,11 @@ type MyInterface interface {
 type MyType struct {
   Content string
 }
-
 func (t MyType) SayHello() {
   fmt.Println(t.Content)
 }
 
 type MyInt int
-
 func (i MyInt) SayHello() {
   fmt.Println(i)
 }
@@ -911,7 +926,7 @@ func main() {
   i1 = MyType{"hello"}
   i2 = MyInt(123)
 
-  describe(i1) // &{hello}, *main.MyType
+  describe(i1) // {hello}, *main.MyType
   describe(i2) // 123, main.MyInt
 
   i1.SayHello() // hello
@@ -924,37 +939,145 @@ func describe(i MyInterface) {
 }
 ```
 
-#### 具体的な値が nil だった場合
+### 具体的な値が nil だった場合
 
 インターフェースの背後にある具体的な値が`nil`だった場合は、レシーバにも`nil`が渡される。
 
 ```go
 type MyInterface interface {
-	SayHello()
+  SayHello()
 }
 
 type MyType struct {
-	Content string
+  Content string
 }
 
 func (t *MyType) SayHello() {
-	if t == nil {
-		fmt.Println("this is nil")
-		return
-	}
-	fmt.Println(t.Content)
+  if t == nil {
+    fmt.Println("this is nil")
+    return
+  }
+  fmt.Println(t.Content)
 }
 
 func main() {
-	var i MyInterface
+  var i MyInterface
 
-	var myType *MyType
-	i = myType
-	describe(i)  // <nil>, *main.MyType
-	i.SayHello() // this is nil
+  // structのポインタはnilになる可能性がある。
+  // 一方、structの値はnilになることはない（宣言時に各フィールドがzero valuesにセットされたstructが作成されるため）
+  var myType *MyType
+  i = myType
+  describe(i)  // <nil>, *main.MyType
+  i.SayHello() // this is nil
 }
 
 func describe(i MyInterface) {
-	fmt.Printf("%v, %T\n", i, i)
+  fmt.Printf("%v, %T\n", i, i)
 }
 ```
+
+### nil interface values
+
+nil である interface は、具体的な値と型を持たないため、メソッドを呼んでもエラーになる。
+
+```go
+type I interface {
+  M()
+}
+
+func main() {
+  var i I // value=>nil, type=>nil
+  i.M() // runtime error
+}
+```
+
+### Empty interface
+
+- ひとつもメソッドが定義されていないインターフェースを **empty interface** という。
+- empty interface にはどのような値でも代入することができる。
+- 型がわからない時に使う（例：`Printf`では値を empty interface で受け取っている）
+
+```go
+var i interface{}  // value=>nil, type=>nil
+i = 42  // value=>42, type=>int
+i = "hello"  // value=>"hello", type=>string
+
+// empty interfaceで受け取るのでどんな値でも受け取れる
+func anyExec(any interface{}) {}
+```
+
+### Type assertion
+
+空インターフェースで受け取った値は元の型の情報が欠落している。このような局面で利用するのが型アサーションである。下記のようにして使う。
+
+```go
+value, ok := some_var.(some_type)
+```
+
+具体的には、下記のように条件分岐して使う。
+
+```go
+func printIf(src interface{}) {
+    if value, ok := src.(int); ok {
+        fmt.Printf("parameter is integer. [value: %d]\n", value)
+        return
+    }
+
+    if value, ok := src.(string); ok {
+        fmt.Printf("parameter is string. [value: %s]\n", value)
+        return
+    }
+
+    if value, ok := src.([]string); ok {
+        fmt.Printf("parameter is slice string. [value: %s]\n", value)
+        return
+    }
+
+    fmt.Printf("parameter is unknown type. [valueType: %T]\n", src)
+}
+```
+
+### Type switch
+
+- 手軽に型アサーションを行う方法として、Type Switch（型スイッチ）という文法も用意されている。
+- 通常の switch 文と異なるのは、値ではなく **型でケースが分かれる** という点である。
+
+```go
+func printSwitch(src interface{}) {
+    switch value := src.(type) {
+    case int:
+        fmt.Printf("parameter is integer. [value: %d]\n", value)
+    case string:
+        fmt.Printf("parameter is string. [value: %s]\n", value)
+    case []string:
+        fmt.Printf("parameter is slice string. [value: %s]\n", value)
+    default:
+        fmt.Printf("parameter is unknown type. [valueType: %T]\n", src)
+    }
+}
+```
+
+### Stringers
+
+- もっとも有名なインターフェースの一つに、`Stringer`がある。これは`fmt`パッケージで定義されている。
+- `Stringer`インターフェースは、自身をテキストにして出力する`String()`というメソッドが変数に実装されていることを保証する。
+- `fmt`パッケージでは、プリントする際に、変数に`Stringer`インターフェースが実装されていないかチェックし、あれば利用する。
+
+```go
+type Person struct {
+    Name string
+    Age  int
+}
+
+func (p Person) String() string {
+    return fmt.Sprintf("%v (%v years)", p.Name, p.Age)
+}
+
+func main() {
+    a := Person{"Arthur Dent", 42}
+    z := Person{"Zaphod Beeblebrox", 9001}
+    fmt.Println(a, z) // Arthur Dent (42 years) Zaphod Beeblebrox (9001 years)
+}
+```
+
+## Errors
