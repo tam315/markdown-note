@@ -151,16 +151,16 @@ False と判定されるものは下記のとおり。これ以外はすべて`T
 - `if cond is not None:` => `None`であった場合のみ何もしない
 - `if cond:` => `None`,`0`,`''`,`[]`,`{}`であった場合に何もしない
 
-コンディションを書くときは常に **「None 以外の falsy な値(0 や空文字列)であった時に、何かする必要があるか」** を考えること。
+例えば、`if somedict['some_key']:`だと、値が None だった場合だけでなく、値が 0 や空文字列の場合にも実行されない。
 
-例えば、`if somedict.get('some_key'):`だと、None だけでなく、値が 0 や空文字列の場合にも実行されない。
+コンディションを書くときは **「None 以外の falsy な値(0 や空文字列)であった時に、何かする必要があるか」** を考え、falsy な値を拾う必要があれば、`is not None`を使うこと。
 
-「None ではなく、空文字列でもない、文字列」を保障するには下記のようになる。
+None で無いことを調べた後に、追加の対応が必要な場合もある。例えば文字列なら空文字列でないか、配列なら要素が 0 ではないか、など。例えば、「None ではなく、空文字列でもない、文字列」を保障するには下記のようになる。
 
 ```py
 if cond is not None and \
-   cond != '' and \
-   type(cond) == str:
+   type(cond) == str and \
+   cond != '':
 ```
 
 ### 制御
@@ -174,6 +174,17 @@ for i in [1,2,3]:
   print(i)
 for l in "hello":
   print(l)
+```
+
+インデックスを取得する方法
+
+```py
+for index, word in enumerate(['hello','my','friend']):
+    print(index, word)
+
+# 0 hello
+# 1 my
+# 2 friend
 ```
 
 ### Built-in Functions

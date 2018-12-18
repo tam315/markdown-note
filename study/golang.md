@@ -764,6 +764,17 @@ func main() {
 }
 ```
 
+### Method Set
+
+型は、型に紐付けられた「メソッドセット」をもつ。
+
+- インターフェース型のメソッドセットは、インターフェースで宣言されているメソッドで構成される
+- 型`T`のメソッドセットは、型`T`を受け取る全てのレシーバで構成される。
+  - ただし、型`T`が addressable な場合(よく分からない、要調査)は、型`T`と型`*T`を受け取る全てのレシーバで構成される`。
+- 型`*T`のメソッドセットは、型`T`と型`*T`を受け取る全てのレシーバで構成される(両方のレシーバを宣言するとエラーになるけど)
+
+[stack overflow](https://stackoverflow.com/questions/53830404/why-my-custom-error-type-causes-error-with-specific-pattern)
+
 ### Value Receiver と Pointer Receiver
 
 前述のレシーバは Value Receiver と呼ばれ、値渡しである。メソッドを使って呼び出し元の変数等の値を変更したい場合は、Pointer Receiver を使う。
@@ -777,13 +788,13 @@ func main() {
 
 ### レシーバによる自動変換
 
-レシーバがポインタを受け取る場合に、呼び出し側で「値」を渡した（`&f`のようにしなかった）としても、自動的にポインタに変換される。
+レシーバでは、呼び出し側が「値」であるか「ポインタ」であるかに関わらず、必ず適切な変数（値かポインタか）を受け取れる。
 
 ```go
 type MyInt int
 
 // `*T`とすることで、呼び出し元の変数をポインタとして受け取ることができる
-func (f *MyInt) Abs() {
+func (f *MyInt) Abs() { // 3. 値から呼び出したにも関わらず、ポインタで受け取れる
   if *f < 0 {
     *f = -(*f)
     return
@@ -792,22 +803,21 @@ func (f *MyInt) Abs() {
 }
 
 func main() {
-  f := MyInt(-123)
-  f.Abs()
-  fmt.Println(f) // => 123
+  f := MyInt(-123) // 1. 変数は値である
+  f.Abs() // 2. 値から呼び出している
+  fmt.Println(f) // 4. 結果として、この表示結果は`123`になる
 }
 ```
 
-逆に、レシーバが値を受け取る場合に、呼び出し側でポインタを渡したとしても、自動的に値に変換される。
-
 ```go
-func (f MyInt) Abs() {
-  fmt.Println(f) // 2. 値で受け取っている
+func (f MyInt) Abs() { // 3. ポインタから呼び出したにも関わらず、値で受け取れる
+  return sqrt(f*f)
 }
 
 func main() {
-  p := &MyInt(123)
-  fmt.Println(p) // １．ポインタで渡しても
+  p := &MyInt(-123)　// 1. 変数はポインタである
+  result := p.Abs() // 2. ポインタから呼び出している
+  fmt.Println() // 4. 結果として、この表示結果は`123`になる
 }
 ```
 
@@ -1060,8 +1070,15 @@ func printSwitch(src interface{}) {
 ### Stringers
 
 - もっとも有名なインターフェースの一つに、`Stringer`がある。これは`fmt`パッケージで定義されている。
-- `Stringer`インターフェースは、自身をテキストにして出力する`String()`というメソッドが変数に実装されていることを保証する。
-- `fmt`パッケージでは、プリントする際に、変数に`Stringer`インターフェースが実装されていないかチェックし、あれば利用する。
+
+```go
+type Stringer interface {
+    String() string
+}
+```
+
+- `Stringer`インターフェースは、自身をテキストにして出力する`String()`というメソッドが変数に実装されていることを保証する。つまり、`String()`というメソッドを実装すれば、`Stringer`型になる。
+- `fmt`パッケージでは、プリントする際に、変数が`Stringer`型かチェックし、そうであれば`String()`メソッドを使用する。
 
 ```go
 type Person struct {
@@ -1081,3 +1098,67 @@ func main() {
 ```
 
 ## Errors
+
+- エラーは`error`型で扱われる。これは、ビルトインのインターフェースであり、`Error()`というメソッドを実装していることを保証する。つまり、`Error()`というメソッドを実装すれば`error`型になる。
+- なお、`Stringer`型と同じく、`fmt`パッケージは`error`型をプリントする際には`Error()`メソッドを使用する。
+
+```go
+type error interface {
+    Error() string
+}
+```
+
+### 基本的な使い方
+
+```go
+i, err := strconv.Atoi("wrong int")
+if err != nil {
+    fmt.Printf("couldn't convert number: %v\n", err)
+    return
+}
+```
+
+### error 型をカスタムする
+
+カスタムの error 型を作るには、`Error()`メソッドを変数にバインドしてやればよい。
+
+```go
+type MyError struct{}
+
+func (e MyError) Error() string {
+  return "something bad happened"
+}
+
+// 常にerror型を返すファンクション
+func run() error {
+  return MyError{}
+}
+
+func main() {
+  if err := run(); err != nil {
+    fmt.Printf("%T", err)
+  }
+}
+```
+
+上記のコードでも問題なく動作するが、`run()`が return する時や、Error()が呼ばれる時に、`MyError`が都度コピーされるという点で効率が悪い。ポインタで受け渡ししてやると、効率が良い。
+
+```go
+type MyError struct{}
+
+// 3. *MyErrorで受けたほうが効率が良い
+func (e *MyError) Error() string {
+  return "something bad happened"
+}
+
+func run() error {
+  return &MyError{} // 1. ポインタで返してやると効率が良い
+}
+
+func main() {
+  if err := run(); err != nil {
+    // 2. print時には、型MyErrorか、型*MyErrorを受け取るレシーバがよばれる
+    fmt.Println(err)
+  }
+}
+```
