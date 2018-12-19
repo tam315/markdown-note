@@ -709,6 +709,22 @@ func main() {
 - Go ではクラスがない代わりに、型に対してメソッドを定義することができる
 - メソッドは、「レシーバ」を引数にとる関数を使って定義する
 - レシーバは、`func`と関数名の間に記載する
+- 型に紐づくメソッド群を、「メソッドセット」という
+
+### Method Set
+
+型は、型に紐付けられた「メソッドセット」をもつ。
+
+| 変数の型               | メソッドセット                                                                     |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| インターフェースの場合 | インターフェースで宣言されているメソッド群                                         |
+| 値（`T`）の場合        | Value Receivers(`T`)<br>(型`T`が addressable な場合は、Pointer Receivers(`*T`) も) |
+| ポインタ（`*T`）の場合 | Value Receivers(`T`)<br>Pointer Receivers(`*T`)<br>                                |
+
+- addressable とは、`&T`で実際の値にアドレス（`0x***`）にアクセスできるということっぽい。int などは addressable、array/slice/struct 等は not addressable。
+- [Stack Overflow](https://stackoverflow.com/questions/33587227/golang-method-sets-pointer-vs-value-receiver)
+- [Method Sets](https://golang.org/ref/spec#Method_sets)
+- [Method Values](https://golang.org/ref/spec#Method_values)
 
 ### struct をレシーバで受け取る
 
@@ -764,17 +780,6 @@ func main() {
 }
 ```
 
-### Method Set
-
-型は、型に紐付けられた「メソッドセット」をもつ。
-
-- インターフェース型のメソッドセットは、インターフェースで宣言されているメソッドで構成される
-- 型`T`のメソッドセットは、型`T`を受け取る全てのレシーバで構成される。
-  - ただし、型`T`が addressable な場合(よく分からない、要調査)は、型`T`と型`*T`を受け取る全てのレシーバで構成される`。
-- 型`*T`のメソッドセットは、型`T`と型`*T`を受け取る全てのレシーバで構成される(両方のレシーバを宣言するとエラーになるけど)
-
-[stack overflow](https://stackoverflow.com/questions/53830404/why-my-custom-error-type-causes-error-with-specific-pattern)
-
 ### Value Receiver と Pointer Receiver
 
 前述のレシーバは Value Receiver と呼ばれ、値渡しである。メソッドを使って呼び出し元の変数等の値を変更したい場合は、Pointer Receiver を使う。
@@ -793,8 +798,10 @@ func main() {
 ```go
 type MyInt int
 
-// `*T`とすることで、呼び出し元の変数をポインタとして受け取ることができる
-func (f *MyInt) Abs() { // 3. 値から呼び出したにも関わらず、ポインタで受け取れる
+// 3. 値から呼び出したにも関わらず、ポインタで受け取れる
+//    (なお、valueである`MyInt`からpointer receiverを呼べるのは、
+//     MyIntがaddressableであることにより、勝手に(&f).Abs()として扱われるから。)
+func (f *MyInt) Abs() {
   if *f < 0 {
     *f = -(*f)
     return
@@ -820,6 +827,9 @@ func main() {
   fmt.Println() // 4. 結果として、この表示結果は`123`になる
 }
 ```
+
+この自動変換があるため、同じ型において、Value Receiver と Pointer Receiver を両方定義すると、エラーになる。
+どちらを呼べばいいかわからないから。
 
 ## Interfaces
 
