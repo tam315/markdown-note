@@ -137,7 +137,7 @@ uint uint8 uint16 uint32 uint64 uintptr (u = unsigned)
 byte // alias for uint8
 
 rune // alias for int32
-     // represents a Unicode code point
+    // represents a Unicode code point
 
 float32 float64
 
@@ -721,7 +721,7 @@ func main() {
 | 値（`T`）の場合        | Value Receivers(`T`)<br>(型`T`が addressable な場合は、Pointer Receivers(`*T`) も) |
 | ポインタ（`*T`）の場合 | Value Receivers(`T`)<br>Pointer Receivers(`*T`)<br>                                |
 
-- addressable とは、`&T`で実際の値にアドレス（`0x***`）にアクセスできるということっぽい。int などは addressable、array/slice/struct 等は not addressable。
+- TODO: addressable というのがよく分からない。要調査
 - [Stack Overflow](https://stackoverflow.com/questions/33587227/golang-method-sets-pointer-vs-value-receiver)
 - [Method Sets](https://golang.org/ref/spec#Method_sets)
 - [Method Values](https://golang.org/ref/spec#Method_values)
@@ -1107,7 +1107,7 @@ func main() {
 }
 ```
 
-## Errors
+### Errors
 
 - エラーは`error`型で扱われる。これは、ビルトインのインターフェースであり、`Error()`というメソッドを実装していることを保証する。つまり、`Error()`というメソッドを実装すれば`error`型になる。
 - なお、`Stringer`型と同じく、`fmt`パッケージは`error`型をプリントする際には`Error()`メソッドを使用する。
@@ -1118,7 +1118,7 @@ type error interface {
 }
 ```
 
-### 基本的な使い方
+#### 基本的な使い方
 
 ```go
 i, err := strconv.Atoi("wrong int")
@@ -1128,7 +1128,7 @@ if err != nil {
 }
 ```
 
-### error 型をカスタムする
+#### error 型をカスタムする
 
 カスタムの error 型を作るには、`Error()`メソッドを変数にバインドしてやればよい。
 
@@ -1170,5 +1170,58 @@ func main() {
     // 2. print時には、型MyErrorか、型*MyErrorを受け取るレシーバがよばれる
     fmt.Println(err)
   }
+}
+```
+
+### Readers
+
+Go の標準ライブラリには、ファイル、ネットワーク、圧縮、暗号化などを扱うためのインターフェースが多く用意されている。
+
+その一例が、`io`パッケージの`io.Reader`というインターフェースである。このインターフェースは、変数が`Read()`というメソッドを持つことを保証する。
+
+```go
+func (T) Read(b []byte) (n int, err error)
+```
+
+#### Reader の使い方
+
+Read は、指定されたバイトスライスにデータを詰め込み、詰め込んだバイト数とエラー値を返す。ストリームの最後に達した場合は、`io.EOF`というエラーを返す。
+
+```go
+reader := strings.NewReader("Hello, Reader!")
+
+myBytes := make([]byte, 8)
+
+for {
+  readCount, err := reader.Read(myBytes)
+  fmt.Printf("%v  %v  %v %q\n", readCount, err, myBytes, myBytes)
+  if err == io.EOF {
+    break
+  }
+}
+// 8  <nil>  [72 101 108 108 111 44 32 82] "Hello, R"
+// 6  <nil>  [101 97 100 101 114 33 32 82] "eader! R"
+// 0  EOF  [101 97 100 101 114 33 32 82] "eader! R"
+```
+
+#### `io.Reader` インターフェースの実装
+
+```go
+type MyReader struct{}
+
+// 永遠に'A'を返し続けるリーダー
+func (m MyReader) Read(b []byte) (i int, e error) {
+  for x := range b {
+    b[x] = 'A'
+  }
+  return len(b), nil
+}
+
+func main() {
+  myReader := MyReader{}
+  myBytes := make([]byte, 5)
+  myReader.Read(myBytes)
+
+  fmt.Printf("%q", myBytes) // => "AAAAA"
 }
 ```
