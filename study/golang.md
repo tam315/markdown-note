@@ -1225,3 +1225,199 @@ func main() {
   fmt.Printf("%q", myBytes) // => "AAAAA"
 }
 ```
+
+#### Reader のラッパー
+
+Reader のよくある使い方として、別の io.Reader をラップする io.Reader を用意して、ストリームに手を加えるという方法が挙げられる。
+
+下記の`rot13Reader`は、流れてきた文字列を 13 文字分シフトして下流に流す。
+
+```go
+type rot13Reader struct {
+  previoursReader io.Reader
+}
+
+func (rot rot13Reader) Read(downStreamBytes []byte) (int, error) {
+  count, err := rot.previoursReader.Read(downStreamBytes)
+  for i := range downStreamBytes {
+    downStreamBytes[i] += 13
+  }
+  return count, err
+}
+
+func main() {
+  s := strings.NewReader("Lbh penpxrq gur pbqr!")
+  r := rot13Reader{s}
+  io.Copy(os.Stdout, &r)
+}
+```
+
+## Concurrency
+
+### Goroutines
+
+Goroutines は、Go ランタイムによって管理される軽量スレッドである。
+
+```go
+func say(s string) {
+  for i := 0; i < 5; i++ {
+    time.Sleep(100 * time.Millisecond)
+    fmt.Println(s)
+  }
+}
+
+func main() {
+  go say("world")
+  say("hello")
+}
+
+// `go`ありだと↓
+// world
+// hello
+// hello
+// world
+// world
+// hello
+// hello
+// world
+// hello
+
+// `go`なしだと↓
+// world
+// world
+// world
+// world
+// world
+// hello
+// hello
+// hello
+// hello
+// hello
+```
+
+### Channels
+
+チャンネルとは：
+
+- データの通り道である
+- 型を持つ
+- `<-`(チャンネルオペレータ)で値を送受信できる。
+
+```go
+ch <- someInput    // チャンネルchに値を送信する
+someOutput := <-ch  // チャンネルchから値を受信する
+```
+
+マップやスライスと同じように、使う前に初期化が必要である。
+
+```go
+ch := make(chan int)
+```
+
+デフォルトでは、データの送受信は、送信側と受信側の **双方が準備完了するまでブロック** される。これにより、明示的なロックや条件変数がなくても、同期的な実行が可能になる。
+
+```go
+func sum(s []int, c chan int) {
+  sum := 0
+  for _, v := range s {
+    sum += v
+  }
+  c <- sum // チャンネルにデータを送信する
+}
+
+func main() {
+  s1 := []int{1, 2, 3}
+  s2 := []int{4, 5, 6}
+
+  // int型のチャンネルを作る
+  c := make(chan int)
+
+  // goroutineを走らせる
+  go sum(s1, c)
+  go sum(s2, c)
+
+  // チャンネルからデータを受信する
+  answer1, answer2 := <-c, <-c
+
+  fmt.Println(answer1, answer2)
+}
+```
+
+#### Buffered Channels
+
+- チャンネルはバッファできる。
+- バッファするには、`make`の第二引数にサイズを指定する。
+- チャンネルをバッファすると：
+  - バッファがフルのときのみ、送信がブロックされる。
+  - バッファが空のときのみ、受信がブロックされる。
+
+```go
+ch := make(chan int, 3)
+ch <- 1
+ch <- 2
+ch <- 3 // チャンネルがフルなのでエラーになる
+fmt.Println(<-ch)
+fmt.Println(<-ch)
+```
+
+#### Range and Close
+
+- 送信側からのみ、チャンネルを`close`できる。受信側で行うと panic になる。
+- クローズされると`v, ok := <-ch`の`ok`に`false`が入る。
+- `for v := range ch`で、チャンネルからの値がなくなるまで、連続して受け取ることができる。
+- ファイルを扱うときと異なり、チャンネルはクローズしなくてもいい。クローズが必要なのは、値の終わりを受信側に伝える必要があるときだけ。（例えば受信側で`range`を使っている場合など）
+
+```go
+func stepIntegers(chBufferSize int, ch chan int) {
+  for i := 0; i < chBufferSize; i++ {
+    ch <- i
+  }
+  close(ch)
+}
+
+func main() {
+  ch := make(chan int, 10)
+  go stepIntegers(cap(ch), ch)
+  for v := range ch {
+    fmt.Println(v)
+  }
+  // => 0 1 2 3 4 5 6 7 8 9
+}
+```
+
+#### Select
+
+- どれかのチャンネルから値をゲットできるまで待つ
+- 複数ゲットできた場合はランダムに選ぶ
+
+```go
+ch1 := make(chan int)
+ch2 := make(chan int, 10)
+
+go func() {
+  for i := 0; i < 10; i++ {
+    ch1 <- i
+  }
+  ch2 <- 999
+}()
+
+for {
+  select {
+  case v := <-ch1:
+    fmt.Println(v)
+  case v := <-ch2:
+    fmt.Println(v)
+    return
+  }
+}
+```
+
+- 上記の`ch1`はバッファがないため、受信側が 10 回出現するまで、同期的に先読みした後に、次行に進む。
+- よって、結果は`0 1 2 3 4 5 6 7 8 9 999`になる。
+
+```go
+ch1 := make(chan int, 10)
+```
+
+- もし ch1 を上記のようにバッファにすると、受信側の出現を待たずに次行に進む。
+- よって、結果は`0 1 2 999`のようになる。（`ch1`,`ch2`のどちらにもデータが有るため、`select`によりランダムに選ばれ、`ch2`を引いた瞬間に処理が終了する）
