@@ -1450,7 +1450,7 @@ func main() {
   - バッファが空のときのみ、受信がブロックされる。
 
 ```go
-ch := make(chan int, 3)
+ch := make(chan int, 2)
 ch <- 1
 ch <- 2
 ch <- 3 // チャンネルがフルなのでエラーになる
