@@ -10,21 +10,23 @@
 - `main`パッケージの`main`関数からプログラムが始まる
 - パッケージ名はインポートパスの最後の要素と同じ名前である(`math/rand`なら`rand`)
 
-### Imports
+#### Imports
 
 ```go
 // bad
 import "fmt"
-import "math"
+import anotherName "math"
+import _ "io" // 初期化処理だけ使いたい場合
 
 // good (factored import)
 import (
   "fmt"
-  "math"
+  anotherName "math"
+  import _ "io"
 )
 ```
 
-### Exported names
+#### Exported names
 
 - 大文字で始まる名前がエクスポートされる
 - パッケージをインポートしたとき、エクスポートされた名前のみ参照できる
@@ -45,7 +47,7 @@ func add(x, y int) int {
 }
 ```
 
-### Multiple results
+#### Multiple results
 
 ファンクションは複数の値を返すことができる。
 
@@ -60,7 +62,7 @@ func main() {
 }
 ```
 
-### Named return values
+#### Named return values
 
 - 戻り値に名前をつけると、関数の最初で定義した変数として扱われる
 - 名前付き戻り値を使い、かつ return に何も書かなかった場合、自動的に名前付き戻り値がリターンされる（naked return）。ただし、長い関数では読みやすさの点から明示的に記載すること。
@@ -79,6 +81,56 @@ func main() {
 }
 ```
 
+#### 値渡しと参照渡し
+
+- 関数に引数を渡した場合、値はコピーされる。つまり、呼び出し元の変数とは別物である。
+- 下記の場合、`i`は`myInt`のコピーであり、`p`は`myPointer`のコピーである。
+
+```go
+func test(i int, p *int) {}
+
+func main() {
+  myInt := 123
+  myPointer := &myInt
+  test(myInt, myPointer)
+}
+```
+
+#### 可変長パラメータ
+
+- 最後の引数に限って、`...`をつけることで可変長のパラメータとして受け取れる
+- 受け取ったパラメータはスライスとして扱われる。
+
+```go
+// c の型は []string になる
+func someFunc(a int, b int, c ...string){}
+```
+
+#### 関数リテラル
+
+- 匿名関数（クロージャ）を作るときに使う
+- 記法としては、通常の関数宣言から名前を削除するだけ
+- リテラルの外側の変数にアクセス可能
+- 名前がないので、関数を呼び出す際には、IIFE にするか、変数に代入して後から呼び出す。
+
+```go
+// 関数リテラル
+func (a string, b int) []string {}
+```
+
+#### 関数型
+
+- 関数を変数に代入するときの型として扱うためのもの
+- 引数名は省略可能であり、通常は書かない
+
+```go
+// 関数型の宣言
+var a func(int, int) int
+
+// 実装
+a = func(a int, b int) int {}
+```
+
 ### Variables
 
 `var`で変数を宣言できる。
@@ -93,7 +145,7 @@ func main() {
 }
 ```
 
-### Initializers
+#### Initializers
 
 宣言時に内容を設定する場合は、型定義を省略できる。
 
@@ -109,7 +161,7 @@ var (
 fmt.Println(a, b, c) // => 1 true "no!"
 ```
 
-### Short variable declarations
+#### Short variable declarations
 
 - **ファンクションの中であれば**、`:=`を使うことで`var`を省略できる。
 - ファンクションの外では、すべての Statement は`var`,`func`,`import`などのキーワードから始まる必要があるため、省略形は使えない。
@@ -121,7 +173,7 @@ func someFunc() {
 }
 ```
 
-### Basic types
+#### Basic types
 
 - `int`, `uint`, `uintptr`は、32bit システムでは 32bit、64bit システムでは 64bit である。
 - 特に理由がなければ、サイズ指定やアンサインドは使わず、`int`を使うこと。
@@ -144,16 +196,19 @@ float32 float64
 complex64 complex128
 ```
 
-### Zero values
+#### Zero values
 
 明示的に初期値を設定しない限り、変数には「Zero Values」がセットされる
 
-- 数値なら `0`
-- boolean なら `false`
-- 文字列なら`""`(空文字列)
-- ポインタなら`nil`
-- スライスなら`nil`
-- マップなら`nil`
+| type                           | value                         |
+| ------------------------------ | ----------------------------- |
+| 数値                           | `0`                           |
+| boolean                        | `false`                       |
+| 文字列                         | `""`(空文字列)                |
+| struct                         | 各フィールドがゼロ値の struct |
+| 配列、スライス                 | 各要素がゼロ値の配列          |
+| マップ                         | 空のマップ？                  |
+| その他（ポインタ、関数型など） | `nil`                         |
 
 ```go
 var a int     // => 0
@@ -162,7 +217,7 @@ var c bool    // => false
 var d string  // => ""
 ```
 
-### Type conversions
+#### Type conversions
 
 `Type(value)`の形で型変換を行える。
 
@@ -171,7 +226,7 @@ var i float64 = float64(123)
 j := uint(456)
 ```
 
-### Type inference
+#### Type inference
 
 - 明示的に型を指定しなかった場合は、右辺の値から型推論される。
 - 数値の場合は、必要な精度により、適切な方が自動で選択される。
@@ -215,6 +270,33 @@ func main() {
 }
 ```
 
+### Literals
+
+```go
+// 論理値リテラル
+true, false
+
+// 整数リテラル
+8, 0x23
+
+// 浮動小数点リテラル
+0.0, 12.5, 12e5
+
+// 虚数リテラル
+0i, -123.45i
+
+// 文字（ルーン）リテラル
+'a', 'b'
+
+// 文字列リテラル
+"エスケープが\n解釈される"
+`エスケープが\n無視されるが、
+改行を入れることができる`
+
+// 関数リテラル
+func (string, int) []string {}
+```
+
 ## Flow control statements
 
 ### for
@@ -238,6 +320,26 @@ for sum < 1000 { }
 // 何も要素を記載しなければwhileとして使える
 for { }
 ```
+
+### range
+
+`range()`を使うと便利にループ処理できる。
+
+```go
+for index, value := range my_slice {}
+// 省略するときは`_`にするか、削除する
+for index := range slice {}
+for _, value := range slice {}
+```
+
+range で使える型は下記の通り
+
+| type         | 1st value          | 2nd value                       |
+| ------------ | ------------------ | ------------------------------- |
+| Array, Slice | インデックス       | 値                              |
+| string       | バイトインデックス | unicode コードポイント(rune 型) |
+| map          | キー               | 値                              |
+| channel      | 値                 | -                               |
 
 ### if
 
@@ -272,19 +374,11 @@ case 2:
 }
 ```
 
-条件式を省略することで、`if-elseif-else`を簡略に書くことができる
+- 他の言語と異なり、Go では`case`節に式を書くことができる。
+- 条件式を省略すると、`switch true`を指定したのと同じことになる。
+- 上記を組み合わせることで、`if-elseif-else`を簡略に書くことができる
 
 ```go
-switch a := 1; {
-case a == 1:
-  fmt.Println("number is one")
-case a == 2:
-  fmt.Println("number is two")
-default:
-  fmt.Println("number is unknown")
-}
-
-b := 1
 switch {
 case b == 1:
   fmt.Println("number is one")
@@ -331,7 +425,7 @@ i := 123
 pointer = &i
 ```
 
-`*ポインタ`で「そのメモリアドレスに存在する内容」を参照できる。これを、dereferencing(値参照) や indirecting(遠回し？)という。
+`*ポインタ`で「そのメモリアドレスに存在する内容」を参照できる。これを、dereferencing、indirecting、値参照、間接参照などという。
 
 ```go
 fmt.Println(*pointer) // => 123
@@ -339,9 +433,32 @@ fmt.Println(*pointer) // => 123
 fmt.Println(*pointer) // => 456
 ```
 
+`new()`を使うことで、明示的にメモリ領域を割り当てることができる。確保された領域にはゼロ値が代入される。
+
+```go
+var i *int = new(int)
+var s *string = new(string)
+```
+
 ### Structs
 
-`struct`は、複数フィールドから作成される型である。
+- `struct`型は、複数フィールドから成る型である
+- struct の値にはドットでアクセスできる
+
+```go
+var x struct {
+  // 先頭を大文字にすると外部パッケージからもアクセスできるようになる
+  i int
+  f float32
+  s string
+}
+x.i = 1
+x.f = 1.1
+x.s = "hello"
+```
+
+- 構造体型を毎回手書きするのは面倒なので、名前をつけることができる
+- 名前をつけると、後述の Struct Literals を使うことで簡単に構造体を生成できる。
 
 ```go
 type Car struct {
@@ -349,14 +466,6 @@ type Car struct {
   Age  int
 }
 car := Car{"bmw", 15}
-fmt.Println(car) // => {bmw 15}
-```
-
-struct の値にはドットでアクセスできる。
-
-```go
-car.Name = "nissan"
-fmt.Println(car) // => {nissan 15}
 ```
 
 #### Zero Values
@@ -585,17 +694,6 @@ s = append(s, 6) // cap == 8
 s = append(s, 7) // cap == 8
 s = append(s, 8) // cap == 8
 s = append(s, 9) // cap == 16
-```
-
-### Range
-
-Array や Slice は`range()`でループ処理できる。
-
-```go
-for index, value := range my_slice {}
-// 省略するときは`_`にするか、削除する
-for index := range slice {}
-for _, value := range slice {}
 ```
 
 ### Map
