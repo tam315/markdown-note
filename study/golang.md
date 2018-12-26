@@ -457,7 +457,7 @@ x.f = 1.1
 x.s = "hello"
 ```
 
-- 構造体型を毎回手書きするのは面倒なので、名前をつけることができる
+- 構造体型を毎回手書きするのは面倒なので、名前のついた Struct 型として宣言することができる
 - 名前をつけると、後述の Struct Literals を使うことで簡単に構造体を生成できる。
 
 ```go
@@ -519,17 +519,73 @@ car := Car{}      // Name:"" and Age:0 implicitly
 p := &Car{} // has type *Car
 ```
 
-### Arrays
-
-`[n]T`で、長さ n で型が T の配列を作成できる。配列の長さも**型の定義に含まれる**。長さは後から変更できない。
+改行するときは、最後のトレーリングカンマが必須なので注意。
 
 ```go
-var a [3]int
+car := Car{
+  Name: "bmw",
+  Age: 18, // このカンマが無いとエラーになる
+}
+```
+
+#### 匿名フィールド
+
+フィールド名を省略すると、型名がフィールド名になる。こうしたフィールドを「匿名フィールド」という。
+
+```go
+type someStruct struct {
+  int // フィールド名は`int`
+  uini64 // フィールド名は`uint64`
+  *byte // フィールド名は`byte`
+}
+```
+
+#### 埋め込み
+
+- 子 struct に親 struct を匿名フィールドとして指定することで、親の持つフィールドとメソッドを子で利用可能になる。これを「埋め込み」という。
+- 親のフィールドやメソッドを使うときは単に`child.doSomething()`のようにすればよい。ただし、複数の struct を埋め込んで名前が重複したときは、明示的に`child.parentStruct.doSomething()`のように指定する必要がある。
+- 埋め込みを使うと、継承に似たことができる。
+
+```go
+type parentStruct struct {
+  i int
+}
+
+func (e parentStruct) doSomething() {
+  fmt.Println("hello")
+}
+
+type childStruct struct {
+  parentStruct
+}
+
+func main() {
+  var child childStruct
+  child.doSomething()  // => "hello"
+//child.parentStruct.doSomething()としなくていい！
+
+  fmt.Println(child.i) // => 0
+//fmt.Println(child.parentStruct.i)としなくていい！
+}
+```
+
+### Arrays
+
+- `[n]T`で、長さ n で型が T の配列を作成できる。配列の長さも**型の定義に含まれる**。長さは後から変更できない。
+- 配列の作成は配列リテラルを使う。
+
+```go
+var a [3]int // 各要素はゼロ値
 a[0] = 100
 a[1] = 200
 a[2] = 300
 
-b := [6]int{2, 3, 5, 7, 11, 13}
+// 配列リテラル
+b := [6]int{} // 各要素はゼロ値
+c := [6]int{2, 3, 5, 7, 11, 13}
+
+// ...を使うと、長さが自動で設定される。下記の例だと3になる。
+d := [...]int{2, 3, 5}
 ```
 
 Array 型の変数は、配列全体を表現している。C 言語のように配列の先頭を指すポインタではない。このため、代入を行うと配列全体がコピーされる。
@@ -548,14 +604,20 @@ fmt.Printf("%v", b) // [999 2 3]
 詳細は[このブログ](https://blog.golang.org/go-slices-usage-and-internals)を参照
 
 - スライスは Array の上に構築されている。Go では配列よりもスライスをよく使う。
-- `[]T`で型が T のスライスを宣言できる
 - スタートを前にずらすことはできない。後ろにずらすことはできる。
 - エンドは、前後にずらすことができる。
 - `someArray[1:4]`で、要素 1 から要素 3 までを含むスライスを作成できる
 
 ```go
+[]T // スライス型
+array_or_slice[MIN:MAX] // スライス式
+```
+
+```go
 array := [6]int{1, 2, 3, 4, 5, 6}
-slice := array[1:4]
+
+var slice []int // スライス型の変数を容易
+slice = array[1:4] // スライス式でスライスを作成して代入
 
 fmt.Println(slice) // => 2,3,4
 ```
@@ -682,7 +744,8 @@ board[0][0] = "X"
 #### appending to a slice
 
 - `append()`を使うことで、簡単にスライス（配列）に要素を追加できる
-- スライスの背後にある配列の大きさが足りなくなったとき
+- スライスの背後にある配列の大きさが余っているときは、単に追加される。
+- スライスの背後にある配列の大きさが足りなくなったとき：
   - 新しい配列が作成される。このとき、余分に配列の長さが確保される。
   - 古い配列の内容が新しい配列にコピーされる
   - 新しいスライスは新しい配列を指す
@@ -694,6 +757,23 @@ s = append(s, 6) // cap == 8
 s = append(s, 7) // cap == 8
 s = append(s, 8) // cap == 8
 s = append(s, 9) // cap == 16
+
+s = append(s,10,11) // 複数追加もできる
+s = append(s, another_slice...) // スライスを追加するときは...で展開してから追加
+```
+
+#### copy
+
+- スライスをコピーするときは`copy()`をつかう。
+- `count`にはコピーした数が入る。
+
+```go
+src := []int{1, 2, 3, 4}
+dst := []int{5, 6, 7}
+
+count := copy(dst[1:], src)
+
+fmt.Println(count, dst) // => 2   [5 1 2]
 ```
 
 ### Map
@@ -701,6 +781,10 @@ s = append(s, 9) // cap == 16
 - key-value ペア。
 - `make()`を使うことでマップを作成することができる。
 - `map[T]T`で宣言する
+
+#### 参照型
+
+スライスと同じく、Map も参照型である。ただし、スライスでいうバックエンドの配列に相当するものは用意されておらず、それらに直接アクセスすることはできない。
 
 #### `make()`でつくる
 
@@ -712,6 +796,18 @@ my_map1 = make(map[string]int)
 
 my_map1["hello"] = 123
 fmt.Println(my_map1["hello"]) // 123
+
+my_map1["empty"] // => 0  未定義のキーを呼ぶと、ゼロ値が返る
+```
+
+#### 存在確認
+
+キーが存在するか確認するときは`ok`を使う。
+
+```go
+val, ok := my_map1["new"]
+// valがいらないときは
+_, ok := my_map1["new"]
 ```
 
 #### リテラルでつくる
@@ -801,6 +897,16 @@ func main() {
   fmt.Println(pos(1), neg(-1)) // 3 -3
 }
 ```
+
+### 参照型
+
+- 下記は参照型である。
+  - スライス
+  - マップ
+  - チャネル
+- 関数に受け渡したときにコピーされるコストが、極めて低い。
+- 参照を持つため、関数で値を変更すると、呼び出し元の値も変更される。
+- 参照型の作成には`make()`が使える
 
 ## Methods
 
@@ -932,6 +1038,14 @@ func main() {
 ## Interfaces
 
 - インターフェースは型の一種である。メソッドの組み合わせで定義される。
+
+```go
+var i interface {
+  sayHello()
+}
+```
+
+- 通常は、下記のように名前のついたインターフェース型として宣言してから使う。
 - 下記の変数`counter`は、`PlusOne()`というメソッドを持つ変数であれば何でも代入できる。
 
 ```go
@@ -1016,6 +1130,33 @@ func main() {
 }
 ```
 
+### 命名規則
+
+インターフェースが一つしか関数を持たない場合、インターフェース名は「関数名+'er'」とするのが慣習である。
+
+```go
+type Reader interface {
+  Read()
+}
+```
+
+### 埋め込み
+
+構造体と同じく、インターフェースも埋め込みを行うことができる。擬似的な継承やミックスインを実現できる。
+
+```go
+type Buyer interface {
+  Buy()
+}
+type Seller interface {
+  Sell()
+}
+type Dealer interface {
+  Buyer
+  Seller
+}
+```
+
 ### インターフェースの持つ値
 
 インターフェースの持つ値は、 **具体的な値と具体的な型** で構成されるタプルと考えられる。（「具体的」＝インターフェースを実装している実際の変数の、の意）
@@ -1044,7 +1185,7 @@ func main() {
   i1 = MyType{"hello"}
   i2 = MyInt(123)
 
-  describe(i1) // {hello}, *main.MyType
+  describe(i1) // {hello}, main.MyType
   describe(i2) // 123, main.MyInt
 
   i1.SayHello() // hello
@@ -1126,13 +1267,19 @@ func anyExec(any interface{}) {}
 
 ### Type assertion
 
-空インターフェースで受け取った値は元の型の情報が欠落している。このような局面で利用するのが型アサーションである。下記のようにして使う。
+- 空インターフェースで受け取った値は元の型の情報が欠落している。このため、型を持つ値として扱うときには変換が必要となる。この変換作業が型アサーションである。下記のようにして使う。
+- 変換に失敗した場合は`ok`に`false`が入る。`ok`を省略して変換に失敗した場合はパニックになる。
 
 ```go
 value, ok := some_var.(some_type)
 ```
 
-具体的には、下記のように条件分岐して使う。
+```go
+var i interface{} = "hello" // iは型を持たない
+s := i.(string) // string 型に変換する
+```
+
+具体的には、下記のように条件分岐して使うことが多い。
 
 ```go
 func printIf(src interface{}) {
@@ -1173,6 +1320,22 @@ func printSwitch(src interface{}) {
         fmt.Printf("parameter is unknown type. [valueType: %T]\n", src)
     }
 }
+```
+
+### 可変長パラメータにスライスを渡す
+
+スライスの後に`...`をつけることで、値をばらしてから可変長パラメータに値を渡すことができる。
+
+```go
+func main() {
+  s := []string{"a", "b", "c"}
+
+  test("a", "b", "c")
+  // 上記は下記と等価
+  test(s...)
+}
+
+func test(s ...string) {}
 ```
 
 ### Stringers
@@ -1348,6 +1511,39 @@ func main() {
   r := rot13Reader{s}
   io.Copy(os.Stdout, &r)
 }
+```
+
+## Panic
+
+### パニックとは
+
+通常、関数内でエラーが発生したときは、`error`インターフェース型の値を返す。しかし、下記の場合は`panic()`を使う。
+
+- 致命的過ぎてリカバリが不要であるとき
+- 特定のリカバリ処理を意図的に呼び出したいとき
+
+```go
+panic("パニック発生")
+```
+
+パニック時でも`defer`した関数は実行される。
+
+### リカバリ
+
+- リカバリは`defer`した関数の中でのみ行うことができる。
+- `recover()`を使う。
+- `recover()`の返値は:
+  - panic が発生していれば`panic()`に渡した引数
+  - panic が発生していなければ`nil`
+
+```go
+defer func() {
+  if err := recover(); err != nil {
+    fmt.Println("リカバリ処理")
+    fmt.Println(err) // => "パニック発生"
+  }
+}()
+panic("パニック発生")
 ```
 
 ## Concurrency
