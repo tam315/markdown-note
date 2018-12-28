@@ -216,13 +216,31 @@ git commit -m "this is merge commit message"
 
 ## Remote Branch
 
+### push
+
+ローカルブランチをリモートにプッシュする
+
 ```bash
-# ローカルブランチをリモートにプッシュ
 git push origin some_localbranch:remote_branch
 git push -u origin some_localbranch:remote_branch # 設定を記憶しておく
+```
 
+### branch
+
+リモートブランチの一覧を表示する
+
+```bash
 git branch -v # ブランチ一覧
 git branch -vv # ブランチ一覧（リモートとの対応つき）
+```
+
+### prune
+
+リモートで削除されたブランチをローカルでも削除する
+
+```bash
+git remote prune origin
+git remote prune origin --dry-run
 ```
 
 ## Rebase
