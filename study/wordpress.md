@@ -20,7 +20,7 @@
 
 ```bash
 # Let's Encryptのセットアップ
-cd /tmp
+cd /home/bitnami
 git clone https://github.com/letsencrypt/letsencrypt
 cd letsencrypt
 ./letsencrypt-auto
@@ -40,7 +40,7 @@ sudo /opt/bitnami/ctlscript.sh restart apache
 
 ```sh
 #!/bin/sh
-/tmp/letsencrypt/letsencrypt-auto renew
+/home/bitnami/letsencrypt/letsencrypt-auto renew
 cp /etc/letsencrypt/live/${ドメイン名}/privkey.pem /opt/bitnami/apache2/conf/server.key
 cp /etc/letsencrypt/live/${ドメイン名}/fullchain.pem /opt/bitnami/apache2/conf/server.crt
 /opt/bitnami/ctlscript.sh restart apache
