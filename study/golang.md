@@ -1822,3 +1822,45 @@ for {
 // tick.
 // BOOM!
 ```
+
+### Mutex
+
+単に goroutine が同時に同じ値にアクセスしない（mutual exclution）ようにしたい場合は、`sync.Mutex`を使うと良い。
+
+```go
+// 複数のgoroutineで共有する構造体
+type SafeCounter struct {
+  v   int
+  mux sync.Mutex
+}
+
+func (c *SafeCounter) Inc() {
+  // すでにロックされていればここでコードがブロックされる
+  c.mux.Lock()
+  // ロック中なので、一度に一つのgoroutineしかアクセスできない
+  c.v++
+  // アンロックする
+  c.mux.Unlock()
+}
+
+func (c *SafeCounter) Value() int {
+  // すでにロックされていればここでコードがブロックされる
+  c.mux.Lock()
+
+  // return後にアンロックする
+  defer c.mux.Unlock()
+
+  // ロック中なので、一度に一つのgoroutineしかアクセスできない
+  return c.v
+}
+
+func main() {
+  c := SafeCounter{}
+  for i := 0; i < 1000; i++ {
+    go c.Inc()
+  }
+
+  time.Sleep(time.Second)
+  fmt.Println(c.Value()) // => 1000
+}
+```
