@@ -625,6 +625,86 @@ recalcNeeded = false;
   - `accumulate`
   - `receipt`
 
+## 基本的なデータ型
+
+### 数値全般
+
+- 0 と 1 だけは必要に応じてハードコーディングしてよい
+- それ以外の数値（マジックナンバー）は使うな、名前付き定数を使え
+- 0 除算が起きないよう注意する
+- 型変換は明示的に行う
+- 異なる型を（暗黙的変換で）比較しないこと
+
+### 整数
+
+- 除算に注意する　結果は言語により異なる(7/10===0 など)
+- 桁あふれに注意する（中間結果、最終結果どちらも）
+
+### 浮動小数点
+
+- 大きさが極端に異なる数の加減算はするな
+  - 結果が不正確になるから
+  - もし行う場合は、数をソートしてから絶対値の小さい順に足していくと、最も誤差は小さくなる
+- 等価を比較しない
+  - 同じ値になるはずの 2 つの計算結果が、違う値になることはしばしば発生するため
+  - もし比較したい場合は、ある程度の誤差を許容する、比較のためのルーチンを作成すること
+- 丸め誤差に対処するには
+  - 精度の高い方に変換する（単精度 → 倍精度）
+  - BCD(Binary Coded Decimal)に変換する
+  - 整数に変換する（ドルなら、105 を 1 ドル 5 セントとして管理するなど）
+  - 丸め誤差に敏感な、専用の型が使っている言語に用意されていないか確認する
+
+### 文字と文字列
+
+- マジックキャラクタ・マジックストリングを使うな、名前付き定数を使え
+- off-by-one エラーに注意する（文字列数を超えた読み取りなど）
+- Unicode を使う
+- 開発当初から i18n の戦略を練る
+- C 言語における諸注意は省略、本書参照
+
+### ブール変数
+
+- 説明変数として使うことで、**評価を単純に**する。また、プログラムを **コードで文書化** する
+  - `reachedToLastLevel = level === maxLevel`
+
+### 列挙型
+
+- コードを読みやすくするために使う
+
+```js
+// bad
+result = getData(data, true, false, false);
+
+// good
+result = getData(
+  data,
+  EmploymentStatus_CurrentEmployee,
+  PayrollType_Salaried,
+  SavingsPlan_NoDeduction,
+);
+```
+
+- 信頼性を高めるために使う（ありえない値をコンパイル時にチェック）
+- 保守性を高めるために使う（実際の値が変更するときは 1 箇所を編集すれば OK）
+- ブール値の代わりに使う（true ＋ 2 種類の false など）
+- if/case で使う場合は、最後に無効な値を検査するのを忘れずに
+- 実際に使用する要素以外の、制御用要素を使う
+  - 列挙の最初と最後の要素をループ時に使用する
+  - 最初の要素に無効な値を設定することで、未初期化の値を検出する
+
+```cpp
+enum Color {
+  Color_InvalidFirst = 0, // 未初期化を検出
+  Color_First = 1, // ループの最初の要素として使用
+  Color_Red = 1,
+  Color_Green = 2,
+  Color_Blue = 3,
+  Color_Last = 3, // ループの最後の要素として使用
+}
+```
+
+- 言語に enum が存在しない場合は、自分で作ること
+
 ## ストレートなコードの構成
 
 ### 順序が重要なステートメント
@@ -905,11 +985,13 @@ func getLevelByScore(score float64) int {
   maxLevel := len(rangeLimits) - 1
 
   for level, limit := range rangeLimits {
-    if score <= limit || level == maxLevel {
+    scoreInRange := score <= limit
+    reachedToLastLevel := level == maxLevel
+    if scoreInRange || reachedToLastLevel {
       return level
     }
   }
-  panic("fatal error")
+  panic("this can't be happen")
 }
 
 func main() {
