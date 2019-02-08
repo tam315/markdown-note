@@ -104,7 +104,7 @@ snippet = Snippet.objects.get(id=1)
 snippet # => <Snippet: Snippet object (2)>
 ```
 
-インスタンスを渡すことで、シリアライズ用の Serializer を作成する。`serializer.data`に、dict に変換（=シリアライズ）されたインスタンスが入る。
+**インスタンスを基にして** Serializer を作成する。`serializer.data`で、dict に変換（=シリアライズ）されたインスタンスを取得できる。
 
 ```py
 serializer = SnippetSerializer(snippet)
@@ -141,7 +141,8 @@ stream = io.BytesIO(content) # content === JSON
 data = JSONParser().parse(stream)
 ```
 
-`data`キーに、パースした dict を渡すことで、デシリアライズ用の Serializer を作成する。
+- 新規作成の場合は、**dict を基にして** Serializer を作成する。
+- 更新の場合は、**インスタンスと dict を基にして** Serializer を作成する。
 
 ```py
 # 新規にインスタンスを作成する場合
@@ -271,3 +272,99 @@ urlpatterns = [
     path('snippets/<int:pk>/', views.snippet_detail),
 ]
 ```
+
+## API view
+
+### Request オブジェクト
+
+- `HttpRequest`の拡張版として、rest framework では`Request`オブジェクトが用意されている。
+- 主な特徴
+  - view において`request.data`を使うことで、リクエストのデータを dict として取り出せること。
+  - view において`request.query_params`を使うことで、クエリストリングを dict として取り出せること。
+- `request.POST`はフォームデータしか取り出せないのに対して、`request.data`はどんな形式でデータでも受け取れる。
+
+### Response オブジェクト
+
+`Response`オブジェクトは、ユーザに投げ返すデータを、クライアントが要求している content type に変換してくれる機能を持つ。
+
+```py
+# ユーザが求めているcontent-typeで投げ返す
+return Response(data)
+```
+
+### Status code
+
+ステータスコードは間違えやすい。`status`というモジュールの中に`status.HTTP_400_BAD_REQUEST`のように明示的な定数を用意したから、これを使え。
+
+### API view の作り方
+
+API view は、前述の Request, Response などの機能に加え、次のような機能を提供する view である。
+
+- 正しくないメソッドでリクエストされた場合に、`405 Method Not Allowed`を返す
+- `request.data`のパース失敗時に、`ParseError`例外を投げる
+
+#### ラッパー
+
+API view を作るには、ラッパーを使う。
+
+- `@api_vew`デコレータ --- 関数ベースで作る場合に使う
+- `APIView`クラス --- クラスベースで作る場合に使う
+
+#### 実装方法
+
+[こちらの diff](https://github.com/junkboy0315/django-rest-framework/commit/86b1b87abb5967064feb7eaa12911beca388b244?diff=unified)を参照
+
+Django のみで実装した場合と比べて、コードが簡単になっている。
+
+この状態で既に、リクエストヘッダに`Accept:application/json`や`Accept:text/html`をつけることで、レスポンス形式を指定して受け取ることができる。
+（`localhost:8000/snippets`にブラウザでアクセスできる！）
+
+### サフィックスでデータ形式を指定できるようにする
+
+下記のように、データ形式をサフィックスで指定して取得できるようにする方法。
+
+- `http://example.com/api/items/4.json`
+- `http://example.com/api/items/4.api`
+
+view の引数に`format`を追加する
+
+```py
+def snippet_list(request, format=None):
+#....
+def snippet_detail(request, pk, format=None):
+```
+
+urlpatterns をラッパで囲む
+
+```py
+from rest_framework.urlpatterns import format_suffix_patterns
+
+urlpatterns = [
+  # 設定....
+]
+urlpatterns = format_suffix_patterns(urlpatterns)
+```
+
+## Class-based views
+
+前述の view は function-based で実装した。これを class-based な view で実装しなおすには、[こちら](https://github.com/junkboy0315/django-rest-framework/commit/0c9f2846250543dd7ce69caa52e73240809a43fb?diff=split)や[こちら](https://github.com/junkboy0315/django-rest-framework/commit/4585bb6229fddb875337ced280689abba1b2093b?diff=split)の diff のようにする。
+
+`APIView`クラスを継承し、`get`,`post`,`put`,`delete`などのメソッドをオーバーライドして使う。書き方が若干変わるだけで、処理内容自体は function-based のときと何も変わらない。
+
+### Mixins
+
+mixin を使うと、view においてよく使われる定型的な処理をトッピングできる。
+
+mixin で view をリファクタした結果が[こちらの diff](https://github.com/junkboy0315/django-rest-framework/commit/32e625bbdc70e0935bd2cc60e62466ab76a6cebb?diff=unified)である。
+
+ほとんどの処理が消えている。消えた部分が、mixin が提供してくれている処理ということである。
+
+- `mixins.ListModelMixin` --- `list`メソッドを提供する
+- `mixins.CreateModelMixin` --- `create`メソッドを提供する
+- `mixins.RetrieveModelMixin` --- `retrieve`メソッドを提供する
+- `mixins.UpdateModelMixin` --- `update`メソッドを提供する
+- `mixins.DestroyModelMixin` --- `destroy`メソッドを提供する
+
+### Generic views
+
+ミックスインを個別に行わなくても、既にミックスイン済みのクラスが用意されている。これらを使うと、view のコードを[極端に単純](https://github.com/junkboy0315/django-rest-framework/commit/ea640baa9ca36d8724ae0c5c9da08899f4109204)にできる。
