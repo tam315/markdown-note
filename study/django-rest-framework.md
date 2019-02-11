@@ -314,6 +314,54 @@ API view を作るには、ラッパーを使う。
 
 [こちらの diff](https://github.com/junkboy0315/django-rest-framework/commit/86b1b87abb5967064feb7eaa12911beca388b244?diff=unified)を参照
 
+```py
+@api_view(['GET', 'POST'])
+def snippet_list(request):
+    """
+    - 全ての snippets を表示する。
+    - 新しい snippet を作成する
+    """
+    if request.method == 'GET':
+        snippets = Snippet.objects.all()
+        serializer = SnippetSerializer(snippets, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        serializer = SnippetSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def snippet_detail(request, pk):
+    """
+    単一のスニペットの、取得・更新・削除を行う。
+    """
+    try:
+        snippet = Snippet.objects.get(pk=pk)
+    except Snippet.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = SnippetSerializer(snippet)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = SnippetSerializer(snippet, data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(serializer.data)
+
+    elif request.method == 'DELETE':
+        snippet.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+```
+
 Django のみで実装した場合と比べて、コードが簡単になっている。
 
 この状態で既に、リクエストヘッダに`Accept:application/json`や`Accept:text/html`をつけることで、レスポンス形式を指定して受け取ることができる。
@@ -365,6 +413,245 @@ mixin で view をリファクタした結果が[こちらの diff](https://gith
 - `mixins.UpdateModelMixin` --- `update`メソッドを提供する
 - `mixins.DestroyModelMixin` --- `destroy`メソッドを提供する
 
+```py
+class SnippetList(mixins.ListModelMixin,
+                  mixins.CreateModelMixin,
+                  generics.GenericAPIView):
+    """
+    - 全ての snippets を表示する。
+    - 新しい snippet を作成する
+    """
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+
+class SnippetDetail(mixins.RetrieveModelMixin,
+                    mixins.UpdateModelMixin,
+                    mixins.DestroyModelMixin,
+                    generics.GenericAPIView):
+    """
+    単一のスニペットの、取得・更新・削除を行う。
+    """
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+
+    def get(self, request, *args, **kwargs):  # なお、pkはkwargsとして渡ってくる
+        return self.retrieve(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+```
+
 ### Generic views
 
 ミックスインを個別に行わなくても、既にミックスイン済みのクラスが用意されている。これらを使うと、view のコードを[極端に単純](https://github.com/junkboy0315/django-rest-framework/commit/ea640baa9ca36d8724ae0c5c9da08899f4109204)にできる。
+
+```py
+class SnippetList(generics.ListCreateAPIView):
+    """
+    - 全ての snippets を表示する。
+    - 新しい snippet を作成する
+    """
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+
+
+class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+    """
+    単一のスニペットの、取得・更新・削除を行う。
+    """
+    queryset = Snippet.objects.all()
+    serializer_class = SnippetSerializer
+```
+
+## Authentication & Permissions
+
+本項では下記の機能を実装する
+
+- Snippet に作者の情報を保存する
+- 未認証ユーザは閲覧のみ行える
+- オブジェクトレベルの認証（オブジェクト作者のみ更新や削除が可能）
+
+最低限必要なコードは以下の通り
+
+- [ユーザ情報の保存](https://github.com/junkboy0315/django-rest-framework/commit/c437c2d953ac638167c4d7983926309a16dd80f1)
+- [未認証ユーザは閲覧のみ](https://github.com/junkboy0315/django-rest-framework/commit/b4bf18f7124ed7cac509851a41b6f4a83ee0614d)
+- [オブジェクトレベルの認証](https://github.com/junkboy0315/django-rest-framework/commit/4d345d0063baa692a526ea69466b412fdf61bf08)
+
+### Snippet
+
+作者の情報を保存するフィールドを、Snippet モデルに追加する。
+
+```py
+# models.py
+class Snippet(models.Model):
+    owner = models.ForeignKey('auth.User',
+                              related_name='snippets',
+                              on_delete=models.CASCADE)
+```
+
+```bash
+python manage.py makemigrations snippets
+python manage.py migrate
+```
+
+### User
+
+※この項は全て省略可能。
+
+User モデルのシリアライザを作成する。
+
+```py
+# serializer.py
+from django.contrib.auth.models import User
+
+class UserSerializer(serializers.ModelSerializer):
+    # UserからSnippetをリバースリレーションシップで参照するには
+    # 下記のように明示的に指定する必要がある。
+    # 使わないならば以下の項目は消してもOK。
+    snippets = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Snippet.objects.all())
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'snippets')
+```
+
+User モデルの view を作成する
+
+```py
+# view.py
+class UserList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+class UserDetail(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+```
+
+ルーティングを設定する
+
+```py
+# urls.py
+path('users/', views.UserList.as_view()),
+path('users/<int:pk>/', views.UserDetail.as_view()),
+```
+
+### ユーザ情報の取り出し
+
+- ユーザ情報はリクエストに含まれている。このため、リクエストからユーザ情報を取り出してシリアライザに渡す必要がある。
+- これは、view において`CreateModelMixin`の`perform_create`メソッドをオーバーライドすることで実現する。`create`メソッド全体をオーバーライドする必要はない。
+- これにより、インスタンスの保存時に、`validated_data`に加えて`owner`が一緒に保存されるようになる。なお、この場合は`owner`は`is_valid()`での検証対象とはならない。
+
+```py
+# view.py
+class SnippetList(generics.ListCreateAPIView):
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+```
+
+### 読取時のみの処理
+
+- untyped な`ReadOnlyField`クラスを使うことで、シリアライズ時（読取時）のみデータの形を変えることができる。
+- 下記の例では、読み取り時のみ`owner`フィールドの値をテキストとして取り出している。
+- 書込時は、なんの処理も行わず、そのまま書き込む。
+
+```py
+class SnippetSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+    # 下記でも同じ効果が得られる
+    owner = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Snippet
+        fields = ('id', 'title', 'code', 'linenos',
+                  'language', 'style', 'owner')
+```
+
+### view の権限設定
+
+認証済みユーザ以外の編集を禁止するため、下記のように view を設定する
+
+```py
+from rest_framework import permissions
+
+class SnippetList(generics.ListCreateAPIView):
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
+```
+
+### ブラウザからのログイン
+
+ブラウザからログインできるようにするには下記の行を`url.py`に追加する
+
+```py
+urlpatterns [
+    path('api-auth/', include('rest_framework.urls')),
+]
+```
+
+### オブジェクト単位での権限設定
+
+作者なら編集可能、それ以外は閲覧可能と言った具合に、オブジェクトごとに権限を設定したいときは、カスタム権限を使う。
+
+```py
+# permissions.py
+from rest_framework import permissions
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    オーナーのみ編集を可能にするカスタム権限
+    """
+    def has_object_permission(self, request, view, obj):
+        # GET等は常に許可
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        # 作者のみ編集可
+        return obj.owner == request.user
+```
+
+```py
+# view.py
+class SnippetList(generics.ListCreateAPIView):
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly)
+```
+
+### (おまけ)モデル保存時にデータを操作する
+
+モデルの`save()`メソッドをオーバライドすることで、保存時にデータを操作することができる。
+
+```py
+class Snippet(models.Model):
+    created =#...
+    title = #...
+    code =#...
+    linenos =#...
+    language = #...
+    style =#...
+    owner =#...
+    highlighted =#...
+
+    def save(self, *args, **kwargs):
+        """
+        `pygmanets`を使ってハイライトされたHTMLを生成する
+        """
+        lexer = get_lexer_by_name(self.language)
+        linenos = 'table' if self.linenos else False
+        options = {'title': self.title} if self.title else {}
+        formatter = HtmlFormatter(style=self.style,
+                                  linenos=linenos,
+                                  full=True,
+                                  **options)
+        self.highlighted = highlight(self.code, lexer, formatter)
+        super(Snippet, self).save(*args, **kwargs)
+```
