@@ -655,3 +655,114 @@ class Snippet(models.Model):
         self.highlighted = highlight(self.code, lexer, formatter)
         super(Snippet, self).save(*args, **kwargs)
 ```
+
+## Relationships & Hyperlinked APIs
+
+### API の一覧を表示する API
+
+rest framework の`reverse`に view の名前を与えることで、URL を取得することができる。
+
+```py
+# view.py
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.reverse import reverse
+
+@api_view(['GET'])
+def api_root(request, format=None):
+    return Response({
+        'users': reverse('user-list', request=request, format=format),
+        'snippets': reverse('snippet-list', request=request, format=format)
+    })
+
+# urls.py
+urlpatterns = [
+    path('', views.api_root),
+]
+```
+
+### 特定のフィールドを返す API
+
+インスタンスではなく、インスタンスの特定のプロパティを返す API を作りたいときは、`GenericAPIView`を使って手動で作る。
+
+下記は、Snippet モデルの highlight プロパティを HTML で返す例。
+
+```py
+# serializer.py
+from rest_framework import renderers
+from rest_framework.response import Response
+
+class SnippetHighlight(generics.GenericAPIView):
+    queryset = Snippet.objects.all()
+    renderer_classes = (renderers.StaticHTMLRenderer,)
+
+    def get(self, request, *args, **kwargs):
+        snippet = self.get_object()
+        return Response(snippet.highlighted)
+```
+
+```py
+# snippets/urls.py
+path('snippets/<int:pk>/highlight/',
+     views.SnippetHighlight.as_view()),
+```
+
+### API をハイパーリンクでつなぐ
+
+エンティティ間の関係性を表す方法は以下の通り。Rest framework はこれら全てをサポートしている。
+
+- primary key
+- hyperlink
+- slug
+- string representation
+- nesting ...など
+
+ハイパーリンクを使うには、`HyperlinkedModelSerializer`を使う。`ModelSerializer`との違いは：
+
+- デフォルトでは`id`を含まず、`url`フィールドを含む
+- `PrimaryKeyRelatedField`の代わりに`HyperlinkedRelatedField`を使う
+
+### URL パターン名
+
+ハイパーリンクを使うときは、原則として下記のルールで名前をつけること。
+
+- `{model_name}-detail`
+- `{model_name}-list`
+- `{model_name}-{fieldname}`
+
+```py
+urlpatterns = [
+    path('', views.api_root),
+
+    path('snippets/',
+         views.SnippetList.as_view(),
+         name='snippet-list'),
+
+    path('snippets/<int:pk>/',
+         views.SnippetDetail.as_view(),
+         name='snippet-detail'),
+
+    path('snippets/<int:pk>/highlight/',
+         views.SnippetHighlight.as_view(),
+         name='snippet-highlight'),
+
+    path('users/',
+         views.UserList.as_view(),
+         name='user-list'),
+
+    path('users/<int:pk>/',
+         views.UserDetail.as_view(),
+         name='user-detail'),
+]
+```
+
+### ページネーション
+
+ページネーションを追加するには`tutorial/settings.py`に下記を記載する
+
+```py
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10
+}
+```
