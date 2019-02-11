@@ -192,7 +192,7 @@ print(repr(serializer))
   - モデル定義を基に、シリアライズに関するフィールドの情報を自動的に設定してくれる（`required`, `allow_blank`, `max_length`, `read_only`など）
   - 何も書かなくても、簡易的な`create()`や`update()`を実装してくれる
 
-このため、前述の Serializer を、下記の通り劇的にシンプルにすることができる。
+このため、[前述の Serializer](#serializer-の作成) を、下記の通り劇的にシンプルにすることができる。
 
 ```py
 class SnippetSerializer(serializers.ModelSerializer):
@@ -453,7 +453,7 @@ class SnippetDetail(mixins.RetrieveModelMixin,
 
 ### Generic views
 
-ミックスインを個別に行わなくても、既にミックスイン済みのクラスが用意されている。これらを使うと、view のコードを[極端に単純](https://github.com/junkboy0315/django-rest-framework/commit/ea640baa9ca36d8724ae0c5c9da08899f4109204)にできる。
+[Generic views](https://github.com/encode/django-rest-framework/blob/0e10d32fb122619a7977909536b642d09603192a/rest_framework/generics.py#L276) を使うと、`get`や`post`などのメソッドと、ミックスインで提供される`retrieve`,`update`などの対応付けを一括して行ってくれるため、view のコードを[単純化](https://github.com/junkboy0315/django-rest-framework/commit/ea640baa9ca36d8724ae0c5c9da08899f4109204)できる。
 
 ```py
 class SnippetList(generics.ListCreateAPIView):
