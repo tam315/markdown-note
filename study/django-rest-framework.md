@@ -766,3 +766,69 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10
 }
 ```
+
+## ModelSerializer Advanced
+
+### リレーション項目のマッピング
+
+モデルのフィールド定義が、Foreign Key を保持する「参照」のフィールドや、その逆方向である「逆参照」のフィールドである場合は、デフォルトではシリアライザの`PrimaryKeyRelatedField()`にマップされる。
+
+なお、書き込みもできてしまうので、必要なければ`(read_only=True)`とするのをお忘れなく。
+
+```py
+# 参照はデフォルトで下記のようにマップされる（明示的に書かなくてもよい）
+class TrackSerializer(serializers.ModelSerializer):
+    album = serializers.PrimaryKeyRelatedField()
+
+# 逆参照はデフォルトで下記のようにマップされる（明示的に書かなくてもよい）
+class AlbumSerializer(serializers.ModelSerializer):
+    tracks = serializers.PrimaryKeyRelatedField(many=True)
+```
+
+#### 逆参照
+
+逆参照を使う際は、参照元モデルにおいて`models.ForeignKey（related_name='tracks')`のように逆参照用のキーを設定しておくこと。`***_set`での逆参照はうまく動かない場合があるので注意。
+
+### depth
+
+デプスを設定すれば勝手に Foreign フィールドを展開してくれる。この場合、シリアライザーを指定する必要もない。
+
+```py
+class AccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ('id', 'account_name', 'users', 'created')
+        depth = 1 # 規定は0
+```
+
+### フィールドの追加、名前付け替え
+
+明示的にフィールドを追加したり、名前を付け替えることができる。フィールドでは、モデルの「プロパティ」および「メソッド」にアクセスできる
+
+```py
+class AccountSerializer(serializers.ModelSerializer):
+    url1 = serializers.CharField(source='get_some_url')
+    url2 = serializers.CharField(source='foreign_field.url')
+```
+
+### read_only_fields
+
+`read_only=True`などをたくさん書くのが面倒なら`read_only_fields`をつかう。
+
+```py
+class AccountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Account
+        fields = ('id', 'account_name', 'users', 'created')
+        read_only_fields = ('account_name',)
+```
+
+または extra_kwargs を使ってもよい。
+
+```py
+class CreateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('email', 'username', 'password')
+        extra_kwargs = {'password': {'write_only': True}}
+```

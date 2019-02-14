@@ -86,6 +86,11 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+
+    # 計算で算出したいプロパティは下記のように定義する
+    @property
+    def author_name_and_title(self):
+      return self.author.name + self.title
 ```
 
 マイグレーションを行う
