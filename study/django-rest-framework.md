@@ -832,3 +832,26 @@ class CreateUserSerializer(serializers.ModelSerializer):
         fields = ('email', 'username', 'password')
         extra_kwargs = {'password': {'write_only': True}}
 ```
+
+### 計算による値の算出
+
+- たとえば tracks というフィールドを計算で算出する方法は下記の通り
+- 下記の場合は単に逆参照を使えばいいので、本来は計算で算出する必要はないことに留意する
+
+```py
+# シリアライザでやる場合
+class AlbumSerializer(serializers.ModelSerializer):
+    tracks = serializers.SerializerMethodField()
+
+    # `get_***`の法則で名前をつける必要がある
+    def get_tracks(self, album): # 第二引数がインスタンスを表す
+        tracks = album.tracks.all()
+        return [_['id'] for _ in tracks]
+
+# モデルでやる場合
+class Album(models.Model):
+    @property
+    def tracks(self): # `self`がインスタンスを表す
+        tracks = self.tracks.all()
+        return [_['id'] for _ in tracks]
+```
