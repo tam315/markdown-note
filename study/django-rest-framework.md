@@ -393,6 +393,61 @@ urlpatterns = [
 urlpatterns = format_suffix_patterns(urlpatterns)
 ```
 
+### Context
+
+APIView からシリアライザに対して「コンテキスト」というものが渡されている。コンテキストはリクエスト情報などを含んでいる。
+
+任意の情報をコンテキストとしてシリアライザに渡したいときは、APIView において下記のようにする。
+
+```py
+def get_serializer_context(self, *args, **kwargs):
+    context = super().get_serializer_context(*args, **kwargs)
+    context = {
+        **context,
+        'some_additional_key': 'some_value'
+    }
+    return context
+```
+
+シリアライザ側では、下記のようにコンテキストにアクセスできる
+
+```py
+def some_method(self, obj):
+    value_from_context = self.context['some_additional_key']
+```
+
+### 自動で追記するフィールド
+
+`create_date`や`update_user`など、サーバサイドで付加する情報を自動で処理する方法
+
+#### シリアライザで対処する方法
+
+`ModelSerializer#create()`や`#update()`を上書きする。ほとんど場合において、この方法が最適。
+
+```py
+def create(self, validated_data):
+    user_id = self.context['request'].user.get('user_id')
+    validated_data = {
+        **validated_data,
+        'create_user': user_id,
+        'update_user': user_id,
+    }
+    return super().create(validated_data)
+```
+
+#### APIView で対処する方法
+
+`CreateAPIView#perform_create()`や`UpdateAPIView#perform_update()`などを上書きする。作成・一覧・変更・削除の処理ごとに、処理を個別に用意したい時に最適。
+
+```py
+def perform_create(self, serializer):
+    user_id = self.request.user.get('user_id')
+    serializer.save(
+        create_user=user_id,
+        update_user=user_id,
+    )
+```
+
 ## Class-based views
 
 前述の view は function-based で実装した。これを class-based な view で実装しなおすには、[こちら](https://github.com/junkboy0315/django-rest-framework/commit/0c9f2846250543dd7ce69caa52e73240809a43fb?diff=split)や[こちら](https://github.com/junkboy0315/django-rest-framework/commit/4585bb6229fddb875337ced280689abba1b2093b?diff=split)の diff のようにする。

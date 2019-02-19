@@ -248,6 +248,48 @@ Post.objects.\
   all()
 ```
 
+### 参照・逆参照先のデータの取得
+
+後続の処理で何度もアクセスされるオブジェクトを先に取得しておきたいときには、`select_related`や`prefetch_related`を使う。
+
+[参考](https://akiyoko.hatenablog.jp/entry/2016/08/03/080941)
+
+#### select_related
+
+one 側のオブジェクト（Foreign Key など）を見に行くときにつかう。
+INNER JOIN または LEFT OUTER JOIN されるのでクエリの回数を減らせる。
+
+```py
+# many->one
+BlogPost.objects.filter(pk=1).select_related('user')
+```
+
+#### prefetch_related
+
+one 側のオブジェクトに加え、many 側のオブジェクト群を取得することができる。
+複数回のクエリを発行して Python 側で結合するので、select_related よりはクエリ回数は増える。
+
+```py
+# one->many (reverse relationship)
+User.objects.filter(pk=1).prefetch_related('blogposts')
+
+# many->many
+BlogPost.objects.filter(pk=1).prefetch_related('categories')
+```
+
+#### prefetch_related するデータにフィルタを掛ける
+
+`django.db.models.Prefetch`を使う。
+
+```py
+User.objects.all().prefetch_related(
+  Prefetch(
+      "blogposts",
+      queryset=Blogposts.objects.filter(some_key='some_value')
+  )
+)
+```
+
 ## 動的データを表示する
 
 view.py において、Model と Template をバインドする。
