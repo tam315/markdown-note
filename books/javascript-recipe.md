@@ -93,3 +93,28 @@ arrayLike = 'abcde';
 オブジェクトや配列について、追加・削除・変更を不可能にする。又はそうなっているかどうか調べる。
 
 他に、追加削除のみ禁じる`Object.seal()`、追加のみ禁止の`Object.preventExtensions()`等がある。
+
+## データ
+
+### ミュータブル、イミュータブル
+
+- プリミティブ --- イミュータブル、変化しない（`1`が`2`にはならない）
+- 配列、オブジェクト等 --- ミュータブル、変化する（`[]`が`[1,2]`になる）
+
+## その他
+
+- 日付や時間
+- ブラウザやウィンドウの操作
+- ユーザアクション、DOM イベント
+- DOM 操作
+- フォーム、フォームに関するイベント
+- アニメーション
+- 音声・動画
+- SVG/Canvas
+- Promise, setTimeout 等
+- JSON, XML
+- localStorage, Cookie
+- スマホのセンサー
+- デバッグ
+  - `console.dir(someObject)`
+  - `console.table(someObject)`
