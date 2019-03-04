@@ -290,6 +290,26 @@ User.objects.all().prefetch_related(
 )
 ```
 
+### 2 種類のインスタンス作成方法
+
+```py
+# こちらは`save()`は不要
+MODEL_NAME.objects.create(kwargs)
+
+# こちらは`save()`が必要
+obj = MODEL_NAME(kwargs)
+obj.save()
+```
+
+### Model.objects.get()の弱点
+
+get 関数は条件にあうインスタンス（オブジェクト）が見つからなかったとき、`ObjectDoesNotExist`を raise する。これは不都合なことが多いので、通常は`get_object_or_404` 関数を使う。
+
+```py
+from django.shortcuts import get_object_or_404
+get_object_or_404(Person, id=20)
+```
+
 ## 動的データを表示する
 
 view.py において、Model と Template をバインドする。

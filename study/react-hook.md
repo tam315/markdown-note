@@ -99,6 +99,7 @@ function Example() {
 - `useState`は、function component が複数回呼ばれた（再レンダリングされた）場合も、前回の state の値を保持している
 - `useState`は、値と、値を更新するファンクションを返す。
 - `useState`には初期値を渡す。
+- 2 回目以降の render 時には、`useState`に渡した値（初期値）は単に無視される。
 - `this.setState`と異なり、値はオブジェクトでなくてもよい。
 - `this.setState`と異なり、オブジェクトをマージするような機能はない。
 
@@ -119,13 +120,9 @@ function ExampleWithManyStates() {
 
 ### Effect Hook
 
-`Side Effects(≒effects)`とは、データの取得やサブスクリプションなどの処理のことで、一般的にはライフサイクルメソッドの中に書かれる。コンポーネントの描写に影響を与えることと、コンポーネントのレンダリング処理の中には記述できない（頻繁に呼ばれすぎるため）ことから、そう呼ばれる。
+`Side Effects(≒effects)`とは、データの取得やサブスクリプションなどの処理のこと。一般的にはライフサイクルメソッドとして書かれる。
 
-- `useEffect`が Effect Hook である。
-- 下記の 3 つを 1 つにまとめたものである
-  - `componentDidMount`
-  - `componentDidUpdate`
-  - `componentWillUnmount`
+名前の由来は、render メソッドの外（=side）に記述することと、コンポーネントの描写に影響を与える(effect)ことである。（render に書くと頻繁に呼ばれすぎる）
 
 ```js
 import React, { useEffect } from 'react';
@@ -144,6 +141,11 @@ function Example() {
 }
 ```
 
+- `useEffect`が Effect Hook である。
+- 下記の 3 つを 1 つにまとめたものである
+  - `componentDidMount`
+  - `componentDidUpdate`
+  - `componentWillUnmount`
 - 初回を含め、**レンダリング後に毎回呼ばれる**。
   - `componentDidMount`と`componentDidUpdate`が一緒になっているようなもの。
   - props が変化するたびに毎回呼ばれることで、[props の変化を漏らさず捕捉し、必ず適切なクリーンアップを毎回行い、もってバグを減らす](https://reactjs.org/docs/hooks-effect.html#explanation-why-effects-run-on-each-update)ことができる
@@ -152,14 +154,13 @@ function Example() {
 
 #### useEffect が呼ばれる条件を変更する
 
-「props が変化するたびに毎回呼ばれる」という動作を変更するには、第 2 引数に、変化を補足したい state や props を指定する。何も指定しなければ初回マウント時にだけ実行される（`componentDidMount`と同じ動作になる）。
+「props が変化するたびに毎回呼ばれる」という動作を変更するには、第 2 引数に、変化を補足したい state や props を指定する。空配列(`[]`)を指定すると、初回マウント時にだけ実行される（`componentDidMount`と同じ動作になる）。
 
-この機能は、いずれ自動化される予定。
+いずれ、これらの配列を明示的に渡さなくても、自動で最適化されるようになる予定らしい。
 
 ```js
-useEffect(() => {
-  document.title = `You clicked ${count} times`;
-}, [count]); // Only re-run the effect if count changes
+useEffect(() => {}, [count]); // 初回及び`count`の値が変化した時に実行される
+useEffect(() => {}, []); // 初回のみ実行される
 ```
 
 #### 複数の Effect Hook
@@ -187,7 +188,7 @@ function FriendStatusWithCounter(props) {
 
 カスタム Hook は、React の機能というよりは、関数を使って Hook に関する重複処理を排除するための、ただの慣習である。
 
-例えば、ユーザのログイン状態を、コンポーネントの props として注入する Hook の例は以下の通り（いままでなら HOC などを使ってやらざるを得なかったところ）
+例えば、ユーザのログイン状態を表す state をコンポーネントに注入する Hook の例は以下の通り（いままでなら HOC などを使ってやらざるを得なかったところ）
 
 カスタム Hook
 
