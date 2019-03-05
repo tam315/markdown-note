@@ -166,6 +166,8 @@ def post_list(request):
 テンプレートは、`アプリケーションフォルダ/templates/アプリケーション名`の中に配置すること。
 アプリケーション名が重複しているのは、あとでより複雑な構成にする時に楽にするためらしい。
 
+`request`でリクエスト情報を取得できる。
+
 `blog/templates/blog/post_list.html`
 
 ```html
@@ -266,8 +268,7 @@ BlogPost.objects.filter(pk=1).select_related('user')
 
 #### prefetch_related
 
-one 側のオブジェクトに加え、many 側のオブジェクト群を取得することができる。
-複数回のクエリを発行して Python 側で結合するので、select_related よりはクエリ回数は増える。
+many 側のオブジェクト群を取得することができる（one 側のオブジェクト取得にも使えるが、あまり利用しない）。複数回のクエリを発行して Python 側で結合するので、select_related よりはクエリ回数は増える。
 
 ```py
 # one->many (reverse relationship)
@@ -277,18 +278,51 @@ User.objects.filter(pk=1).prefetch_related('blogposts')
 BlogPost.objects.filter(pk=1).prefetch_related('categories')
 ```
 
-#### prefetch_related するデータにフィルタを掛ける
+#### 内部結合
 
-`django.db.models.Prefetch`を使う。
+`filter`は内部結合(INNER JOIN)で動作する。
+
+下記の例では、Blog(many)から Author(one)へ参照が設定されているものとする。Author から Blog を逆参照している。
 
 ```py
-User.objects.all().prefetch_related(
-  Prefetch(
-      "blogposts",
-      queryset=Blogposts.objects.filter(some_key='some_value')
-  )
-)
+# 少なくとも 1 つ以上の`hello`というタイトルのブログを持っている作者らの情報をクエリする
+Author.objects\
+  .filter(blog__title='hello') \
+  .all()
 ```
+
+#### 外部結合
+
+many 側のデータ「を」フィルタしたいときは、`prefetch_related`と`django.db.models.Prefetch`を組み合わせる。外部結合と同じような動作になる。
+
+1. 全てのユーザを取得
+2. 各ユーザに紐づく、タイトルが'hello'であるブログを取得（1 とは独立したクエリが発行され、Python 側でマージされる）
+
+```py
+Author.objects \
+  .prefetch_related(
+    Prefetch(
+      "blog",
+      queryset=Blogposts.objects.filter(title='hello')
+    )
+  )
+```
+
+#### filter と Prefetch の違い
+
+`filter`は many 側のデータ「で」フィルタしているだけなので、後段の`prefetch_related`には何ら影響を与えない点に注意する。
+
+1. 少なくとも 1 つ以上の`hello`というタイトルのブログを持っている作者らの情報をクエリする（INNER JOIN による）
+2. その作者らの子となる**全ての`blog`をクエリ**する（上記とは独立したクエリが発行され、Python 側でマージされる）
+
+```py
+Author.objects\
+  .filter(blog__title='hello') \
+  .prefetch_related('blog') \
+  .all()
+```
+
+結論：many 側のデータ「で」フィルタしたいときは`filter`を、many 側のデータ「を」フィルタしたいときは`Prefetch`を使う。
 
 ### 2 種類のインスタンス作成方法
 
