@@ -120,23 +120,31 @@ function ExampleWithManyStates() {
 
 ### Effect Hook
 
-`Side Effects(≒effects)`とは、データの取得やサブスクリプションなどの処理のこと。一般的にはライフサイクルメソッドとして書かれる。
-
-名前の由来は、render メソッドの外（=side）に記述することと、コンポーネントの描写に影響を与える(effect)ことである。（render に書くと頻繁に呼ばれすぎる）
+- Side Effects(≒effects)を Hook で記述する際は、Effect Hook を使う。
+- Side Effects とは、データの取得やサブスクリプションなどの処理のこと。一般的にはライフサイクルメソッドとして書かれる。
+- Side Effects の名前の由来
+  - render 内に書くと頻繁に呼ばれすぎるため、render の外（=side）に記述すること
+  - コンポーネントの描写に影響を与える(=effect)こと
 
 ```js
 import React, { useEffect } from 'react';
 
 function Example() {
-  useEffect(() => {
-    // ここが`componentDidMount`と`componentDidUpdate`に該当
-    document.title = `You clicked ${count} times`;
+  useEffect(
+    () => {
+      // この領域が、`componentDidMount`と`componentDidUpdate`に該当
+      document.title = `You clicked ${count} times`;
 
-    return () => {
-      // ここが`componentWillUnmount`に該当
-      document.title = '';
-    };
-  });
+      return () => {
+        // この領域が、`componentWillUnmount`と`componentDidUpdate`に該当
+        document.title = '';
+      };
+    },
+    // ここに`componentDidUpdate`でwatchしたいstate or propsを指定する。
+    // 省略した場合は、renderのたびに毎回呼ばれる。
+    // 空配列を指定した場合は、マウント時に1回だけ呼ばれる。
+    [count],
+  );
   return <div />;
 }
 ```
@@ -146,7 +154,7 @@ function Example() {
   - `componentDidMount`
   - `componentDidUpdate`
   - `componentWillUnmount`
-- 初回を含め、**レンダリング後に毎回呼ばれる**。
+- デフォルトでは**レンダリング後に毎回呼ばれる**。
   - `componentDidMount`と`componentDidUpdate`が一緒になっているようなもの。
   - props が変化するたびに毎回呼ばれることで、[props の変化を漏らさず捕捉し、必ず適切なクリーンアップを毎回行い、もってバグを減らす](https://reactjs.org/docs/hooks-effect.html#explanation-why-effects-run-on-each-update)ことができる
 - `useEffect`に記載した内容は、**レンダリングの後**に行われる(でなければ useEffect を使う意味が薄れる)
