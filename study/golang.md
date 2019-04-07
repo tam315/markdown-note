@@ -9,6 +9,7 @@
 - Go のプログラムはパッケージで成り立っている
 - `main`パッケージの`main`関数からプログラムが始まる
 - パッケージ名はインポートパスの最後の要素と同じ名前である(`math/rand`なら`rand`)
+- 一つのフォルダには一つのパッケージしか含められない（例外は`フォルダ名_test`）。通常はフォルダ名をパッケージ名にする。
 
 #### Imports
 
@@ -1874,4 +1875,20 @@ func main() {
   time.Sleep(time.Second)
   fmt.Println(c.Value()) // => 1000
 }
+```
+
+## Test
+
+テストの方法
+
+```txt
+> ls -la
+lexer/lexer.go
+lexer/lexer_test.go
+```
+
+であれば
+
+```bash
+go test ./lexer
 ```

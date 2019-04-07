@@ -528,6 +528,12 @@ class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SnippetSerializer
 ```
 
+### PUT と PATCH の違い
+
+view の PUT メソッドを使うと、最終的に serializer が`partial=False`で設定される。これにより、必須フィールドが揃っていないとバリデーションエラーになる。
+
+view の patch メソッドを使うと、最終的に serializer が`partial=True`で設定される。これにより、必須フィールドが揃っていなくても更新可能になる
+
 ## Authentication & Permissions
 
 本項では下記の機能を実装する
@@ -909,4 +915,13 @@ class Album(models.Model):
     def tracks(self): # `self`がインスタンスを表す
         tracks = self.tracks.all()
         return [_['id'] for _ in tracks]
+```
+
+### ネストしたモデルの値を取得したい時
+
+MethodSerializer ではなく sources=``の文法を使うとよい。
+
+```py
+class AlbumSerializer(serializers.ModelSerializer):
+    artist_age = serializers.IntegerField(sources='artist.age')
 ```
