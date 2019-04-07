@@ -6,15 +6,15 @@
 
 [https://en.wikipedia.org/wiki/Lexical_analysis](https://en.wikipedia.org/wiki/Lexical_analysis)
 
-別名、lexing 又は tokenization
-
 lexer, tokenizer 又は scanner などと呼ばれるものを使って、ソースコード等（sequence of characters）をトークン（sequence of tokens）に変換すること
+
+別名、lexing 又は tokenization ともいう。
 
 ```txt
 lex x = 5 + 5;
 ```
 
-上記をトークンにすると次のようになる。
+上記をトークンで表すと、例えば次のような形になる。
 
 ```txt
 [
