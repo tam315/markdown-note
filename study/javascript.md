@@ -32,9 +32,10 @@
   - つまり、ファンクションを実行しているオブジェクトを指す
   - 関数の宣言された場所ではなく、**関数の呼び出され方**によって変わる
 
-### Method（オブジェクトに所属するファンクション）の場合
+### Method として呼び出された場合
 
-thisはそのオブジェクトを指す。
+メソッドとして呼び出された場合は、this はそのオブジェクトを指す。
+メソッドとして呼び出すとは、オブジェクトのプロパティとして関数を実行すること。
 
 ```js
 const obj = {
@@ -48,9 +49,9 @@ obj.speak(); //=> たなか
 // obj.speak.apply(obj) と等価
 ```
 
-### Method以外（Function Statement / Expression)の場合
+### Function として呼び出された場合
 
-thisは window / global を指す。
+Function として呼び出された場合は、this は window / global を指す。（callback として渡される Anonymous Funciton を含む）
 
 ```js
 function a() {
@@ -62,13 +63,26 @@ a(); // => window / global
 変数に代入した場合も同様
 
 ```js
-const a = function(){
+const a = function() {
   console.log(this);
 };
 a(); // => window / global
 ```
 
-コールバックやIIFEもStatementにあたるので同様
+あるオブジェクトのメソッドを変数に代入した場合も同様
+
+```js
+const obj = {
+  say: function() {
+    console.log(this);
+  },
+};
+const someVar = obj.say;
+
+someVar(); // => window / global
+```
+
+コールバックや IIFE も同様
 
 ```js
 const obj = {
@@ -79,19 +93,6 @@ const obj = {
   },
 };
 obj.say(); // => window / global
-```
-
-あるオブジェクトのメソッドをグローバル変数に代入した場合も同様
-
-```js
-const obj = {
-  say: function() {
-    console.log(this);
-  },
-};
-const someGlobal = obj.say;
-
-someGlobal(); // => window / global
 ```
 
 ## this の束縛
