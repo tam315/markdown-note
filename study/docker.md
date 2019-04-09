@@ -51,3 +51,36 @@ docker run --mount 'src=postgres,target=/var/lib/postgresql/data'
 ```bash
 docker run -v c:/test:/backup
 ```
+
+## Tips
+
+### フロント環境の再ビルドが遅い
+
+フロント環境を docker で構築した際、ビルド環境が遅くなってしまう。これは主に`node_modules`をホスト側と共有してしまっていることが理由である。設定をオーバーライドし、`node_modules`だけは docker 側でネイティブに動作するようにすると高速化する。
+
+```yaml
+version: '3.3'
+services:
+  some_frontend:
+    image: node:10.11
+    container_name: some_frontend
+    volumes:
+      - ./:/root/project_root
+      # node_modules だけは共有しない
+      - /root/project_root/node_modules/
+```
+
+### windows 環境において webpack の watch が動作しない
+
+フロント環境を docker で構築した際、windows 環境では watch 機能が動作しない（2019.04.09 時点）。これを動作させるには、以下のような設定を`webpack.config.js`に記載する。
+
+```js
+module.exports = {
+  /* ... */
+  watchOptions: {
+    ignored: /node_modules/,
+    aggregateTimeout: 300,
+    poll: 500,
+  },
+};
+```
