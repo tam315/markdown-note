@@ -6,6 +6,13 @@ module.exports = {
     ['link', { rel: 'icon', type: 'image/png', href: '/favicon.png' }],
     ['link', { rel: 'manifest', href: '/manifest.json' }],
     ['meta', { name: 'theme-color', content: '#2E6BE6' }],
+    [
+      'link',
+      {
+        rel: 'stylesheet',
+        href: 'https://cdn.jsdelivr.net/npm/katex@0.6.0/dist/katex.min.css',
+      },
+    ],
   ],
   themeConfig: {
     sidebar: 'auto',
@@ -24,6 +31,7 @@ module.exports = {
   markdown: {
     toc: { includeLevel: [2] },
     config: md => {
+      md.use(require('markdown-it-katex'));
       md.use(require('markdown-it-imsize'));
     },
   },

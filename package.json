@@ -12,5 +12,8 @@
   "dependencies": {
     "markdown-it-imsize": "^2.0.1",
     "vuepress": "0.14.9"
+  },
+  "devDependencies": {
+    "markdown-it-katex": "^2.0.3"
   }
 }
