@@ -385,3 +385,29 @@ $\mathbf{a} + \mathbf{b} = (3+1 \quad 2+4) = (4 \quad 6)$
 $\mathbf{a} = (3 \quad 2)$の大きさは下記のように表す。
 
 $|\mathbf{a}| = \sqrt{3^2 + 2^2} = \sqrt{13}$
+
+#### ベクトルの内積
+
+- $\mathbf{a}$の大きさに、$\mathbf{b}$が作る影の大きさを掛け合わせたもの
+- 直角なら 0、反対方向ならマイナスの値になる
+
+<Img src="//camo.qiitausercontent.com/2759bab5f47659c4d32562f980ea2aa77f272899/68747470733a2f2f71696974612d696d6167652d73746f72652e73332e616d617a6f6e6177732e636f6d2f302f35303637302f31323137663661312d313431622d393465372d623039382d3435613864656139353137312e706e67" link="//qiita.com/kenmatsu4/items/a144047c1b49aa8c7eb0" maxWidth="300px" />
+
+$\mathbf{a} \cdot \mathbf{b} = |\mathbf{a}| |\mathbf{b}| \cos \theta$
+
+$\mathbf{a} \cdot \mathbf{b} = a_1 b_1 + a_2 b_2$
+
+numpy だと下記のように計算できる。
+
+```py
+a = np.array([2, 1])
+b = np.array([-1, 2])
+print(a.dot(b)) # => 0 (直角だから)
+```
+
+#### コーシー・シュワルツの不等式
+
+- 内積の最大値は、$\mathbf{a},\mathbf{b}$が同じ向きのとき
+- 内積の最小値は、$\mathbf{a},\mathbf{b}$が反対向きのとき
+
+$-|\mathbf{a}||\mathbf{b}| \leqslant \mathbf{a} \cdot \mathbf{b} \leqslant |\mathbf{a}||\mathbf{b}|$
