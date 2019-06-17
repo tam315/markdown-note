@@ -30,11 +30,19 @@ module.exports = {
   },
   markdown: {
     toc: { includeLevel: [2] },
-    config: md => {
-      md.use(require('markdown-it-katex'));
-      md.use(require('markdown-it-imsize'));
+  },
+  extendMarkdown(md) {
+    md.use(require('markdown-it-katex'));
+    md.use(require('markdown-it-imsize'));
+  },
+  plugins: {
+    '@vuepress/google-analytics': {
+      ga: 'UA-116967778-5',
+    },
+    '@vuepress/pwa': {
+      serviceWorker: true,
+      updatePopup: true,
     },
   },
-  ga: 'UA-116967778-5',
   serviceWorker: true,
 };
