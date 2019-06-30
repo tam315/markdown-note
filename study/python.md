@@ -144,6 +144,23 @@ False と判定されるものは下記のとおり。これ以外はすべて`T
 - `{}`
 - `None`
 
+#### Date and Times
+
+- `dt.datetime` --- 日時
+- `dt.time` --- 時間
+- `dt.timedelta` --- 期間
+
+```py
+# 作成する
+birthday = dt.datetime(1985,2,13)
+
+# テキストをパースして作成する(p=parse)
+birthday = dt.datetime.strptime('24/12/1984', '%d%m%Y)
+
+# フォーマットして出力する(f=format)
+birthday.strftime('%d%m%Y')
+```
+
 #### Falsy な値に関する注意
 
 下記の 2 つは、異なるものである。
