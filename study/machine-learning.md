@@ -52,8 +52,15 @@ df['Age_categories'] = pd.cut(
 
 ### Dataframe
 
+- 表、行、列の操作は Numpy の ndarray とほぼ同じ。下記のように対応していると思ってよい。
+
+| Pandas    | Numpy      |
+| --------- | ---------- |
+| DataFrame | 2d-ndarray |
+| Series    | 1d-ndarray |
+
 - `df[列名のArray]` --- 列を限定した Dataframe を取得する
-- `df[列名]` --- 列を Series として取得する(Series ≒ key-value ペア)
+- `df[列名]` --- 列を Series として取得する(Series は key-value ペアかつ One-Directional)
 - `df[列名] == 'some_value'` --- 各行が条件に合致するかを、Boolean タイプの Series として取得する
 
 ```py
@@ -121,7 +128,72 @@ plt.show()
 
 ## NumPy
 
-- `np.mean(数値の配列)` --- 平均を取得する
+- `np.array(n次元配列)` --- ndarray を作成する
+- `np.genfromtxt()` --- ndarray を作成する
+
+```py
+ndarray = np.genfromtxt('some.csv', delimiter=',', skip_header=1)
+```
+
+- ndarray の選択
+
+```py
+ndarray[1,3] # valueで
+ndarray[1:5, 2:4] # Sliceで
+ndarray[[1,2,3], [2,3,5]] # Arrayで
+ndarray[someBoolArray, someBoolArray] # Boolで
+```
+
+- ベクター計算
+
+```py
+ndarray + ndarray
+ndarray - ndarray
+ndarray * ndarray
+ndarray / ndarray
+```
+
+- 1d-ndarray の統計情報
+
+```py
+ndarray.min()
+ndarray.max()
+ndarray.mean()
+ndarray.sum()
+```
+
+- 2d-ndarray の統計情報
+
+```py
+ndarray.max()
+ndarray.max(axis=0) # 列方向のまとまりで計算して1d-ndarrayを返す
+ndarray.max(axis=1) # 行方向のまとまりで計算して1d-ndarrayを返す
+```
+
+- boolean indexing
+
+```py
+# 1d-ndararyに比較演算子を使うと、Booleanの1d-arrayが返ってくる
+less_than_five = ndarray[:, 3] < 5
+
+# Booleanの1d-arrayでフィルタする
+ndarray[less_than_five]
+
+# フィルタしたうえで特定の列を取得する
+ndarray[less_than_five, 1:4]
+```
+
+- 値の代入
+
+```py
+ndarray[3, 5] = 1 # 特定セル
+ndarray[3] = 1 # 特定の行すべて
+ndarray[:, 5] = 1 # 特定の列すべて
+ndarray[2:4, 5] = 1 # 一部行の特定の列すべて
+
+# ある列の値が〇〇なら、フラグ列に値を代入する、というパターン
+ndarray[ndarray[:, 4] < 50, 5] = 1
+```
 
 ## scikit-learn
 
