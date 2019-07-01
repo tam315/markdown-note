@@ -59,8 +59,27 @@ df['Age_categories'] = pd.cut(
 | DataFrame | 2d-ndarray |
 | Series    | 1d-ndarray |
 
-- `df[列名のArray]` --- 列を限定した Dataframe を取得する
-- `df[列名]` --- 列を Series として取得する(Series は key-value ペアかつ One-Directional)
+- Numpy の ndarray と比べたっときの dataframe の特徴
+  - 軸のラベルに文字列を使える
+  - 同じ列内に複数のデータ型を保持できる
+- 列の選択
+
+| やりたいこと                       | Explicit Syntax         | Common Shorthand     |
+| ---------------------------------- | ----------------------- | -------------------- |
+| Series を取得                      | `df.loc[:,列名]`        | `df[列名]`           |
+| Dataframe を取得（配列を使う）     | `df.loc[:,列名のArray]` | `df[列名のArray]`    |
+| Dataframe を取得（スライスを使う） | `df.loc[:,列名:列名]`   | (省略形は存在しない) |
+
+- 行の選択
+
+行を選択したときの Series は基本的に混合型なので、dtype は`object`になることが多い。
+
+| やりたいこと                       | Explicit Syntax       | Common Shorthand     |
+| ---------------------------------- | --------------------- | -------------------- |
+| Series を取得                      | `df.loc[キー]`        | (省略形は存在しない) |
+| Dataframe を取得（配列を使う）     | `df.loc[キーのArray]` | (省略形は存在しない) |
+| Dataframe を取得（スライスを使う） | `df.loc[キー:キー]`   | `df[キー:キー]`      |
+
 - `df[列名] == 'some_value'` --- 各行が条件に合致するかを、Boolean タイプの Series として取得する
 
 ```py
@@ -86,6 +105,16 @@ df.to_csv('./result.csv', index=False)
 
 ### Series
 
+Series は key-value ペアから成る配列であり、one-directional なデータでる。Dataframe は Series の集合体といえる。
+
+- 選択
+
+| やりたいこと                    | Explicit Syntax       | Shorthand Convention |
+| ------------------------------- | --------------------- | -------------------- |
+| 値を取得                        | `s.loc[キー]`         | `s[キー]`            |
+| Series を取得（配列を使う）     | `s.loc[[キー, キー]]` | `s[[キー, キー]]`    |
+| Series を取得（スライスを使う） | `s.loc[キー: キー]`   | `s[キー: キー]`      |
+
 - `series.fillna()` --- 値がないセルを埋める
 - `series.value_counts()` --- 値の出現数を Series として取得する
 - `series.get_dummies()` --- シリーズを複数の列に分解して Dataframe として取得する
@@ -96,8 +125,15 @@ pd.get_dummies(train['Pclass'], prefix='Pclass')
 
 ### Dataframe, Series 共通
 
-- `df.shape` --- データの個数（と列数）を Tuple で取得する
-- `df.describe()` --- データの概要を表示する
+下記の`df`(Dataframe)は`s`(Series)に置き換えても動作する。
+
+- `df.head()` --- 先頭数行を表示する
+- `df.tail()` --- 末尾数行を表示する
+- `df.describe()` --- 統計情報を表示する
+- `df.shape` --- データ数(と列数)を Tuple で取得する
+- `df.dtypes` --- 型を表示する
+  - `object`型 --- 他のどの型にも当てはまらない場合。殆どの場合は文字列を表す。
+- `df.info()` --- データ数と型を表示する。`shape`+`dtypes`。
 
 ### グラフ等
 
@@ -128,6 +164,8 @@ plt.show()
 
 ## NumPy
 
+数値型の dataframe では numpy が使われている。
+
 - `np.array(n次元配列)` --- ndarray を作成する
 - `np.genfromtxt()` --- ndarray を作成する
 
@@ -135,6 +173,8 @@ plt.show()
 ndarray = np.genfromtxt('some.csv', delimiter=',', skip_header=1)
 ```
 
+- `ndarray.shape` --- 軸(次元)ごとのデータ数を Tuple で取得する
+- `ndarray.dtype` --- 型を表示する(`dtypes`ではないので注意)
 - ndarray の選択
 
 ```py
