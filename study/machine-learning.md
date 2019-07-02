@@ -20,7 +20,14 @@ Pandas, NumPy, scikit-learn など
 - `pd.read_csv` --- CSV のインポート
 
 ```py
-pd.read_csv('../train.csv')
+# 数値連番を行ラベルとして設定したい場合
+df = pd.read_csv('../train.csv')
+
+# 1列目の値を行ラベルとしてCSVファイルを読み込みたい場合
+df = pd.read_csv('../train.csv', index_col=0)
+
+# インデックス列についた軸ラベルを削除する
+df.index.name = None
 ```
 
 - `pd.DataFrame()` --- DataFrame を作る
@@ -52,6 +59,7 @@ df['Age_categories'] = pd.cut(
 
 ### Dataframe
 
+- [API](https://pandas.pydata.org/pandas-docs/stable/reference/frame.html)
 - 表、行、列の操作は Numpy の ndarray とほぼ同じ。下記のように対応していると思ってよい。
 
 | Pandas    | Numpy      |
@@ -60,37 +68,61 @@ df['Age_categories'] = pd.cut(
 | Series    | 1d-ndarray |
 
 - Numpy の ndarray と比べたっときの dataframe の特徴
-  - 軸のラベルに文字列を使える
+  - 軸ラベルに文字列を使える
   - 同じ列内に複数のデータ型を保持できる
 - 列の選択
 
-| やりたいこと                       | Explicit Syntax         | Common Shorthand     |
-| ---------------------------------- | ----------------------- | -------------------- |
-| Series を取得                      | `df.loc[:,列名]`        | `df[列名]`           |
-| Dataframe を取得（配列を使う）     | `df.loc[:,列名のArray]` | `df[列名のArray]`    |
-| Dataframe を取得（スライスを使う） | `df.loc[:,列名:列名]`   | (省略形は存在しない) |
+| やりたいこと                       | Explicit Syntax                                                               | Common Shorthand                     |
+| ---------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------ |
+| Series を取得                      | `df.loc[:,列名]`                                                              | `df[列名]`                           |
+| Dataframe を取得（配列を使う）     | `df.loc[:,列名のArray]`                                                       | `df[列名のArray]`                    |
+| Dataframe を取得（スライスを使う） | `df.loc[:,列名:列名]`<br/><small> (終わりのスライスも結果に含まれる) </small> | <small> (省略形は存在しない)</small> |
 
 - 行の選択
 
 行を選択したときの Series は基本的に混合型なので、dtype は`object`になることが多い。
 
-| やりたいこと                       | Explicit Syntax       | Common Shorthand     |
-| ---------------------------------- | --------------------- | -------------------- |
-| Series を取得                      | `df.loc[キー]`        | (省略形は存在しない) |
-| Dataframe を取得（配列を使う）     | `df.loc[キーのArray]` | (省略形は存在しない) |
-| Dataframe を取得（スライスを使う） | `df.loc[キー:キー]`   | `df[キー:キー]`      |
+| やりたいこと                               | Explicit Syntax                                                               | Common Shorthand                                                                                           |
+| ------------------------------------------ | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Series を取得                              | `df.loc[キー]`                                                                | <small> (省略形は存在しない)</small>                                                                       |
+| Dataframe を取得（配列を使う）             | `df.loc[キーのArray]`                                                         | <small> (省略形は存在しない)</small>                                                                       |
+| Dataframe を取得（スライスを使う）         | `df.loc[キー:キー]` <br/> <small> (終わりのスライスも結果に含まれる) </small> | `df[キー:キー]` <br/> <small>`キー`の部分を数値にした場合は`loc`ではなく`iloc`の動作になるので注意</small> |
+| Dataframe を取得（Boolean Indexes を使う） | `df.loc[bool_index]`                                                          | `df[index]`                                                                                                |
 
-- `df[列名] == 'some_value'` --- 各行が条件に合致するかを、Boolean タイプの Series として取得する
+- Boolean Masks (Boolean Arrays)
+  - `df[列名] == 'some_value'`
+  - 各行が条件に合致するかを、Boolean Masks(Boolean タイプの Series)として取得する
 
 ```py
-df['Sex'] == 'male'
+male = df['Sex'] == 'male'
+survived = df['Survived'] == 1
 
-# BooleanタイプのSeriesはフィルタ条件として使用できる
-df[df['Sex'] == 'male']
-df[(df['Sex'] == 'male') | (df['Survived'] == 1)]
+# Boolean masksはフィルタ条件として使用できる
+df[male]
+
+# Boolean masks同士で演算ができる
+df[male & survived]
+df[male | survived]
+df[male & ~survived] # ~は否定
+
+# 中間変数を使わない場合はカッコを忘れずに
 df[(df['Sex'] == 'male') & (df['Survived'] == 1)]
 ```
 
+- 値の代入 --- 基本的に numpy と同じ
+
+```py
+# ある列の値が〇〇である場合に何かをする、というパターン。よく使う。
+df.loc[df['age'] == 0, 'age'] = 10
+
+# NaN を意図的に代入するときは`np.nan`を使う。
+df.loc[df['age'] == 0, 'age'] = np.nan
+
+# 存在しない列名を指定すると、新しい列が作られる
+df['new_column'] = 'new value'
+```
+
+- `df.sort_values(カラム名)` --- 指定したカラムで並べ替える
 - `df.pivot_table()` --- ピボットテーブルを Dataframe として取得する
 
 ```py
@@ -103,10 +135,17 @@ df.pivot_table(index="Sex", values=["Survived"])
 df.to_csv('./result.csv', index=False)
 ```
 
+#### NaN について
+
+pandas の（正確には numpy の）int 型は NaN をサポートしていない。
+一方 float 型は NaN をサポートしている。
+このため、NaN が含まれる値は float 型として扱われる。
+
 ### Series
 
 Series は key-value ペアから成る配列であり、one-directional なデータでる。Dataframe は Series の集合体といえる。
 
+- [API](https://pandas.pydata.org/pandas-docs/stable/reference/series.html)
 - 選択
 
 | やりたいこと                    | Explicit Syntax       | Shorthand Convention |
@@ -115,25 +154,55 @@ Series は key-value ペアから成る配列であり、one-directional なデ�
 | Series を取得（配列を使う）     | `s.loc[[キー, キー]]` | `s[[キー, キー]]`    |
 | Series を取得（スライスを使う） | `s.loc[キー: キー]`   | `s[キー: キー]`      |
 
-- `series.fillna()` --- 値がないセルを埋める
-- `series.value_counts()` --- 値の出現数を Series として取得する
-- `series.get_dummies()` --- シリーズを複数の列に分解して Dataframe として取得する
+- Vectorized Operations(ベクター計算) --- 使い方は Numpy と同じ
+- `s.fillna()` --- 値がないセルを埋める
+- `s.value_counts()` --- 値の出現数を **Series として**取得する。デフォルトでは NaN は無視される。
+- `s.isnull()`|`s.notnull()` --- Null である（でない）かどうかを Boolean Masks として取得する。
+- `s.unique()` --- ユニークな値を配列(ndarray)として取得する
+- `s.get_dummies()` --- シリーズを複数の列に分解して Dataframe として取得する
 
 ```py
 pd.get_dummies(train['Pclass'], prefix='Pclass')
 ```
 
+- series を df に結合する
+  - `df['age'] = series`
+  - 行ラベルをもとに結合される。Excel の vlookup のようなもの。
+  - 該当する値がない行には `NaN` が設定される。
+
 ### Dataframe, Series 共通
 
 下記の`df`(Dataframe)は`s`(Series)に置き換えても動作する。
 
+- `df.iloc[]` --- 位置をもとに選択する。使い方は loc や np.ndarray と同じ。
+  - `loc`は**軸ラベル**で選択するとき、`iloc`は**位置**で選択するときに使う
+  - `df[1]`,`df.loc[1]` **行ラベル**が`1`のデータ
+  - `df.iloc[1]` **行の位置**が 2 番目であるデータ
+  - `df[0:5]`
+    - `df.iloc[0:5]`と等価（1 番目から 5 番目までのデータ。最後を含まない。）
+    - `df.loc[0:5]`ではないので注意(行ラベルが 0 から 5 までのデータ。最後を含む。)
 - `df.head()` --- 先頭数行を表示する
 - `df.tail()` --- 末尾数行を表示する
 - `df.describe()` --- 統計情報を表示する
+  - (df のみ) デフォルトでは数値型の列のみが集計対象になる。オブジェクト型の列情報を表示するには`include=[np.object]`等が必要
 - `df.shape` --- データ数(と列数)を Tuple で取得する
 - `df.dtypes` --- 型を表示する
   - `object`型 --- 他のどの型にも当てはまらない場合。殆どの場合は文字列を表す。
 - `df.info()` --- データ数と型を表示する。`shape`+`dtypes`。
+- `df.select_dtypes(include=['int64'])` --- 型が位置する列を DF として取得する
+- Aggregation
+  - 結果は Series で返ってくる
+  - Dataframe の場合は axis の設定が必要。Series の場合は axis の設定は不要。
+    - 縦方向に集計(列ごとの結果を求める) `axis=0`|`axis='index'`
+    - 横方向に集計(行ごとの結果を求める) `axis=1`|`axis='column'`
+    - axis のデフォルト値は`axis=0`
+  - Dataframe の場合は適宜`numeric_only`引数を指定すること
+  - `df.max()`
+  - `df.min()`
+  - `df.mean()`
+  - `df.median()`
+  - `df.mode()`
+  - `df.sum()`
 
 ### グラフ等
 
@@ -184,7 +253,7 @@ ndarray[[1,2,3], [2,3,5]] # Arrayで
 ndarray[someBoolArray, someBoolArray] # Boolで
 ```
 
-- ベクター計算
+- Vectorized Operations(ベクター計算)
 
 ```py
 ndarray + ndarray
