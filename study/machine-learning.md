@@ -29,7 +29,7 @@ df = pd.read_csv('../train.csv', index_col=0)
 # インデックス列についた列ラベルを削除する
 df.index.name = None
 
-# エンコーディングの指定
+# エンコーディングの指定(UTF-8, Latin-1, Windows-1252など、読めるまで試す)
 df = pd.read_csv('../train.csv', encoding='UTF-8')
 ```
 
@@ -236,7 +236,7 @@ s['os'] = s['os'].map(mapping_dict)
 - `df.head()` --- 先頭数行を表示する
 - `df.tail()` --- 末尾数行を表示する
 - `df.describe()` --- 統計情報を表示する
-  - (df のみ) デフォルトでは数値型の列のみが集計対象になる。オブジェクト型の列情報を表示するには`include=[np.object]`等が必要
+  - (df のみ) デフォルトでは数値型の列のみが集計対象になる。オブジェクト型の列情報を表示するには`include='all'`等が必要
 - `df.shape` --- データ数(と列数)を Tuple で取得する
 - `df.dtypes` --- 型を表示する
   - `object`型 --- 他のどの型にも当てはまらない場合。殆どの場合は文字列を表す。
@@ -274,6 +274,7 @@ s['os'] = s['os'].map(mapping_dict)
   - `df.str.split().str[0]`などで必要な情報を新しい列に抽出する
   - `s.value_counts()`等を見ながら誤りを探し、`s.map()`で修正する
 - 数値列・文字列列共通
+  - `df.describe(include='all')`して、freq が count に限りなく近い場合は無意味なデータではないか確認する。
   - `df.isnull()`で欠損値を探して下記の対応を行う
     - `df.dropna()`で行又は列を削除する
     - 値を埋めるか、そのままにする（詳細後述）
