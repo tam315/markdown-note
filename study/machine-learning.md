@@ -93,6 +93,8 @@ df['Age_categories'] = pd.cut(
 | Dataframe を取得（スライスを使う）       | `df.iloc[数値:数値]`  | `df[数値:数値]`                                                                                    |
 | Dataframe を取得（Boolean Masks を使う） | `df.loc[bool_masks]`  | `df[bool_masks]`                                                                                   |
 
+- 特定のセルの選択
+  - `df.at['index', 'column']`
 - Boolean Masks (Boolean Arrays)
   - `df[列名] == 'some_value'`
   - 各行が条件に合致するかを表す Boolean で構成された Series のこと
@@ -243,19 +245,44 @@ s['os'] = s['os'].map(mapping_dict)
 - `df.info()` --- データ数と型を表示する。`shape`+`dtypes`。
 - `df.select_dtypes(include=['int64'])` --- 型が位置する列を DF として取得する
 - `df.isnull()`|`s.notnull()` --- Null である（でない）かどうかを、Series の場合は Boolean Masks として、DF の場合は Boolean の DF として取得する。
+- `df.isin(['a','b','c'])` --- 与えられた配列に含まれるかどうかを返す
 - Aggregation
-  - 結果は Series で返ってくる
-  - Dataframe の場合は axis の設定に注意する。Series の場合は axis の設定は不要。
-    - 縦方向に集計(列ごとの結果を求める) `axis=0`|`axis='index'`
-    - 横方向に集計(行ごとの結果を求める) `axis=1`|`axis='column'`
-    - axis のデフォルト値は`axis=0`
-  - Dataframe の場合は適宜`numeric_only`引数を指定すること
+  - **`df.agg(['max','min'])`**
   - `df.max()`
   - `df.min()`
   - `df.mean()`
   - `df.median()`
   - `df.mode()`
   - `df.sum()`
+  - 縦方向に集計(列ごとの結果を求める) `axis=0`|`axis='index'`
+  - 横方向に集計(行ごとの結果を求める) `axis=1`|`axis='column'`
+  - 適宜`numeric_only`引数を指定する
+- `df.all()` 全ての値が True である。`axis=0|1|None`を設定できる。`any(df)`ではないので注意。
+- `df.any()` いずれかの値が True であるか。`axis=0|1|None`を設定できる。`all(df)`ではないので注意。
+- Groupby
+  - `df.groupby('city').groups` -> dict
+  - `df.groupby('city').get_group('osaka')` -> dataframe
+  - `df.groupby('city').size()` -> series
+  - タイプが categorical な列を groupby するときは、`observed=True`のオプションをつけること。そうしないと、該当するデータがないグループも出力されてしまう。
+
+```py
+df = pd.DataFrame({
+    'brand': ['bmw','bmw','benz'],
+    'price': [100, 200, -50]
+}) \
+.astype({'brand': 'category'}, inplace=True)
+
+df[df['price'] > 0].groupby('brand').size()
+# brand
+# benz    0
+# bmw     2
+# dtype: int64
+
+df[df['price'] > 0].groupby('brand', observed=True).size()
+# brand
+# bmw    2
+# dtype: int64
+```
 
 ### データクリーニング
 
