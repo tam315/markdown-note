@@ -267,6 +267,26 @@ git rebase origin/master
 git pull --rebase origin master
 ```
 
+### onto
+
+```sh
+git rebase --onto TARGET_BASE COMMIT_FROM COMMIT_TO
+
+# Example:
+#
+#                     G - H - I(unit-test)
+#                    /
+#           D - E - F (develop)
+#          /
+# A - B - C (master)
+#
+# git rebase --onto master develop unit-test
+#
+#           D - E - F (develop)
+#          /
+# A - B - C - (master) - G' - H' - I'(unit-test)
+```
+
 ## Stash
 
 ```bash
