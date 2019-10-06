@@ -45,3 +45,19 @@ blockLongname_elementLongname
 blockLongname_elementLongname-modefier
 blockLongname_elementLongname-modkeyModvalue
 ```
+
+## z-index
+
+1. HTML において出現順が後のものほど上に重なる
+2. `position:static`以外のものは、`position:static`のものより上に重なる
+3. transform や opacity を使うと `z-index:0` が指定されたのと同じように振る舞うので注意する
+4. 親要素が`position:static`以外の場合、子要素はその親の積み重ねコンテキストに限定される。回避するには、親の外側に移動するか、親の`position`指定を削除する。
+
+[参考](https://coliss.com/articles/build-websites/operation/css/4-reasons-z-index-isnt-working.html)
+
+## その他 Tips
+
+- `margin-left: auto`で右寄せにできる
+- `pointer-events: none`でポインタの形が変わるのを無効にできる
+- `clip-path`で表示内容にマスクをかけることができる(サポートしているブラウザは少ないので注意)
+- `transition`の第 4 引数で開始までの遅延時間を指定できる
