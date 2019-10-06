@@ -250,6 +250,13 @@ Post.objects.\
   all()
 ```
 
+### Aggregation, Annottion, Groupby
+
+- `aggregate()` レコードセット全体に対して集計を行い、単一のデータとして返す。
+- `annotate()` レコードセットの各レコード単位で集計等を行い、複数のデータとして返す。`values()`を組み合わせることで、Group By したうえで集計を行うこともできる。
+- [参考](http://note.crohaco.net/2014/django-aggregate/)
+- [条件つきで集計](https://docs.djangoproject.com/en/2.2/topics/db/aggregation/)
+
 ### 参照・逆参照先のデータの取得
 
 後続の処理で何度もアクセスされるオブジェクトを先に取得しておきたいときには、`select_related`や`prefetch_related`を使う。
@@ -343,6 +350,10 @@ get 関数は条件にあうインスタンス（オブジェクト）が見つ�
 from django.shortcuts import get_object_or_404
 get_object_or_404(Person, id=20)
 ```
+
+### クエリの確認
+
+`queryset.query` で発行されるクエリを確認できる!
 
 ## 動的データを表示する
 
