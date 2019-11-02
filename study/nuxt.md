@@ -8,21 +8,29 @@
 
 ## 方針を決める
 
-Nuxt には 3 つのモードがある。どのモードで作るかを、はじめから意識しておくこと。
+Nuxt のプロダクション環境での使い方は 3 つある。
 
-- Universal Mode
-  - **Node.js サーバごとデプロイ**する
-  - 初回リクエスト時の asyncData：サーバ側で取得して HTML にしたもの（SSR）になる
-  - ページ遷移時の asyncData：Ajax で取得した最新データになる
-- Pre Rendered Mode
-  - **サーバは不要**
-  - 予めビルドしたファイルをデプロイ
-  - 初回リクエスト時の asyncData：**ビルド時**に取得し HTML 化したもので固定になる
-  - ページ遷移時の asyncData：Ajax で取得した最新データになる
-- SPA Mode
-  - **サーバは不要**
-  - 予めビルドしたファイルをデプロイ
-  - asyncData はつねに Ajax で最新のものを取得する
+### Universal Mode(サーバあり)
+
+- `mode: 'universal'`
+- デプロイ方法 --- Node.js サーバにソースをクローンし`yarn start`する。**サーバが必要**。
+- 非同期データは、
+  - 初回リクエスト時はサーバ側で取得する（常に最新）
+  - ページ遷移時など、2 回目以降はクライアント側で取得する
+
+### Universal Mode(サーバなし)
+
+- `mode: 'universal'`
+- デプロイ方法 --- `nuxt generate`で生成された静的ファイルを単に配布する。**サーバが不要**。
+- 非同期データは、
+  - 初回リクエスト時は、**ビルド時に取得したデータで固定**される（＝疑似的な SSR と考えればよい）。このため、動的データに変更があったときは再ビルド・再デプロイが自動で行われるフローを構築するなどの処置が必要となる。
+  - ページ遷移時など、2 回目以降はクライアント側で取得する
+
+### SPA Mode
+
+- `mode: 'spa'`
+- デプロイ方法 --- `nuxt generate`で生成された静的ファイルを単に配布する。**サーバが不要**。
+- 非同期データは常にクライアント側で取得する
 
 ## インストール
 
@@ -341,7 +349,7 @@ Dynamic Routes で SPA フォールバックを有効にするには設定が必
 <nuxt-link to="/">Home page</nuxt-link>
 
 <!-- 子コンポーネントの配置　router-viewは使えない -->
-<nuxt-child/>
+<nuxt-child />
 ```
 
 ### Vlidation
@@ -467,7 +475,7 @@ module.exports = {
 
 ```html
 <template>
-  <nuxt/>
+  <nuxt />
 </template>
 ```
 
@@ -492,7 +500,7 @@ module.exports = {
 <template>
   <div>
     <div>My blog navigation bar here</div>
-    <nuxt/>
+    <nuxt />
   </div>
 </template>
 ```
@@ -708,9 +716,9 @@ url-loader の初期設定
 最終的に、下記のような形になる。
 
 ```html
-<img src="~/assets/image.png">
+<img src="~/assets/image.png" />
 <!-- 上記は下記に変換される -->
-<img src="/_nuxt/img/image.0c61159.png"><!-- もしくはbase64インライン -->
+<img src="/_nuxt/img/image.0c61159.png" /><!-- もしくはbase64インライン -->
 ```
 
 ### Static
@@ -719,10 +727,10 @@ robotx.txt など、webpack に触れさせたくないファイルは、`static
 
 ```html
 <!-- Static フォルダのファイルを使うときの記法 -->
-<img src="/my-image.png"/>
+<img src="/my-image.png" />
 
 <!-- Assets(webpacked)フォルダのファイルを使うときの記法 -->
-<img src="~/assets/my-image-2.png"/>
+<img src="~/assets/my-image-2.png" />
 ```
 
 ## Plugins
@@ -781,7 +789,7 @@ module.exports = {
 };
 ```
 
-### $root や context へのインジェクト
+### \$root や context へのインジェクト
 
 - アプリケーションワイドで使いたいファンクションは、`$root`（クライアントサイド、Vue.js のルートインスタンス）や`context`（サーバサイド）にインジェクトするとよい。
 - これらのファンクションには慣習として、`$`を頭につける。
