@@ -228,13 +228,10 @@ s['os'] = s['os'].map(mapping_dict)
 
 ### Dataframe, Series 共通
 
-下記の`df`(Dataframe)は、一部を除き`s`(Series)に置き換えても動作する。
+本項の`df`(Dataframe)は、一部を除き`s`(Series)に置き換えても動作する。
 
-- `loc`は**軸ラベル**で選択したいとき、`iloc`は**位置**で選択したいときに使う
-  - `df.loc[1]` **行ラベル**が`1`のデータ
-  - `df.iloc[1]` **行の位置**が 2 番目であるデータ
-  - `df.loc[0:5]`は最後を含む
-  - `df.iloc[0:5]`は最後を含まない
+#### 情報表示
+
 - `df.head()` --- 先頭数行を表示する
 - `df.tail()` --- 末尾数行を表示する
 - `df.describe()` --- 統計情報を表示する
@@ -243,27 +240,48 @@ s['os'] = s['os'].map(mapping_dict)
 - `df.dtypes` --- 型を表示する
   - `object`型 --- 他のどの型にも当てはまらない場合。殆どの場合は文字列を表す。
 - `df.info()` --- データ数と型を表示する。`shape`+`dtypes`。
+
+#### 選択
+
+- `loc`は**軸ラベル**で選択したいとき、`iloc`は**位置**で選択したいときに使う
+  - `df.loc[1]` **行ラベル**が`1`のデータ
+  - `df.iloc[1]` **行の位置**が 2 番目であるデータ
+  - `df.loc[0:5]`は最後を含む
+  - `df.iloc[0:5]`は最後を含まない
 - `df.select_dtypes(include=['int64'])` --- 型が位置する列を DF として取得する
-- `df.isnull()`|`s.notnull()` --- Null である（でない）かどうかを、Series の場合は Boolean Masks として、DF の場合は Boolean の DF として取得する。
-- `df.isin(['a','b','c'])` --- 与えられた配列に含まれるかどうかを返す
-- Aggregation
-  - **`df.agg(['max','min'])`**
-  - `df.max()`
-  - `df.min()`
-  - `df.mean()`
-  - `df.median()`
-  - `df.mode()`
-  - `df.sum()`
-  - 縦方向に集計(列ごとの結果を求める) `axis=0`|`axis='index'`
-  - 横方向に集計(行ごとの結果を求める) `axis=1`|`axis='column'`
-  - 適宜`numeric_only`引数を指定する
+
+#### Boolean Mask の作成
+
+- `df.isnull()`|`s.notnull()` --- Null であるか
+- `df.isin(['a','b','c'])` --- 与えた配列に含まれるか
+
+#### 変換、ループ
+
+- `*series`, `*df`で keyword args に変換できる
+- `**series`, `**df`で dict に変換できる
+- `.keys()|.values()|.items()`などを使ってループ処理を行える
+
+#### Aggregation
+
+- **`df.agg(['max','min'])`**
+- `df.max()`
+- `df.min()`
+- `df.mean()`
+- `df.median()`
+- `df.mode()`
+- `df.sum()`
+- 縦方向に集計(列ごとの結果を求める) `axis=0`|`axis='index'`
+- 横方向に集計(行ごとの結果を求める) `axis=1`|`axis='column'`
+- 適宜`numeric_only`引数を指定する
 - `df.all()` 全ての値が True である。`axis=0|1|None`を設定できる。`any(df)`ではないので注意。
 - `df.any()` いずれかの値が True であるか。`axis=0|1|None`を設定できる。`all(df)`ではないので注意。
-- Groupby
-  - `df.groupby('city').groups` -> dict
-  - `df.groupby('city').get_group('osaka')` -> dataframe
-  - `df.groupby('city').size()` -> series
-  - タイプが categorical な列を groupby するときは、`observed=True`のオプションをつけること。そうしないと、該当するデータがないグループも出力されてしまう。
+
+#### Groupby
+
+- `df.groupby('city').groups` -> dict
+- `df.groupby('city').get_group('osaka')` -> dataframe
+- `df.groupby('city').size()` -> series
+- タイプが categorical な列を groupby するときは、`observed=True`のオプションをつけること。そうしないと、該当するデータがないグループも出力されてしまう。
 
 ```py
 df = pd.DataFrame({

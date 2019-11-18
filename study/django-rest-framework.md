@@ -534,6 +534,12 @@ view の PUT メソッドを使うと、最終的に serializer が`partial=Fals
 
 view の patch メソッドを使うと、最終的に serializer が`partial=True`で設定される。これにより、必須フィールドが揃っていなくても更新可能になる
 
+原則として PUT を使って、更新時には全項目を BODY として投げるほうが良いかも。
+そうしないと、フロント側で更新が不要な項目を明示的に削る必要があり、面倒だから。
+この場合、必須とすべき項目は新規登録時と同じになるはず。
+（null である項目は更新しない、という方法も考えられるが、基本的に API 側では、
+null を null として記録すべきなのか、あるいは無視すべきなのかを判断できない）
+
 ## Authentication & Permissions
 
 本項では下記の機能を実装する
@@ -925,3 +931,12 @@ MethodSerializer ではなく sources=``の文法を使うとよい。
 class AlbumSerializer(serializers.ModelSerializer):
     artist_age = serializers.IntegerField(sources='artist.age')
 ```
+
+### extra_kwargs 雛形
+
+- 読込のみ：`{'read_only': True}`
+- 書込&必須：`{'allow_blank': False, 'allow_null': False,'required': True}`
+- 書込&非必須：`{'allow_blank': True, 'allow_null': True, 'required': False}`
+
+extra_kwargs はもともとモデルに含まれるフィールドにのみ効くらしい。
+`serializers.CharField()`などの記述で明示的に手動作成したフィールドには効果がないみたい。
