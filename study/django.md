@@ -154,9 +154,13 @@ urlpatterns = [
 
 ## ビュー
 
-`blog/views.py`
+ややこしいが、
+
+- Django の View は、MVC でいうところの Controller を指している。
+- Django の template が、MVC でいうところの View を指している。
 
 ```py
+# blog/views.py
 from django.shortcuts import render
 
 def post_list(request):
@@ -174,9 +178,7 @@ def post_list(request):
 <div>hello world</div>
 ```
 
-## Django ORM
-
-### Django shell
+## Django shell
 
 Django shell の起動 (python shell に見えるが、Django も動いてるよ)
 
@@ -186,7 +188,11 @@ python manage.py shell
 
 shell では、Model を使って様々な操作を行える。
 
-### 一覧の取得
+## Django ORM の基本
+
+### 基本操作
+
+#### 一覧の取得
 
 `model.objects.all()`
 
@@ -198,7 +204,7 @@ Post.objects.all()
 # <QuerySet [<Post: Hello1>, <Post: Hello2>]> => これがクエリセット
 ```
 
-### 条件を指定して 1 件取得
+#### 条件を指定して 1 件取得
 
 `model.objects.get()`
 
@@ -209,15 +215,31 @@ from django.contrib.auth.models import User
 me = User.objects.get(username='ola') # => 単品のオブジェクトが返る
 ```
 
-### 作成
-
-`model.objects.create()`
+条件にあうインスタンス（オブジェクト）が見つからなかったときは、`ObjectDoesNotExist`を raise する。これは不都合なことが多いので、`get_object_or_404` 関数と組み合わせて使うことも多い。
 
 ```py
-Post.objects.create(author=me, title="Sample Title", text='Test')
+from django.shortcuts import get_object_or_404
+get_object_or_404(Person, id=20)
 ```
 
-### 条件を指定して複数件取得
+#### DB から情報を再取得
+
+`model_instance.refresh_from_db()`
+
+#### 作成
+
+2 種類のインスタンス作成方法がある。
+
+```py
+# こちらは`save()`は不要
+MODEL_NAME.objects.create(kwargs)
+
+# こちらは`save()`が必要
+obj = MODEL_NAME(kwargs)
+obj.save()
+```
+
+#### 条件を指定して複数件取得
 
 `model.objects.filter()`
 
@@ -232,7 +254,7 @@ Post.objects.filter(title__contains='sample')
 Post.objects.filter(published_date__lte=timezone.now())
 ```
 
-### 並べ替え
+#### 並べ替え
 
 `model.objects.order_by()`
 
@@ -241,7 +263,7 @@ Post.objects.order_by('created_date')
 Post.objects.order_by('-created_date')
 ```
 
-### チェーン
+#### チェーン
 
 ```py
 Post.objects.\
@@ -250,20 +272,17 @@ Post.objects.\
   all()
 ```
 
-### Aggregation, Annottion, Groupby
+### クエリの確認
 
-- `aggregate()` レコードセット全体に対して集計を行い、単一のデータとして返す。
-- `annotate()` レコードセットの各レコード単位で集計等を行い、複数のデータとして返す。`values()`を組み合わせることで、Group By したうえで集計を行うこともできる。
-- [参考](http://note.crohaco.net/2014/django-aggregate/)
-- [条件つきで集計](https://docs.djangoproject.com/en/2.2/topics/db/aggregation/)
+`queryset.query` で発行されるクエリを確認できる!
 
-### 参照・逆参照先のデータの取得
+## 参照・逆参照先のデータの取得
 
 後続の処理で何度もアクセスされるオブジェクトを先に取得しておきたいときには、`select_related`や`prefetch_related`を使う。
 
 [参考](https://akiyoko.hatenablog.jp/entry/2016/08/03/080941)
 
-#### select_related
+### select_related
 
 one 側のオブジェクト（Foreign Key など）を見に行くときにつかう。
 INNER JOIN または LEFT OUTER JOIN されるのでクエリの回数を減らせる。
@@ -273,7 +292,7 @@ INNER JOIN または LEFT OUTER JOIN されるのでクエリの回数を減ら�
 BlogPost.objects.filter(pk=1).select_related('user')
 ```
 
-#### prefetch_related
+### prefetch_related
 
 many 側のオブジェクト群を取得することができる（one 側のオブジェクト取得にも使えるが、あまり利用しない）。複数回のクエリを発行して Python 側で結合するので、select_related よりはクエリ回数は増える。
 
@@ -285,7 +304,7 @@ User.objects.filter(pk=1).prefetch_related('blogposts')
 BlogPost.objects.filter(pk=1).prefetch_related('categories')
 ```
 
-#### 内部結合
+### 内部結合
 
 `filter`は内部結合(INNER JOIN)で動作する。
 
@@ -298,7 +317,7 @@ Author.objects\
   .all()
 ```
 
-#### 外部結合
+### 外部結合
 
 many 側のデータ「を」フィルタしたいときは、`prefetch_related`と`django.db.models.Prefetch`を組み合わせる。外部結合と同じような動作になる。
 
@@ -315,7 +334,7 @@ Author.objects \
   )
 ```
 
-#### filter と Prefetch の違い
+### filter と Prefetch の違い
 
 `filter`は many 側のデータ「で」フィルタしているだけなので、後段の`prefetch_related`には何ら影響を与えない点に注意する。
 
@@ -331,29 +350,168 @@ Author.objects\
 
 結論：many 側のデータ「で」フィルタしたいときは`filter`を、many 側のデータ「を」フィルタしたいときは`Prefetch`を使う。
 
-### 2 種類のインスタンス作成方法
+## Aggregation, Annottion, Groupby
+
+- `aggregate()` レコードセット全体に対して集計を行い、単一のデータとして返す。
+- `annotate()` レコードセットの各レコード単位で集計等を行い、複数のデータとして返す。`values()`を組み合わせることで、Group By したうえで集計を行うこともできる。
+- [参考](http://note.crohaco.net/2014/django-aggregate/)
+- [条件つきで集計](https://docs.djangoproject.com/en/2.2/topics/db/aggregation/)
+
+## Query Expressions
+
+[https://docs.djangoproject.com/en/2.2/ref/models/expressions/](https://docs.djangoproject.com/en/2.2/ref/models/expressions/)
+
+### `F()` expression
+
+- 列の値を使った様々な計算ができる。
+- `filter`や`annotate`の中で使える。インスタンスの値を更新するときにも使える。
+- Race Condition 時に値を失うことがない
 
 ```py
-# こちらは`save()`は不要
-MODEL_NAME.objects.create(kwargs)
+from django.db.models import Count, F, Value
+from django.db.models.functions import Length, Upper
 
-# こちらは`save()`が必要
-obj = MODEL_NAME(kwargs)
-obj.save()
+# 椅子の数よりも従業員数が多い会社
+Company.objects.filter(num_employees__gt=F('num_chairs'))
+
+# 椅子の数よりも従業員数が2倍以上多い会社
+Company.objects.filter(num_employees__gt=F('num_chairs') * 2)
+Company.objects.filter(num_employees__gt=F('num_chairs') + F('num_chairs'))
+
+# 全ての従業員が座るには椅子がいくつ必要なのかを、それぞれの会社ごとに算出
+company = Company.objects \
+  .filter(num_employees__gt=F('num_chairs'))
+  .annotate(chairs_needed=F('num_employees') - F('num_chairs'))
+
+# 個別更新
+# - Bad メモリ効率が悪く、Race Condition時にデータを失う
+some_instance.some_field += 1
+# - Good　メモリ効率がよく、Race Condition時にもデータを失わない
+some_instance.some_field = F('stories_filed') + 1
+
+# 一括更新
+some_instance.update(some_field=F('stories_filed') + 1)
 ```
 
-### Model.objects.get()の弱点
+#### 注意事項
 
-get 関数は条件にあうインスタンス（オブジェクト）が見つからなかったとき、`ObjectDoesNotExist`を raise する。これは不都合なことが多いので、通常は`get_object_or_404` 関数を使う。
+重複して更新されるため、`F()`を使った更新を設定したあとに`save()`を 2 回以上呼んではダメ。
+2 回以上保存したい場合は、間で必ず`refresh_from_db()`すること。
 
 ```py
-from django.shortcuts import get_object_or_404
-get_object_or_404(Person, id=20)
+some_instance.some_field = F('stories_filed') + 1
+some_instance.save() # +1される
+some_instance.save() # もう一度+1される
 ```
 
-### クエリの確認
+#### 型が異なるフィールドの計算
 
-`queryset.query` で発行されるクエリを確認できる!
+異なるタイプの列を使って計算する場合は、`ExpressionWrapper`で明示的に出力フィールドの型を設定する必要がある。
+
+```py
+from django.db.models import DateTimeField, ExpressionWrapper, F
+
+Ticket.objects.annotate(
+    expires=ExpressionWrapper(
+        F('active_at') + F('duration'), output_field=DateTimeField()))
+```
+
+### `Func()` expressions
+
+データベースに備わっている`LOWER`などの関数や、`SUM`などの集計関数を利用するときに使う。
+
+```py
+from django.db.models import F, Func
+
+queryset.annotate(field_lower=Func(F('field'), function='LOWER'))
+# => `SELECT LOWER("db_table"."field") as "field_lower"`
+```
+
+### `Aggregate()` expressions
+
+- `Sum()`や`Count()`など、[`Aggregate()`](https://docs.djangoproject.com/en/2.2/ref/models/expressions/#django.db.models.Aggregate)を継承している関数のこと（`モデル.objects.aggregate()`とは異なるものなので注意）
+- `Func()`の特殊バージョンであり、`GROUP BY`句が必要であることをクエリに知らせるという特徴がある？
+  - `aggregate()`内で使う場合は、集計対象としてクエリセットのトップレベルのフィールドを指定する。
+  - `annotate()`内で使う場合は、集計対象としてクエリセットの外部テーブル自体や外部テーブルのフィールドを指定する。たぶん。
+
+```py
+from django.db.models import Avg, Count Sum
+
+# aggregate()で使う
+Company.objects.aggregate(total_company_count=Count('id'))
+
+# annotate()で使う　下記はどちらも同じ。
+Company.objects.annotate(num_products=Count('products'))
+Company.objects.annotate(num_products=Count(F('products')))
+
+# aggregate expressionは複雑な計算を含むことができるdock
+Company.objects.annotate(num_offerings=Count(F('products') + F('services')))
+```
+
+### `Value()` expression
+
+単純に「値」を表す。
+
+```py
+# Create a new company using expressions.
+company = Company.objects.create(name='Google', ticker=Upper(Value('goog')))
+# Be sure to refresh it if you need to access the field.
+company.refresh_from_db()
+company.ticker
+# => 'GOOG'
+```
+
+### `Subquery()` expressions
+
+- `Subquery`と`OuterRef`を組み合わせることで、サブクエリ側から親クエリの値を参照できる。
+- 結果を単一列に絞り込むには`values`を使う
+- 結果を単一行に絞り込むにはスライス表記を使う
+
+```py
+from django.db.models import OuterRef, Subquery
+
+newest = Comment.objects \
+  .filter(post=OuterRef('pk')) \
+  .order_by('-created_at') \
+  .values('email')[:1]
+Post.objects.annotate(newest_commenter_email=Subquery(newest))
+```
+
+#### Exists()
+
+- `Subquery()`の亜種。存在を確かめるだけなら、こちらを使ったほうが効率が良い。
+- `values`を使って単一列に絞り込む必要はない
+- `~Exists()`とすれば NOT にできる
+
+```py
+recent_comments = Comment.objects.filter(
+  post=OuterRef('pk'),
+  created_at__gte=one_day_ago)
+Post.objects.annotate(recent_comment=Exists(recent_comments))
+```
+
+#### サブクエリの結果でフィルタする
+
+サブクエリの結果でフィルタしたい場合は、`annotate`の後段で行う。
+
+```py
+Post.objects.annotate(
+    recent_comment=Exists(recent_comments),
+).filter(recent_comment=True)
+```
+
+### Raw SQL expressions
+
+- クエリセットに生クエリをトッピングしたい時に使う。
+- なるべく使わない
+- SQL インジェクションに注意する
+
+```py
+from django.db.models.expressions import RawSQL
+queryset.annotate(
+  val=RawSQL("SELECT col FROM sometable WHERE othercol = %s",
+  (someparam,)))
+```
 
 ## 動的データを表示する
 
