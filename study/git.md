@@ -270,7 +270,7 @@ git pull --rebase origin master
 ### onto
 
 ```sh
-git rebase --onto TARGET_BASE COMMIT_FROM COMMIT_TO
+git rebase --onto TARGET_BASE CURRENT_BASE BRANCH_OR_LAST_COMMIT
 
 # Example:
 #
