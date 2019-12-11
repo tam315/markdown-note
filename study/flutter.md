@@ -24,7 +24,7 @@ void main() {
 ```
 
 - `StatelessWidget` 又は `StatefulWidget` を継承したウィジェットを組み合わせて画面を作っていく。
-  - 上記の`MaterialApp`,`Scaffold`などはStateful、`Text`はStateless
+  - 上記の`MaterialApp`,`Scaffold`などは Stateful、`Text`は Stateless
 - Widget の主たる役割は`build()`メソッドを実装すること。
 
 #### 基本ウィジェット
@@ -150,8 +150,13 @@ class _CounterState extends State<Counter> {
           onPressed: _increment,
           child: Text('Increment'),
         ),
-        Text('Name: ' + widget.name), // `widget.名前`でウィジェットの引数にアクセスできる
-        Text('Count: $_counter'), // `$名前`でインスタンス変数にアクセスできる
+
+        // `StatefulWidget`のプロパティにアクセスするには
+        // `widget.名前`を使う
+        Text('Name: ' + widget.name),
+
+        // インスタンス変数にアクセスするには`$名前`を使う
+        Text('Count: $_counter'),
       ],
     );
   }
@@ -161,6 +166,43 @@ class _CounterState extends State<Counter> {
 Counter(name: 'num of click');
 ```
 
-- `StatefulWidget`と`State`が別オブジェクトなのは、関心を分離して再利用性を高めるため。
-  - ウィジェットは表示を担当する。`build()`が実行されると消える一時的なオブジェクト。
-  - Stateは状態の保持を担当する。情報を保持して置かなければいけないため、`build()`が実行されても生き残る。
+- `StatefulWidget`と`State`が別オブジェクトである理由：
+  - 関心を分離して再利用性を高めるため？いまひとつよくわからない
+  - StatefulWidget は表示を担当する。親の`build()`が実行されるたびに再生成される一時的なもの。
+  - State は状態の保持を担当する。親の`build()`が実行されても同じものが使い回される。
+
+#### widget の変更検知
+
+widget(StatefulWidget のプロパティのこと。React の props のようなもの)の変更を検知したいときは`didUpdateWidget`をオーバーライドする。
+
+```dart
+class _CounterState extends State<Counter> {
+  @override
+  void didUpdateWidget(Counter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 処理
+  }
+}
+```
+
+#### State のライフサイクル
+
+ライフサイクルメソッドは`initState`や`dispose`をオーバーライドして記述する。
+
+```dart
+class _CounterState extends State<Counter> {
+  // マウント時に1度だけ行いたい処理
+  @override
+  void initState() {
+    super.initState();
+    // 処理
+  }
+
+  // アンマウント時に行いたい処理
+  @override
+  void dispose() {
+    // 処理
+    super.dispose();
+  }
+}
+```
