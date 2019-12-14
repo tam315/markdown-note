@@ -206,3 +206,132 @@ class _CounterState extends State<Counter> {
   }
 }
 ```
+
+#### key
+
+key を指定しない場合、差分判定はコンポーネントの位置で行われる。
+
+```dart
+[
+  if (showFirst) MyWidget(), // 1
+  MyWidget(), // 2
+]
+```
+
+このため例えば上記の showFirst が true から false になった時、削除されるのは 2 番である。これを防ぐには key を使う。
+
+- `ValueKey` --- 数値などの値で区別する
+- `ObjectKey` --- オブジェクトの id で区別する
+- `UniqueKey` --- 絶対に重複しない。これを指定したコンポーネントは必ず毎回作り直される。
+
+```dart
+// 使用例
+MyTextField(key: ValueKey(2))
+MyTextField(key: ObjectKey(someObject))
+MyTextField(key: Uniquekey())
+```
+
+### レイアウト
+
+Flutter においてはほぼ全てのものがウィジェットである。
+
+- レイアウトのためのウィジェット --- `Row`や`Center`など
+- UI エレメントを作るためのウィジェット（目に見えるウィジェット） --- `Text`や`RaisedButton`など
+
+`Container` --- パディング、マージン、ボーダー、背景色を使いたい時に利用する
+
+#### レイアウトの手順
+
+[レイアウトウィジェット](https://flutter.dev/docs/development/ui/widgets/layout)を選ぶ
+
+```dart
+Center(child:null)
+```
+
+目に見えるウィジェットを作成する。例えば`Text`や`Icon`など。
+
+```dart
+Text('hello')
+```
+
+目に見えるウィジェットをレイアウトウィジェットに追加する。レイアウトウィジェットの`child`又は`children`に記載することで行う。
+
+```dart
+Center(child:Text('hello'))
+```
+
+レイアウトウィジェットをページに配置する。親ウィジェットの`build`メソッドや、マテリアルアプリであれば`Scaffold`の`body`に追加することで行う。
+
+```dart
+class MyComponent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Text('hello'));
+  }
+}
+```
+
+#### ハイレベルなウィジェット
+
+下記のようなハイレベルなウィジェットが用意されているので積極的に活用すること。
+
+- Row の代わりに使える[`ListTile`](https://api.flutter.dev/flutter/material/ListTile-class.html)
+- Column の代わりに使える[`ListView`](https://api.flutter.dev/flutter/widgets/ListView-class.html)
+
+#### 配置
+
+`Row`や`Column`は配置の設定を行うことができる。
+
+- main axis は flex でいう`justify-content`
+- cross axis は flex でいう`align-items`
+
+```dart
+Row(
+  mainAxisAlignment: MainAxisAlignment.spaceAround,
+  crossAxisAlignment: CrossAxisAlignment.center,
+  children: []
+)
+```
+
+#### Row や Column をはみ出す場合
+
+- 画像等が大きすぎて画面内に要素が収まらない場合、黄色と黒色のボーダーが警告として画面上に表示される。
+- 画面内に収めたい場合は`Expanded`で`Row`等の各子要素を囲む。
+  - `flex`を指定することで拡大率を設定できる。
+
+```dart
+Row(
+  crossAxisAlignment: CrossAxisAlignment.center,
+  children: [
+    Expanded(
+      child: Image.asset('images/pic1.jpg'),
+    ),
+    Expanded(
+      flex: 2,
+      child: Image.asset('images/pic2.jpg'),
+    ),
+    Expanded(
+      child: Image.asset('images/pic3.jpg'),
+    ),
+  ],
+);
+```
+
+#### 詰めて表示する
+
+デフォルトでは`Row`や`Column`は main axis の方向に最大限拡大する。拡大せずに詰めて表示したい場合は`mainAxisSize`を設定する。
+
+```dart
+Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Icon(Icons.star),
+    Icon(Icons.star),
+    Icon(Icons.star),
+  ],
+);
+```
+
+#### 読みやすいコードにする
+
+Flutter のコードは、ネストが深くなるとすぐに読みづらくなる。変数や関数に切り出してネストが深くならないように心がけること。
