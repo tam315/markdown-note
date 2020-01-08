@@ -13,7 +13,7 @@
 
 ### Anchors
 
-- `^abc$` start / end of the string
+- `^someWord$` start / end of the string
 - `\b \B` word, not-word boundary
 
 ### Escaped characters
@@ -23,11 +23,13 @@
 
 ### Groups & Lookaround
 
-- `(abc)` capture group
+- `(someWord)` capture group
 - `\1` backreference to group #1
-- `(?:abc)` non-capturing group
-- `(?=abc)` positive lookahead
-- `(?!abc)` negative lookahead
+- `(?:someWord)` non-capturing group
+- `(?=someWord)` positive lookahead
+- `(?<=someWord)` positive lookbehind
+- `(?!someWord)` negative lookahead
+- `(?<!someWord)` negative lookbehind
 
 ### Quantifiers & Alternation
 
