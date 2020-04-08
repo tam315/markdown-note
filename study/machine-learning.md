@@ -365,6 +365,56 @@ plt.legend(['Survived', 'Died'])
 plt.show()
 ```
 
+### nullable なデータタイプ
+
+以前の pandas では、文字列タイプや値が欠損している数値タイプの扱いに難があった。
+
+- 文字列は`object`タイプになる
+- bool タイプの中に欠損値が混ざると`bool`から`object`タイプになる
+- int タイプの中に欠損値が混ざると`int`から`float`タイプになる　などなど
+
+Pandas version 1.0.0 以降では、欠損値を許容するデータタイプが追加された（現在は実験的扱い）。
+
+- StringDtype
+- BooleanDtype(bool でなく boolean)
+- Int64Dtype(I が大文字)
+- Int32Dtype(I が大文字)
+
+上記タイプの欠損値には、新たに追加された欠損値スカラである`pd.NA`が使用される。
+逆に`numpy.nan`や`None`がデータに入り込むと`object`型になってしまうので注意。
+
+上記タイプは今のところデフォルトでは使用されないものの、`df.convert_dtypes()`とすることで、データタイプを一括して欠損値を許容するタイプに適切に変換できる。
+
+```txt
+ #   Column   Non-Null Count  Dtype
+---  ------   --------------  -----
+ 0   id       5 non-null      int64
+ 1   name     5 non-null      object
+ 2   work     5 non-null      object
+ 3   email    5 non-null      object
+ 4   dob      5 non-null      int64
+ 5   address  5 non-null      object
+ 6   city     5 non-null      object
+ 7   optedin  5 non-null      bool
+```
+
+を`df.convert_dtypes()`すると
+
+```txt
+ #   Column   Non-Null Count  Dtype
+---  ------   --------------  -----
+ 0   id       5 non-null      Int64
+ 1   name     5 non-null      string
+ 2   work     5 non-null      string
+ 3   email    5 non-null      string
+ 4   dob      5 non-null      Int64
+ 5   address  5 non-null      string
+ 6   city     5 non-null      string
+ 7   optedin  5 non-null      boolean
+```
+
+になる。
+
 ## NumPy
 
 数値型の dataframe では numpy が使われている。
