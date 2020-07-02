@@ -55,6 +55,23 @@ blockLongname_elementLongname-modkeyModvalue
 
 [参考](https://coliss.com/articles/build-websites/operation/css/4-reasons-z-index-isnt-working.html)
 
+## レスポンシブ
+
+### レスポンシブにするには
+
+- 親が幅高をもつ状態であること
+- 子が自由伸縮する場合
+  - 子に幅高 100%を指定する
+- 子が自由伸縮しない場合
+  - コンテナでラップして幅高に 100%を設定した上で、本体は absolute で表示するなどの工夫が必要
+  - 自由伸縮しないとは
+    - 画像や単なるテキストではないもの
+    - props で受け取った幅高を固定的に設定しているコンポーネントなど
+
+### 制約
+
+- アスペクト比率が固定なら、幅と高さのどちらか一方しかレスポンシブにできない
+
 ## その他 Tips
 
 - `margin-left: auto`で右寄せにできる
