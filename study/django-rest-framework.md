@@ -932,6 +932,55 @@ class AlbumSerializer(serializers.ModelSerializer):
     artist_age = serializers.IntegerField(sources='artist.age')
 ```
 
+### ネストした複数の子要素のうち特定の 1 件を 1 つ上の階層に引っ張り上げる方法
+
+- 複数件の子要素が必ず 1 件に定まる場合に、配列だと使い勝手が悪いので単件で取得したい、というときに使える方法
+- 手順
+  - ビューの `get_queryset()`において、子要素を Prefetch を用いてフィルタする
+  - シリアライザでその先頭を抽出する
+- 下記の例は、車メーカー(Brand)+製造年の情報でクエリしたときに、単一の車種情報(Car)を取得したい場合の例である。
+  - 車メーカーは、1 年に最大で 1 台しか車種を作らないものとする
+  - つまり、製造年が判明しているならば車は 1 台または 0 台に定まる
+
+```py
+class BrandAPIView(ListAPIView):
+    def get_queryset(self):
+        release_year = self.request.query_params['release_year']
+        return self.queryset \
+            .prefetch_related(
+                Prefetch(
+                    # 逆参照フィールド(多側)
+                    "cars",
+                    queryset=Cars.objects.filter(
+                        release_year=release_year,
+                    )
+                )
+            )
+
+
+class _BrandSerializer(serializers.ModelSerializer):
+    # carsではない点に注意
+    car = serializers.SerializerMethodField(read_only=True)
+
+    def get_car(self, brand):
+        # その年に車が製造されていない場合は何も返さない
+        qs = brand.cars.all()
+        if not qs.exists():
+            return None
+
+        # 1件目の車を返す
+        return _CarSerializer(qs.first()).data
+
+    class Meta:
+        model = Brand
+        fields = (
+            'id',
+            'name',
+            'car',
+            # 'cars',
+        )
+```
+
 ### extra_kwargs 雛形
 
 - 読込のみ：`{'read_only': True}`
