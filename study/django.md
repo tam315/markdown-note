@@ -467,15 +467,35 @@ company.ticker
 - 結果を単一列に絞り込むには`values`を使う
 - 結果を単一行に絞り込むにはスライス表記を使う
 
+#### annotate の中で使う場合の例(サブクエリは SELECT 句に記載される)
+
 ```py
 from django.db.models import OuterRef, Subquery
 
-newest = Comment.objects \
+newest_commenter_email = Comment.objects \
   .filter(post=OuterRef('pk')) \
   .order_by('-created_at') \
   .values('email')[:1]
-Post.objects.annotate(newest_commenter_email=Subquery(newest))
+posts = Post.objects.annotate(
+  newest_commenter_email=Subquery(newest_commenter_email))
 ```
+
+なお、サブクエリの結果でフィルタしたい場合は、`annotate`の後段で行う。
+
+```py
+posts.filter(newest_commenter_email='some@email.com')
+```
+
+#### filter の中で直接使う場合の例(サブクエリは WHERE 句内に記載される)
+
+```py
+from django.db.models import Subquery
+
+users = User.objects.all()
+UserParent.objects.filter(user_id__in=Subquery(users.values('id')))
+```
+
+[参考](https://books.agiliq.com/projects/django-orm-cookbook/en/latest/subquery.html#how-to-do-a-subquery-expression-in-django)
 
 #### Exists()
 
@@ -488,16 +508,6 @@ recent_comments = Comment.objects.filter(
   post=OuterRef('pk'),
   created_at__gte=one_day_ago)
 Post.objects.annotate(recent_comment=Exists(recent_comments))
-```
-
-#### サブクエリの結果でフィルタする
-
-サブクエリの結果でフィルタしたい場合は、`annotate`の後段で行う。
-
-```py
-Post.objects.annotate(
-    recent_comment=Exists(recent_comments),
-).filter(recent_comment=True)
 ```
 
 ### Raw SQL expressions
