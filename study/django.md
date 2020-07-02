@@ -734,3 +734,12 @@ view から受け取った`form`を使ってフォームを表示する
 <!-- 編集 -->
 <a href="{% url 'post_edit' pk=*** %}">edit post</a>
 ```
+
+## Tips
+
+### 無駄なクエリを減らす
+
+prefetch_related を効かせたままで最初の要素を取得するには下記のようにする。前者だとプリフェッチしたデータは使用されず、毎回クエリが投げられてしまう。
+
+- ❌user_suppliers.first()
+- ⭕user_suppliers.all()[0]
