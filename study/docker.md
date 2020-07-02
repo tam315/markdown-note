@@ -56,6 +56,12 @@ docker run -v c:/test:/backup
 
 ### フロント環境の再ビルドが遅い
 
+[参考](https://qiita.com/yuki_ycino/items/cb21cf91a39ddd61f484)
+
+[Mutagen-based caching](https://docs.docker.com/docker-for-mac/mutagen-caching/)を使え。
+
+以下、古い情報
+
 フロント環境を docker で構築した際、ビルド環境が遅くなってしまう。これは主に`node_modules`をホスト側と共有してしまっていることが理由である。設定をオーバーライドし、`node_modules`だけは docker 側でネイティブに動作するようにすると高速化する。
 
 ```yaml
