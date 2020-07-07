@@ -182,6 +182,30 @@ redux コミュニティの慣例
 - reducer をデフォルトエクスポートする
 - action creators を named export する
 
+### おすすめのフォルダ構成
+
+- ほとんどの場合において **"feature folder" approach** が有効であることが確認されている
+- 機能やドメインごとにフォルダ分けする方法
+- ファイルタイプ(actions, reducers, containers, components)ごとにフォルダを分ける方法は見通しが悪化しがち
+- [参考](https://redux-toolkit.js.org/tutorials/intermediate-tutorial#writing-the-slice-reducer)
+
+#### フォルダ構成例
+
+[このプロジェクト](https://github.com/reduxjs/rtk-github-issues-example)を参考にするとよいかも
+
+- src
+  - api
+    - api を叩く関数など
+  - app
+    - `App.tsx|css`, `rootReducer.ts`, `store.ts`など、アプリの核となるファイル
+  - components
+    - 再利用可能なコンポーネント
+    - 画面や機能に依存しないコンポーネント
+  - features
+    - (機能ごと|画面ごと|ドメインごと)などでフォルダを作る
+    - コンポーネント、css、スライス(actions, reducers)、セレクタ、テストファイルなどを含む
+  - utils
+
 ### Flux Standard Actions
 
 - アクションは`{type:string, payload: any}`の形式であるべき
@@ -189,14 +213,14 @@ redux コミュニティの慣例
 
 ### payload に手を加えるには
 
-- `createAction()`や`createSlice()`を使って生成された action creators は、与えた引数をそのまま`action.payload`として発出する
+- `createAction()`や`createSlice()`を使って生成された action creators は、与えた引数をそのまま`action.payload`として送出する
 - 与えた引数に何らかの処理を行ってから(prepare してから) payload を作成したい場合は下記のようにする
 
 ```js
 // createActionの場合は第2引数に`prepare callback`を記載する
 const addTodo = createAction('ADD_TODO', text => {
   return {
-    payload: { id: nextTodoId++, text }
+    payload: { id: uuid(), text }
   }
 })
 
@@ -218,13 +242,30 @@ const todosSlice = createSlice({
 }
 ```
 
-### セレクタの最適化
+### セレクタの最適化(sharrowEqual を使う場合)
 
-- state の一部を抜き出すときは`reselect`を使ってメモ化すると良い
-  - 例えば下記の`getVisibleTodos()`では、フィルタの値が変わるたびに全く新しい(参照の異なる)`todos`が生成される
-  - これが mapStateToProps に与えられているため、毎回再描写が走ることになる
-  - `reselect`を使うとメモ化されるため、同じ参照のオブジェクトを取得できる
-- 単純な selectors は slice のファイルに含めてしまって良いかも
+- 下記の場合、data は毎回新しいオブジェクトになる。すなわち再描写がかかる。
+- これは useSelector の比較方法が reference equality だからである。なお、connect の比較方法は shallow equality である。
+  - reference equality --- セレクタが返したオブジェクト「自体」のアドレスが同一であるか
+  - shallow equality --- セレクタが返したオブジェクトの「1 階層目のキーの種類とその参照先アドレス」が同一であるか
+- 第 2 引数に shallowEqual を渡すことで比較方法を変更できる
+
+```ts
+const data = useSelector(
+  (state) => ({
+    commentsLoading: state.comments.loading,
+    commentsError: state.comments.error,
+    comments: state.comments.commentsByIssue[issueId],
+  }),
+  // shallowEqual,
+);
+```
+
+### セレクタの最適化(reselect を使う場合)
+
+- shallowEqual を使ったとしても再描写がかかってしまう場合がある。例えば下記の`getVisibleTodos()`のうち`.filter()`された結果については、必ず新しい(=参照の異なる)配列として生成される
+- このように state の一部をフィルタして抜き出すなどするときなどは、`reselect`を使って適宜メモ化すること
+- `reselect`を使うと`.filter()`した結果もメモ化され、同じ参照のオブジェクトとして取得できる
 
 ```diff
 import { connect, useSelector } from 'react-redux'
@@ -271,4 +312,327 @@ const mapStateToProps = state => ({
 
 又はhookの場合、
 + const todos = useSelector(selectVisibleTodos)
+```
+
+## 上級チュートリアル
+
+[お題のプロジェクト](https://github.com/reduxjs/rtk-github-issues-example)
+
+### HMR
+
+- HMR が利用できる環境では`module.hot`が存在するので、これを使って再描写を行う
+- 再描写の方法は`accept()`のコールバックに個別に記載する
+- create-react-app ではデフォルトでは HMR ではなくフルリロードが行われる
+
+```ts
+module.hot.accept(
+  dependencies, // 監視するファイル
+  callback, // ファイルが変更されたときに何をするか
+);
+```
+
+### store の型
+
+- `mapState`,`useSelector`,`getState`などで store の型を利用するには`ReturnType` という TS のビルトイン型を使う
+- 下記のようにすることで自動的に store の型が最新に保たれる
+
+```ts
+// app/rootReducer.ts
+
+import { combineReducers } from '@reduxjs/toolkit';
+const rootReducer = combineReducers({});
+
+// rootReducerが返す値の型をstoreの型として利用する
+// 型はエクスポートしておき、各所で利用する
+export type RootState = ReturnType<typeof rootReducer>;
+
+export default rootReducer;
+```
+
+### store のセットアップ
+
+```ts
+// app/store.ts
+
+import { configureStore } from '@reduxjs/toolkit';
+import rootReducer from './rootReducer';
+
+const store = configureStore({
+  reducer: rootReducer,
+});
+
+// reducerが更新されたときはHMRする
+// (store.replaceReducerを使って、reducerだけを入れ替える)
+if (process.env.NODE_ENV === 'development' && module.hot) {
+  module.hot.accept('./rootReducer', () => {
+    const newRootReducer = require('./rootReducer').default;
+    // const newRootReducer = (await import('./rootReducer')).default
+
+    store.replaceReducer(newRootReducer);
+  });
+}
+
+// エクスポートしておき、dispatchの型として各所で利用する
+export type MyDispatch = typeof store.dispatch;
+
+export default store;
+```
+
+### 起点ファイル(index.ts)のセットアップ
+
+```tsx
+// index.tsx
+
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
+import store from './app/store';
+import './index.css';
+
+const render = () => {
+  const App = require('./app/App').default;
+  // const App = (await import('./app/App')).default;
+
+  ReactDOM.render(
+    <Provider store={store}>
+      <App />
+    </Provider>,
+    document.getElementById('root'),
+  );
+};
+
+// 初回に一度だけレンダリングを行う
+render();
+
+// コンポーネントが更新されたときはHMRする
+// (React部分だけを再描写する)
+if (process.env.NODE_ENV === 'development' && module.hot) {
+  module.hot.accept('./app/App', render);
+}
+```
+
+### どのような値を redux で管理すべきか
+
+- 最適
+  - 複数のコンポーネントにまたがって使用されそうな値
+- 不適
+  - 一つのコンポーネントでのみ使用される値、特にフォームの値
+
+### reducers や actions の型
+
+`createSlice()`では下記の 2 箇所で型を指定できる
+
+- initialState
+  - 各 case reducer が受け取る state の型として利用される
+  - slice reducer が返す値の型として利用される。つまり、最終的に store の型として利用される
+- case reducer の action
+  - 各 case reducer が受け取る payload の型として利用される
+  - action creator に渡すべき引数の型として利用される
+
+```ts
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+let initialState: SomeMyType = {
+  org: 'rails',
+  repo: 'rails',
+  page: 1,
+  displayType: 'issues',
+  issueId: null,
+};
+
+const issuesDisplaySlice = createSlice({
+  name: 'issuesDisplay',
+  initialState,
+  reducers: {
+    setCurrentPage(state, action: PayloadAction<number>) {
+      state.page = action.payload;
+    },
+  },
+});
+```
+
+### thunk とは
+
+```ts
+// 通常のaction creator
+function exampleActionCreator() {
+  return { type: SOME_TYPE, payload: '' };
+}
+store.dispatch(exampleActionCreator());
+
+// thunk
+function exampleThunk() {
+  return function exampleThunkFunction(dispatch, getState) {
+    // なにかしてdispatchする
+  };
+}
+store.dispatch(exampleThunk());
+```
+
+- thunk の意味 --- "a function that delays a calculation until later"
+- action を直接書かずに action creator を介す慣習にならい、thunk も直接書かずに関数でラップして使う
+- redux-saga や redux-observable も便利だが、ほとんどの場合は thunk で事足りる
+- thunk は`createSlice()`内では**作成出来ない**ので、その外側で独立した関数として作成し、named export する
+- thunk は slice ファイル内に記載すると良い
+
+### thunk の利点
+
+- ロジックが再利用可能で汎用性の高いものになる
+- コンポーネントから複雑なロジックを分離できる
+- コンポーネント内で利用する際に、同期・非同期を意識しなくてすむ
+- `dispatch()`に thunk を渡すと結果を`await`できる！
+  - つまり、必要があればコンポーネントにおいて非同期処理の完了を知ることができる
+
+### thunk の作成
+
+- thunk の型定義を予め行っておくと何度も書く必要がなくなるので便利
+
+```ts
+// app/store.ts
+import { Action } from '@reduxjs/toolkit';
+import { ThunkAction } from 'redux-thunk';
+import { RootState } from './rootReducer';
+
+export type AppThunk = ThunkAction<void, RootState, unknown, Action<string>>;
+// 1つめ --- thunkの返値の型。何も返さない。
+// 2つめ --- getState()が返す型。storeの型と同じ。
+// 3つめ --- thunk middlewareのカスタマイズ用の値。何もカスタマイズしない。
+// 4つめ --- action.typeの型。常に文字列。
+```
+
+```ts
+// features/repoSearch/repoSearchSlice.ts
+export const fetchIssuesCount = (org: string, repo: string): AppThunk => async (
+  dispatch,
+) => {
+  // createSlice()で生成したプレーンなaction creatorをdispatchする
+  dispatch(someActionCreator());
+};
+```
+
+### thunk のエラーハンドリング
+
+下記のような書き方をすると`getRepoDetailsSuccess()`で起きたエラーまで拾ってしまうので、本当はもう少し[丁寧な記述](https://redux-toolkit.js.org/tutorials/advanced-tutorial#async-error-handling-logic-in-thunks)が必要。
+
+```ts
+try {
+  const repoDetails = await getRepoDetails(org, repo);
+  dispatch(getRepoDetailsSuccess());
+} catch (e) {
+  dispatch(getRepoDetailsFailed());
+}
+```
+
+### Slice の例
+
+- Slice ファイルの全体像は下記のようになる
+- 並びとしては以下のようになる
+  - 型定義
+  - 複数の action creators で共通して利用する case reducer 関数
+  - `createSlice`
+  - アクションの destructuring
+  - reducer の default export
+  - 非同期関数
+
+```ts
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { getIssue, getIssues, Issue, IssuesResult } from 'api/githubAPI';
+import { MyDispatch, MyThunkAction } from 'app/store';
+import { Links } from 'parse-link-header';
+
+interface IssuesState {
+  issuesByNumber: Record<number, Issue>;
+  currentPageIssues: number[];
+  pageCount: number;
+  pageLinks: Links | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+const issuesInitialState: IssuesState = {
+  issuesByNumber: {},
+  currentPageIssues: [],
+  pageCount: 0,
+  pageLinks: {},
+  isLoading: false,
+  error: null,
+};
+
+function startLoading(state: IssuesState) {
+  state.isLoading = true;
+}
+
+function loadingFailed(state: IssuesState, action: PayloadAction<string>) {
+  state.isLoading = false;
+  state.error = action.payload;
+}
+
+const issues = createSlice({
+  name: 'issues',
+  initialState: issuesInitialState,
+  reducers: {
+    getIssueStart: startLoading,
+    getIssuesStart: startLoading,
+    getIssueSuccess(state, { payload }: PayloadAction<Issue>) {
+      const { number } = payload;
+      state.issuesByNumber[number] = payload;
+      state.isLoading = false;
+      state.error = null;
+    },
+    getIssuesSuccess(state, { payload }: PayloadAction<IssuesResult>) {
+      const { pageCount, issues, pageLinks } = payload;
+      state.pageCount = pageCount;
+      state.pageLinks = pageLinks;
+      state.isLoading = false;
+      state.error = null;
+
+      issues.forEach((issue) => {
+        state.issuesByNumber[issue.number] = issue;
+      });
+
+      state.currentPageIssues = issues.map((issue) => issue.number);
+    },
+    getIssueFailure: loadingFailed,
+    getIssuesFailure: loadingFailed,
+  },
+});
+
+export const {
+  getIssuesStart,
+  getIssuesSuccess,
+  getIssueStart,
+  getIssueSuccess,
+  getIssueFailure,
+  getIssuesFailure,
+} = issues.actions;
+
+export default issues.reducer;
+
+export const fetchIssues = (
+  org: string,
+  repo: string,
+  page?: number,
+): MyThunkAction => async (dispatch: MyDispatch) => {
+  try {
+    dispatch(getIssuesStart());
+    const issues = await getIssues(org, repo, page);
+    dispatch(getIssuesSuccess(issues));
+  } catch (err) {
+    dispatch(getIssuesFailure(err.toString()));
+  }
+};
+
+export const fetchIssue = (
+  org: string,
+  repo: string,
+  number: number,
+): MyThunkAction => async (dispatch: MyDispatch) => {
+  try {
+    dispatch(getIssueStart());
+    const issue = await getIssue(org, repo, number);
+    dispatch(getIssueSuccess(issue));
+  } catch (err) {
+    dispatch(getIssueFailure(err.toString()));
+  }
+};
 ```
