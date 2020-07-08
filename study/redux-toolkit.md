@@ -6,17 +6,12 @@
 
 ### 目的
 
-Redux Toolkit は、redux に関する下記の問題を解決するためのツール
-
-- 初期セットアップが複雑すぎる
-- 便利に使うには多くのパッケージをインストールする必要がある
-- ボイラープレートが多すぎる
-
-下記のライブラリを組み合わせを使うことで、多くのケースでコードを簡略化できる。
-
-- create-react-app
-- apollo-boost
-- redux-toolkit
+- Redux Toolkit は、redux に関する下記の問題を解決するためのツール
+  - 初期セットアップが複雑すぎる
+  - 便利に使うには多くのパッケージをインストールする必要がある
+  - ボイラープレートが多すぎる
+- 全てのケースはカバー出来なくても、大半のケースでコードを簡略化できるツールを目指している
+- `create-react-app`や`apollo-boost`の精神に感化されている
 
 ### 含まれるもの
 
@@ -172,6 +167,103 @@ const { increment, decrement } = actions;
 // }
 ```
 
+#### extraReducers
+
+- action creator を自動的に作成したくない場合に使用する
+- action creator が作成されない点を除いて`reducers`と同じ働きをする
+- TypeScript 環境の場合は、object を使う方法ではなく、[builder callback を使った方法が推奨されている](https://redux-toolkit.js.org/api/createSlice#the-builder-callback-api-for-extrareducers)
+  - action creator を元に型推論が働き便利なため
+
+```js
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: 0,
+  // objectを使う方法
+  extraReducers: {
+    // action変数に手動で型付けが必要、かつキー名に`.type`が必要
+    [fetchIssue.pending.type]: (state, action) => {},
+    [fetchIssue.fulfilled.type]: (state, action) => {},
+    [fetchIssue.rejected.type]: (state, action) => {},
+  },
+  // builder callbackを使う方法
+  extraReducers: (builder) =>
+    builder
+      // action変数には自動で型推論が効いている
+      .addCase(fetchIssue.pending, (state, action) => {})
+      .addCase(fetchIssue.fulfilled, (state, action) => {})
+      .addCase(fetchIssue.rejected, (state, action) => {}),
+});
+```
+
+#### 注意点
+
+createSlice や ducks パターンで注意すること
+
+- action type は単一の slice でのみ使うのではなく、複数の slice で共有されるべきものであることを認識して設計を行う
+  - 例えば、ユーザがログアウトしたよー、というアクションは様々な slice ので処理されうる
+- action type の循環参照に注意する。対処法は以下の通り。
+  - 例えば 2 つ異なる slice がお互いの action (type) を相互に参照している場合
+  - 該当する action を新たなファイルに移行して`createAction`で作成する
+  - 作成した action type を 2 つの slice においてインポートし`extraReducer`に処理を記載する
+
+### createAsyncThunk
+
+createAsyncThunk を使うと、thunk を書くときにありがちな冗長なコードを簡略化できる。
+
+```ts
+export const fetchIssue = createAsyncThunk(
+  'issues/fetchIssue', // アクション名は手動で指定する
+  async (arg, thunkAPI) => {
+    // 引数は1つしか使えないので、複数必要な場合はこのようにオブジェクトにする必要がある
+    const { org, repo, issueId } = arg;
+    const issues = await getIssue(org, repo, issueId);
+    return issues;
+  },
+);
+
+const issues = createSlice({
+  name: 'issues',
+  initialState: issuesInitialState,
+  reducers: {},
+  // action creatorは作成する必要がないので、extraReducersを使う
+  extraReducers: {
+    [fetchIssue.pending.type]: (state, action) => {},
+    // action.payloadにissuesが入っている
+    [fetchIssue.fulfilled.type]: (state, action) => {},
+    [fetchIssue.rejected.type]: (state, action) => {},
+  },
+});
+
+// コンポーネントで
+dispatch(fetchIssue({ org: 1, repo: 2, issueId: 3 }));
+```
+
+なお、`ThunkAPI`は以下のような値を持つ
+
+```ts
+interface ThunkAPI {
+  dispatch: Function;
+  getState: Function;
+  extra?: any;
+  requestId: string;
+  signal: AbortSignal;
+}
+```
+
+#### unwrapResult
+
+- 通常の thunk action と異なり、createAsyncThunk で作成した thunk action は常に action`{type, payload}`を返す。
+- この挙動を避けて、元のプロミスが返す値を取得したい場合は、`unwrapResult`を使う。
+
+```ts
+import { unwrapResult } from '@reduxjs/toolkit';
+const onClick = () => {
+  dispatch(fetchUserById(userId))
+    .then(unwrapResult)
+    .then((fetchedUser) => {});
+};
+```
+
 ## 中級チュートリアル
 
 ### ducks パターン
@@ -202,7 +294,7 @@ redux コミュニティの慣例
     - 再利用可能なコンポーネント
     - 画面や機能に依存しないコンポーネント
   - features
-    - (機能ごと|画面ごと|ドメインごと)などでフォルダを作る
+    - 機能ごと、画面ごと、ドメインごとにフォルダを作る
     - コンポーネント、css、スライス(actions, reducers)、セレクタ、テストファイルなどを含む
   - utils
 
@@ -537,14 +629,15 @@ try {
 
 ### Slice の例
 
-- Slice ファイルの全体像は下記のようになる
+- Slice ファイルの全体像は下記のようになる(createAsyncThunk を使わないパターン)
 - 並びとしては以下のようになる
   - 型定義
+  - inital state
   - 複数の action creators で共通して利用する case reducer 関数
   - `createSlice`
-  - アクションの destructuring
+  - action creators の destructuring と named export
   - reducer の default export
-  - 非同期関数
+  - thunk action creators
 
 ```ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
