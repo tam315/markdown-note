@@ -449,16 +449,33 @@ export default rootReducer;
 
 ### store のセットアップ
 
+`app/store.ts`のセットアップ例
+
+#### インポート関連
+
 ```ts
-// app/store.ts
+import { Action, configureStore } from '@reduxjs/toolkit';
+import {
+  TypedUseSelectorHook,
+  useDispatch as rawUseDispatch,
+  useSelector as rawUseSelector,
+} from 'react-redux';
+import { ThunkAction } from 'redux-thunk';
+import rootReducer, { RootState } from './rootReducer';
+```
 
-import { configureStore } from '@reduxjs/toolkit';
-import rootReducer from './rootReducer';
+#### ストアの作成
 
+```ts
 const store = configureStore({
   reducer: rootReducer,
 });
+export default store;
+```
 
+#### HMR の設定(redux 関連)
+
+```ts
 // reducerが更新されたときはHMRする
 // (store.replaceReducerを使って、reducerだけを入れ替える)
 if (process.env.NODE_ENV === 'development' && module.hot) {
@@ -469,11 +486,43 @@ if (process.env.NODE_ENV === 'development' && module.hot) {
     store.replaceReducer(newRootReducer);
   });
 }
+```
 
-// エクスポートしておき、dispatchの型として各所で利用する
-export type MyDispatch = typeof store.dispatch;
+#### thunk action の型定義
 
-export default store;
+- thunk action creator の戻り値の型(= thunk action の型)として使用する
+- `createAsyncThunk`のみを使用し、手動で thunk を作成しない場合は、この作業は不要
+
+```ts
+export type MyThunkAction<R = Promise<any>> = ThunkAction<
+  R, // thunk actionの戻り値(結果)の型。ほとんどの場合Promiseになる。
+  RootState, // root stateの型
+  unknown, // thunk actionの第3引数の型(拡張用、通常は使わない)
+  Action<string> // action.typeの型
+>;
+
+// コンポーネントでの使用例
+export const fetchIssues = (): MyThunkAction => async (dispatch) => {};
+```
+
+#### dispatch の型定義
+
+- 素の `useDispatch` を型付けして再利用可能にしておく
+- これを行わないと `dispatch().then()`したときに型エラーとなる
+- https://qiita.com/hiroya8649/items/73d80a52636a787fefa5
+
+```ts
+// 暗黙的に ThunkDispatch 型になる
+type MyDispatch = typeof store.dispatch;
+export const useDispatch = () => rawUseDispatch<MyDispatch>();
+```
+
+#### useSelecter の型定義
+
+- 素の `useSelector` を型付けして再利用可能にしておく
+
+```ts
+export const useSelector: TypedUseSelectorHook<RootState> = rawUseSelector;
 ```
 
 ### 起点ファイル(index.ts)のセットアップ
@@ -579,33 +628,7 @@ store.dispatch(exampleThunk());
 
 ### thunk にまつわる型
 
-thunk にまつわる型定義は予め`store.ts`など一箇所で行っておくと、何度も書く必要がなくなるので便利
-
-```ts
-import { Action } from '@reduxjs/toolkit';
-import { ThunkAction, ThunkDispatch } from 'redux-thunk';
-import { RootState } from './rootReducer';
-
-// thunk actionの型
-// thunk action creatorの戻り値の型として使用する
-export type MyThunkAction<R = Promise<any>> = ThunkAction<
-  R, // thunk actionの戻り値の型
-  RootState, // root stateの型
-  unknown, // thunk actionの第3引数の型(拡張用、通常は使わない)
-  Action<string> // action.typeの型
->;
-
-export const fetchIssues = (): MyThunkAction<Promise<void>> => async (
-  dispatch,
-) => {};
-
-// dispatchの型
-// - これがないとdispatch().then()したときにエラーになる
-// - https://qiita.com/hiroya8649/items/73d80a52636a787fefa5
-export type MyDispatch = ThunkDispatch<RootState, any, Action>;
-
-const dispatch = useDispatch<MyDispatch>();
-```
+thunk にまつわる型定義は予め`store.ts`など一箇所で行っておくと、何度も書く必要がなくなるので便利。詳細は前述の[store のセットアップ](#store-のセットアップ)項目を参照。
 
 ### thunk の利点
 
