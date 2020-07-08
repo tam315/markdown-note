@@ -20,14 +20,10 @@
 - `createAction()`
 - `createSlice()`
 - `createAsyncThunk()`
-  - 与えられた action type (文字列)と Promise を返す関数を元に、thunk を生成する
-  - thunk は Promise の結果により`pending/fulfilled/rejected`のいずれかの action type を送出する
-  - 生成された thunk は`action.fulfilled`の形式で action type として利用できる
 - `createEntityAdapter`
-  - 再利用可能な reducers と selectors を生成する？
-  - ノーマライズされたデータをストア内で管理するために使用する？
+  - ノーマライズを行う際に使う。詳細略。
 - `createSelector`
-  - Reselect ライブラリのユーティリティを利便性のために再エクスポートしたもの？
+  - Reselect ライブラリのユーティリティを利便性のために再エクスポートしたもの
 
 ## 基本チュートリアル
 
@@ -208,7 +204,10 @@ createSlice や ducks パターンで注意すること
 
 ### createAsyncThunk
 
-createAsyncThunk を使うと、thunk を書くときにありがちな冗長なコードを簡略化できる。
+- createAsyncThunk を使うと、thunk を書くときにありがちな冗長なコードを簡略化できる。
+- 与えられた action type (文字列)と Promise を返す関数を元に、thunk を生成する
+- thunk は Promise の結果により`pending/fulfilled/rejected`のいずれかの action type を送出する
+- 生成された thunk は`thunk.fulfilled`等の形式で action type として利用できる
 
 ```ts
 export const fetchIssue = createAsyncThunk(
