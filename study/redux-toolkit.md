@@ -318,6 +318,12 @@ const mapStateToProps = state => ({
 
 [お題のプロジェクト](https://github.com/reduxjs/rtk-github-issues-example)
 
+### dispatch()の戻り値
+
+- `dispatch()`の戻り値は引数の戻り値と等しくなる。例えば：
+  - `プレーンなaction creator()`を与えた場合 --- action creator が return した値(通常は`{type, payload}`)
+  - `thunk action creator()`を与えた場合 --- thunk が return した値(よって、thunk が async なら Promise が戻る)
+
 ### HMR
 
 - HMR が利用できる環境では`module.hot`が存在するので、これを使って再描写を行う
@@ -454,61 +460,67 @@ const issuesDisplaySlice = createSlice({
 ### thunk とは
 
 ```ts
-// 通常のaction creator
+// これは`action` creator
 function exampleActionCreator() {
+  // これは`action`
   return { type: SOME_TYPE, payload: '' };
 }
 store.dispatch(exampleActionCreator());
 
-// thunk
+// これは`thunk action` creator --- 略してthunkと呼ぶ
 function exampleThunk() {
+  // これは`thunk action`
   return function exampleThunkFunction(dispatch, getState) {
-    // なにかしてdispatchする
+    // dispatch(plainActionCreator())
   };
 }
 store.dispatch(exampleThunk());
 ```
 
-- thunk の意味 --- "a function that delays a calculation until later"
-- action を直接書かずに action creator を介す慣習にならい、thunk も直接書かずに関数でラップして使う
+- thunk とは、関数を返す関数のこと
+- その目的は計算を後段に遅らせるため
+  - 結果を得るには 2 回呼ぶ必要がある(`thunk()()`)
+  - これにより、thunk を実行するタイミングと、実際にその結果を得るタイミングをずらすことができる
 - redux-saga や redux-observable も便利だが、ほとんどの場合は thunk で事足りる
 - thunk は`createSlice()`内では**作成出来ない**ので、その外側で独立した関数として作成し、named export する
 - thunk は slice ファイル内に記載すると良い
+
+### thunk にまつわる型
+
+thunk にまつわる型定義は予め`store.ts`など一箇所で行っておくと、何度も書く必要がなくなるので便利
+
+```ts
+import { Action } from '@reduxjs/toolkit';
+import { ThunkAction, ThunkDispatch } from 'redux-thunk';
+import { RootState } from './rootReducer';
+
+// thunk actionの型
+// thunk action creatorの戻り値の型として使用する
+export type MyThunkAction<R = Promise<any>> = ThunkAction<
+  R, // thunk actionの戻り値の型
+  RootState, // root stateの型
+  unknown, // thunk actionの第3引数の型(拡張用、通常は使わない)
+  Action<string> // action.typeの型
+>;
+
+export const fetchIssues = (): MyThunkAction<Promise<void>> => async (
+  dispatch,
+) => {};
+
+// dispatchの型
+// - これがないとdispatch().then()したときにエラーになる
+// - https://qiita.com/hiroya8649/items/73d80a52636a787fefa5
+export type MyDispatch = ThunkDispatch<RootState, any, Action>;
+
+const dispatch = useDispatch<MyDispatch>();
+```
 
 ### thunk の利点
 
 - ロジックが再利用可能で汎用性の高いものになる
 - コンポーネントから複雑なロジックを分離できる
 - コンポーネント内で利用する際に、同期・非同期を意識しなくてすむ
-- `dispatch()`に thunk を渡すと結果を`await`できる！
-  - つまり、必要があればコンポーネントにおいて非同期処理の完了を知ることができる
-
-### thunk の作成
-
-- thunk の型定義を予め行っておくと何度も書く必要がなくなるので便利
-
-```ts
-// app/store.ts
-import { Action } from '@reduxjs/toolkit';
-import { ThunkAction } from 'redux-thunk';
-import { RootState } from './rootReducer';
-
-export type AppThunk = ThunkAction<void, RootState, unknown, Action<string>>;
-// 1つめ --- thunkの返値の型。何も返さない。
-// 2つめ --- getState()が返す型。storeの型と同じ。
-// 3つめ --- thunk middlewareのカスタマイズ用の値。何もカスタマイズしない。
-// 4つめ --- action.typeの型。常に文字列。
-```
-
-```ts
-// features/repoSearch/repoSearchSlice.ts
-export const fetchIssuesCount = (org: string, repo: string): AppThunk => async (
-  dispatch,
-) => {
-  // createSlice()で生成したプレーンなaction creatorをdispatchする
-  dispatch(someActionCreator());
-};
-```
+- `dispatch()`を`await`するなどして非同期処理の完了を知ることができる
 
 ### thunk のエラーハンドリング
 
