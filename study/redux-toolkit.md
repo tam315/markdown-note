@@ -1,4 +1,4 @@
-# Redux Toolkit
+# Redux - Toolkit
 
 [[toc]]
 
@@ -21,9 +21,7 @@
 - `createSlice()`
 - `createAsyncThunk()`
 - `createEntityAdapter`
-  - ノーマライズを行う際に使う。詳細略。
-- `createSelector`
-  - Reselect ライブラリのユーティリティを利便性のために再エクスポートしたもの
+- `createSelector` --- `reselect` の`createSelector`を利便性のために再エクスポートしたもの
 
 ## 基本チュートリアル
 
@@ -269,6 +267,105 @@ const onClick = () => {
     .then(unwrapResult)
     .then((fetchedUser) => {});
 };
+```
+
+### createEntityAdapter
+
+- state を正規化して管理している場合に役立つツール
+- entity を追加・更新・削除するための、定型的な reducers を簡単に作成できる
+- `reselect`でメモ化された、定型的な selectors を簡単に作成できる
+
+#### entity のデータ構造
+
+`createEntityAdapter`を使うと、個々の entity は`ids`と`entities`で管理されるようになる
+
+```js
+// stateの構成例
+{
+  entities {
+    books: {
+      ids: [1,2,3]
+      entities: {1:{},2:{},3:{}}
+    }
+    authors: {
+      ids: [1,2,3]
+      entities: {1:{},2:{},3:{}}
+    }
+  }
+}
+```
+
+#### アダプタの作成
+
+```ts
+type Book = { bookId: string; title: string };
+
+const booksAdapter = createEntityAdapter<Book>({
+  // idフィールドに`id`キー以外のものを使いたい場合は下記のように明示的に指定する
+  selectId: (book) => book.bookId,
+  // 並べ替えの方法を指定したい場合
+  sortComparer: (a, b) => a.title.localeCompare(b.title),
+});
+```
+
+#### initialState の作成
+
+`getInitialState()`は単に`{ids:[],entities:{}}`を返す
+
+```ts
+const initialState = booksAdapter.getInitialState();
+```
+
+#### case reducers の利用
+
+アダプタは entity を CRUD するための[便利な関数](https://redux-toolkit.js.org/api/createEntityAdapter#crud-functions)を持つ。シグネチャはメソッドごとに微妙に異なるので、都度ドキュメントを参照すること。
+
+- addOne
+- addMany
+- setAll
+- removeOne
+- removeMany
+- updateOne
+- updateMany
+- upsertOne
+- upsertMany
+
+```ts
+const booksSlice = createSlice({
+  name: 'books',
+  initialState,
+  reducers: {
+    // アダプタのreducerをそのまま使用する場合
+    bookAdded: booksAdapter.addOne,
+    // アダプタのreducerを手動で呼ぶ場合
+    booksReceived(state, action) {
+      booksAdapter.setAll(state, action.payload.books);
+    },
+  },
+});
+```
+
+#### セレクタ
+
+- selectIds
+- selectEntities
+- selectAll
+- selectTotal
+- selectById
+
+```ts
+// グローバル化されていないセレクタには、entityだけを明示的に渡す必要がある
+const nonGlobalizedSelectors = booksAdapter.getSelectors();
+const allBooks = useSelector((state) =>
+  nonGlobalizedSelectors.selectAll(state.enties.books),
+);
+
+// グローバル化されたセレクタには、root stateをそのまま渡せる
+// つまり、useSelectorにそのまま渡せる
+const globalizedSelectors = booksAdapter.getSelectors<RootState>(
+  (state) => state.books,
+);
+const bookIds = useSelector(globalizedSelectors.selectAll);
 ```
 
 ## 中級チュートリアル
