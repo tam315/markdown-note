@@ -109,17 +109,30 @@ function counter(state = 0, action) {
 - action type から reducer へのルックアップテーブルという形で処理を記述できるようにする。これにより switch 文が不要になる。
 - 裏側で immer が使われているため、state を直接書き換える形で値を改変することができることにより、簡潔な表記が可能になる
 - デフォルトケースについては明記する必要はない
+- TypeScript 環境では型推論の効く builder パターンでの記述を推奨
 
 ```js
 const increment = createAction('INCREMENT');
 const decrement = createAction('DECREMENT');
 
+// object記法
+// - action変数に手動で型付けが必要
+// - アクション名を参照するときに`.type`が必要になる場合あり
 const counter = createReducer(0, {
-  // .typeを使う方法
-  [increment.type]: (state) => state + 1,
   // toStringを使う方法
-  [decrement]: (state) => state - 1,
+  [increment]: (state, action) => {},
+  // .typeを使う方法
+  [decrement.type]: (state, action) => {},
 });
+
+// builder記法
+// - action変数には自動で型推論が効いている
+// - アクション名を参照するときに`.type`は不要
+const counter = createReducer(0, (builder) =>
+  builder
+    .addCase(increment, (state, action) => {})
+    .addCase(decrement, (state, action) => {}),
+);
 ```
 
 ### createSlice
@@ -167,27 +180,22 @@ const { increment, decrement } = actions;
 
 - action creator を自動的に作成したくない場合に使用する
 - action creator が作成されない点を除いて`reducers`と同じ働きをする
-- TypeScript 環境の場合は、object を使う方法ではなく、[builder callback を使った方法が推奨されている](https://redux-toolkit.js.org/api/createSlice#the-builder-callback-api-for-extrareducers)
-  - action creator を元に型推論が働き便利なため
+- TypeScript 環境では型推論の効く [前述の builder 記法](#createreducer)での記述を推奨
 
 ```js
 const counterSlice = createSlice({
   name: 'counter',
   initialState: 0,
-  // objectを使う方法
+  // object記法
   extraReducers: {
-    // action変数に手動で型付けが必要、かつキー名に`.type`が必要
-    [fetchIssue.pending.type]: (state, action) => {},
-    [fetchIssue.fulfilled.type]: (state, action) => {},
-    [fetchIssue.rejected.type]: (state, action) => {},
+    [increment]: (state, action) => {},
+    [decrement]: (state, action) => {},
   },
-  // builder callbackを使う方法
-  extraReducers: (builder) =>
+  // builder記法
+  extraRducers: (builder) =>
     builder
-      // action変数には自動で型推論が効いている
-      .addCase(fetchIssue.pending, (state, action) => {})
-      .addCase(fetchIssue.fulfilled, (state, action) => {})
-      .addCase(fetchIssue.rejected, (state, action) => {}),
+      .addCase(increment, (state, action) => {})
+      .addCase(decrement, (state, action) => {}),
 });
 ```
 
@@ -762,4 +770,45 @@ export const fetchIssue = (
     dispatch(getIssueFailure(err.toString()));
   }
 };
+```
+
+### createSlice を使わないという選択
+
+- createSlice を使う弊害
+  - `createAsyncThunk()`を使わない場合 --- thunk を createSlice の外部かつ後段に書く必要があり、コードのまとまりとして不自然で見にくい
+  - `createAsyncThunk()`を使う場合 --- thunk を slice よりも前で宣言する必要があることから、必然的に slice 内で作成した action creator にアクセスすることが出来ない
+  - あまりないケースだが、slice 内で作成した action creator から、同一の slice 内で作成した他の action creator にアクセス出来ない
+- 結論として、あえて createSlice を使わずに、下記のようにした方が汎用性が高く、シンプルではないか？
+
+```ts
+const sliceName = 'issuesDisplay/';
+
+export const syncActionCreator1 = createAction<number>(
+  `${sliceName}syncActionCreator1`,
+);
+export const syncActionCreator2 = createAction<number>(
+  `${sliceName}syncActionCreator2`,
+);
+export const asyncActionCreator1 = createAsyncThunk<number, string>(
+  `${sliceName}asyncActionCreator1`,
+  async (name, { dispatch }) => {
+    dispatch(syncActionCreator1(100));
+    dispatch(syncActionCreator2(200));
+    return name.length;
+  },
+);
+export const asyncActionCreator2 = createAsyncThunk<void, void>(
+  `${sliceName}asyncActionCreator2`,
+  async () => {},
+);
+
+const reducer = createReducer(initialState, (builder) =>
+  builder
+    .addCase(syncActionCreator1, (state, action) => {})
+    .addCase(syncActionCreator2, (state, action) => {})
+    .addCase(asyncActionCreator1.fulfilled, (state, action) => {}),
+    .addCase(asyncActionCreator2.fulfilled, (state, action) => {}),
+);
+
+export default reducer;
 ```
