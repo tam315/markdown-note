@@ -178,53 +178,28 @@ const normalizedState = {
   - `state.entities.comments.byId`にコメントを追加
   - `state.entities.comments.allIds`にコメント ID を追加
 
-### スタンダードな方法 (単純なマージ)
+### スタンダードな方法
 
-- reducer の記述は最小で住む
-- 一方で、action の発出側で整合性のとれた全データを作成するのが大変
-- 追加・更新は可能だが、削除はできない
+#### action 側で正規化する方法
 
-```js
-import merge from 'lodash/merge';
+- action 側で`normalizr`などで正規化してアクションを発出する
+  - 例えば`{action:{entitiies:{ここに正規化したデータを必ず配置する}}}`などの形式で
+- reducer を action をまたいで共通化できるメリットがある
+  - どのアクションでも`action.entities.***`を UPSERT などすればよいため
+- API レスポンスに変更があったときは action creator 側の修正が必要
 
-function commentsById(state = {}, action) {
-  switch (action.type) {
-    default: {
-      if (action.entities?.comments) {
-        return merge({}, state, action.entities.comments.byId);
-      }
-      return state;
-    }
-  }
-}
-```
+#### reducer 側で正規化する方法
 
-### スタンダードな方法 (Slice Reducer Composition)
-
-- 下記のそれぞれに case reducer を作成し、タスク(コメントの追加など)に適切に対応させる[方法](https://redux.js.org/recipes/structuring-reducers/updating-normalized-data#slice-reducer-composition)
-- これが一番シンプルでよいかも
-
-```txt
-{
-  entities:{
-    posts:{
-      byId, ←これ
-      allIds, ←これ
-    },
-    comments:{
-      byId, ←これ
-      allIds, ←これ
-    }
-  }
-}
-```
+- reducer 側で非正規なデータから必要なデータを抜き出して適切に処理する
+- reducer は action ごとに個別となる
+- API レスポンスに変更があったときは reducer 側の修正が必要
 
 ### その他の方法 (Task-Based Updates)
 
 - タスク(コメントの追加など)で必要となる処理を一括で記載した reducer を作成する方法
 - この reducer はトップレベルに配置する必要がある
 - `immer`を内包した`redux-toolkit`を使えばコードはかなりすっきりする
-- タスクで必要となる処理が見渡せる一方で、state 全体の知識が必要になるため、あまり良くないかも
+- タスクで必要となる処理が見渡せる一方で、state 全体の知識が必要になり関心の分離が出来ないのが難点
 
 ```js
 import { createReducer } from '@reduxjs/toolkit';
