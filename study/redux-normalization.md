@@ -182,7 +182,7 @@ const normalizedState = {
 
 #### action 側で正規化する方法
 
-- action 側で`normalizr`などで正規化してアクションを発出する
+- action や middleware で正規化してアクションを発出する
   - 例えば`{action:{entitiies:{ここに正規化したデータを必ず配置する}}}`などの形式で
 - reducer を action をまたいで共通化できるメリットがある
   - どのアクションでも`action.entities.***`を UPSERT などすればよいため
@@ -193,6 +193,12 @@ const normalizedState = {
 - reducer 側で非正規なデータから必要なデータを抜き出して適切に処理する
 - reducer は action ごとに個別となる
 - API レスポンスに変更があったときは reducer 側の修正が必要
+
+#### サンプル
+
+[real-world example](https://codesandbox.io/s/github/reduxjs/redux/tree/master/examples/real-world)
+
+このサンプルではミドルウェア層において、正規化の処理や、スネークケースからキャメルケースへの変換を一括して行っている。
 
 ### その他の方法 (Task-Based Updates)
 
