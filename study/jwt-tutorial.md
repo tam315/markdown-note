@@ -4,34 +4,23 @@
 
 [動画](https://www.youtube.com/watch?v=25GS0MLT8JU)のまとめ
 
-## Others
+## サーバ側
 
-- `yarn upgrade-interactive --latest`
-- `npx tsconfig.json`
-- `nodemon --exec some-command`
-- 使わない変数は`_`にするか`_name`のように頭にアンダーバーをつけることで、eslint が許してくれる
-- TypeScript
-  - undefined かもよ、と怒られた場合は!をつけると解消する `someVal!`
-  - 困ったときは`someVal as any`
-- cmd + . でオートインポートできる
+`typeorm`と`type-graphql`を使うと、GraphQL の object type の作成と、ORM のモデル(エンティティー)の作成を、一つのクラス定義により行うことができる。
 
-## 1. server
+### プロジェクトのセットアップ
 
 - `npx typeorm init --name server --database postgres`
 - postgres で DB を手動作成
 - `ormconfig.json`のユーザ名などを適宜編集
 - `yarn start`で自動的にテーブル等が作成される
 
-`typeorm`と`type-graphql`を使うと、GraphQL の object type の作成と、ORM のモデル(エンティティー)の作成を、一つのクラス定義により行うことができる。
+### graphql 関係
 
-graphql setup
-
-- `yarn add express apollo-server-express graphql`
+- `yarn add express apollo-server-express graphql type-graphql`
 - `yarn add -D @types/express @types/graphql`
 
-type graphql
-
-- `yarn add type-graphql`
+### Resolver
 
 ```ts
 // UserResolver.ts
@@ -55,7 +44,7 @@ const apolloServer = new ApolloServer({
 });
 ```
 
-mutation
+### Mutation
 
 - `yarn add bcryptjs`
 - `yarn add -D @types/bcryptjs`
@@ -82,6 +71,8 @@ export class UserResolver {
   }
 }
 ```
+
+### Query
 
 users の一覧取得クエリ
 
@@ -118,7 +109,7 @@ export class UserResolver {
   }
 ```
 
-JWT
+### JWT
 
 - `yarn add jsonwebtoken`
 - `yarn add @types/jsonwebtoken`
@@ -171,6 +162,8 @@ export class UserResolver {
 }
 ```
 
+### Context
+
 ApolloServer で express の req, res を取得したいときは context を使う
 
 ```ts
@@ -188,6 +181,8 @@ export class UserResolver {
 }
 ```
 
+### dotenv
+
 - `yarn add dotenv`
 
 `.env`
@@ -201,21 +196,20 @@ import 'dotenv/config';
 console.log(process.env.ACCESS_TOKEN_SECRET);
 ```
 
-type-graphql での認証機能の実装方法
+### type-graphql での認証機能の実装方法
 
 ```ts
 // MyContext.ts
-import { Request, Response } from 'express';
+import { ExpressContext } from 'apollo-server-express/dist/ApolloServer';
 
-export interface MyContext {
-  req: Request;
-  res: Response;
-  payload?: { userId: string }; // これに任意のデータを乗せる。名前は自由。
+export interface MyContext extends ExpressContext {
+  // これに任意のデータを乗せる。名前は自由。
+  payload?: { userId: string };
 }
 ```
 
 ```ts
-// isAuthorized.ts (middleware)
+// isAuthorized.ts (apollo-serverのmiddlewareとして使う)
 import { verify } from 'jsonwebtoken';
 import { MiddlewareFn } from 'type-graphql/dist/interfaces/Middleware';
 import { MyContext } from './MyContext';
@@ -253,7 +247,7 @@ export class UserResolver {
 }
 ```
 
-refresh token の実装
+### refresh token
 
 ```ts
 // reflesh token request hander
@@ -289,7 +283,9 @@ export const refreshTokenHander: RequestHandler = async (req, res) => {
 };
 ```
 
-reflesh token のバージョン管理（無効にする場合は user.tokenVersion を 1 つ上げるだけで OK）
+### reflesh token のバージョン管理
+
+無効にする場合は user.tokenVersion を 1 つ上げるだけで OK
 
 ```ts
 // トークン作成時にバージョンを含めておく
@@ -309,7 +305,9 @@ if (refreshToken.tokenVersion !== user.tokenVersion) {
 }
 ```
 
-## frontend
+## クライアント側
+
+### setup
 
 - `yarn add apollo-boost @apollo/react-hooks graphql`
 - `yarn add -D @types/graphql`
@@ -357,13 +355,15 @@ export const App: React.FC = () => {
 };
 ```
 
-フロントエンド側に型や hook を自動生成する
+### 型や hook の自動生成
 
 - `yarn add -D @graphql-codegen/cli`
 - `npx npx graphql-codegen init`
 - 画面に従って設定ファイルを作成
 - サーバを立ち上げた状態で`yarn gen`などを実行(設定による)
-- 以上により、型ファイルだけでなく、HOC や hook が自動的に生成される
+- 以上により、型のみならず HOC や hook が自動的に生成される
+  - 型は無条件で全て生成される
+  - hook 等は documents に記載したものについて生成される
 
 ```yaml
 # codegen.yml
@@ -382,7 +382,7 @@ generates:
       withHooks: true # hookだけ生成して
 ```
 
-Mutation の使い方
+### Mutation の使い方
 
 ```graphql
 # register.graphql
@@ -394,5 +394,132 @@ mutation Register($email: String!, $password: String!) {
 # const [register] = useRegisterMutation();
 ```
 
-1:53:42 から
-https://www.youtube.com/watch?v=25GS0MLT8JU
+### キャッシュ利用に関する設定
+
+```ts
+// 例えば、常に最新の情報をAPIから取得したい場合
+useUsersQuery({ fetchPolicy: 'network-only' });
+```
+
+### Cookie
+
+Cookie をオリジンをまたいで使うには CORS の設定が必要
+
+Cross-Origin Resource Sharing(オリジン間リソース共有)は、異なるオリジン (ドメイン、プロトコル、ポート番号のいずれかが異なる)に存在するリソースへのアクセスをするために、**ブラウザに指示**をする仕組み。
+
+まずクライアント側で認証情報(Cookie)つきのリクエストを送る設定にする。
+デフォルトでは、Cross-Origin なリクエストではクッキーは送信されないため。
+
+```ts
+const client = new ApolloClient({
+  credentials: 'include', // この行を追加する
+});
+```
+
+次に、サーバ側において下記の情報をプリフライトリクエスト時に返却するように設定する
+これがブラウザへの指示となる。
+ブラウザはこれを受けて、本リクエストに Cookie を含めるかどうかを決定する。
+
+- リクエストを許可するオリジン
+- 資格情報(Cookie)の送信をしてもいいか
+
+```ts
+// appolo側のCORS設定を無効にする
+// (express側で設定したほうが汎用的であるため)
+apolloServer.applyMiddleware({ app, cors: false });
+
+// express側でCORSの設定を行う(なるべくコードの先頭で行うこと)
+app.use(
+  cors({
+    // クエストを許可するオリジン 最後にスラッシュをつけてはダメよ
+    origin: 'http://localhost:3000',
+    // 資格情報(Cookie)の送信をしてもいいか
+    credentials: true,
+  }),
+);
+```
+
+### アクセストークンが切れていた場合に自動的に更新する方法
+
+[apollo-link-token-refresh](https://github.com/newsiberian/apollo-link-token-refresh)を使うと良い。jwt をクライアント側でデコードした上で有効期限を確認し、切れていれば新しいアクセストークンを取得する。詳細は省略。
+
+### アクセストークンをリクエストに含める方法
+
+```ts
+const client = new ApolloClient({
+  request: (operation) => {
+    const accessToken = getAccessToken();
+    if (accessToken) {
+      operation.setContext({
+        headers: {
+          authorization: `bearer ${accessToken}`,
+        },
+      });
+    }
+  },
+});
+```
+
+初期読み込み時や画面リロード時にリクエストトークンを使った認証を行う方法
+下記のようなコンポーネントを作成し、ルートに近い場所に配置するとよい
+
+```ts
+export const Authenticator: React.FC<IProps> = ({ children }) => {
+  const [isAuthenticating, setIsAuthenticating] = useState(true);
+
+  useEffect(() => {
+    // refresh tokenがcookieに保存されている前提
+    fetch('http://localhost:8080/refresh_token', {
+      method: 'POST',
+      credentials: 'include',
+    }).then(async (response) => {
+      const { accessToken } = await response.json();
+      setAccessToken(accessToken);
+      setIsAuthenticating(false);
+    });
+  }, []);
+
+  if (isAuthenticating) {
+    return <div>authenticating...</div>;
+  }
+
+  return children;
+};
+```
+
+### Mutation の戻り値を使ってキャッシュの値を更新する
+
+```ts
+const [login] = useLoginMutation();
+
+await login({
+  variables: {
+    email,
+    password,
+  },
+  // 例えば`Me`という名前のクエリのキャッシュを更新したい場合は下記のようにする
+  // これにより関係のあるコンポーネントが自動で更新される
+  update: (store, { data }) => {
+    if (!data) {
+      return null;
+    }
+    store.writeQuery<MeQuery>({
+      query: MeDocument,
+      data: {
+        me: data.login.user,
+      },
+    });
+  },
+});
+```
+
+## Other Tips
+
+- `yarn upgrade-interactive --latest`
+- `npx tsconfig.json`
+- `nodemon --exec some-command`
+- 使わない変数は`_`にするか`_name`のように頭にアンダーバーをつけることで、eslint が許してくれる
+- TypeScript
+  - undefined かもよ、と怒られた場合は!をつけると解消する `someVal!`
+  - 困ったときは`someVal as any`
+- cmd + . でオートインポートできる
