@@ -17,6 +17,35 @@ createAccount({
 });
 ```
 
+#### custom merge function
+
+アイテムを削除したのちに refetchQueries で全件取得をすると、下記のようなメッセージが出る場合がある。
+
+```txt
+Cache data may be lost when replacing the accounts field of a Query object.
+```
+
+この場合は、下記のように custom merge function を明示的に設定してやるとよい。
+
+```ts
+const client = new ApolloClient({
+  cache: new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          accounts: {
+            // custom merge function
+            // - accountsを取得したときはキャッシュのデータをまるごと置き換える
+            // - ページネーションなどを行うときはより細かい制御が必要となる
+            merge: (_existingAccount, incomingAccounts) => incomingAccounts,
+          },
+        },
+      },
+    },
+  }),
+});
+```
+
 ### update を使う方法
 
 - `cache.modify()`などを使用し、キャッシュを完全にコントロールできる
@@ -24,26 +53,34 @@ createAccount({
 - デメリット --- 処理の記述が煩雑
 
 ```ts
+// 作成の例
 createAccount({
   variables: { account: data },
   update: (cache, fetchResult) => {
+    const newAccountRef = cache.writeFragment({
+      data: fetchResult.data?.createAccount?.account,
+      fragment: gql`
+        fragment NewAccountType on AccountType {
+          id
+          name
+        }
+      `,
+    });
     cache.modify({
       fields: {
-        accounts: (existingAccounts: AccountType[]) => [
-          ...existingAccounts,
-          fetchResult.data?.createAccount,
-        ],
+        accounts: (existingAccounts) => [...existingAccounts, newAccountRef],
       },
     });
   },
 });
 
+// 削除の例
 deleteAccount({
   variables: { id },
   update: (cache, fetchResult) => {
     cache.modify({
       fields: {
-        accounts: (xistingAccounts: AccountType[], { readField }) =>
+        accounts: (existingAccounts: AccountType[], { readField }) =>
           existingAccounts.filter(
             (existingAccount) =>
               readField('id', existingAccount) !==
