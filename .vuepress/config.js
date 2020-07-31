@@ -13,6 +13,15 @@ module.exports = {
         href: 'https://cdn.jsdelivr.net/npm/katex@0.6.0/dist/katex.min.css',
       },
     ],
+    [
+      // adsense
+      'script',
+      {
+        async: true,
+        'data-ad-client': 'ca-pub-7134126650568891',
+        src: '//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js',
+      },
+    ],
   ],
   themeConfig: {
     sidebar: 'auto',
