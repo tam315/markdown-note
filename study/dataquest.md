@@ -29,7 +29,7 @@ data_ndarray = np.array([10, 20, 30])
   - `(dataframe|series).mode()`
   - `(dataframe|series).sum()`
 - `series.value_counts()` --- ユニークな値とその出現数を取得する
-- `series.describe()` --- 下記を取得する
+- `series.describe()` --- 統計情報を取得する
   - null でない値の個数
   - 平均、最大値、出現頻度など
 
@@ -82,7 +82,7 @@ data_ndarray = np.array([10, 20, 30])
 
 #### データの俯瞰
 
-- `df.describe()`でデータを俯瞰したうえで下記を抽出する
+- `df.describe()`で統計情報を俯瞰したうえで下記を抽出する
   - 数値がテキストとして格納されていないか --- あれば修正する(後述)
   - 値が 1 種類しかない無用な列はないか --- あれば削除を検討する `df.drop(['colname'], axis=1)`
   - より詳しい調査が必要な列はどれか --- あれば調査する
@@ -181,7 +181,7 @@ pd.Series(
 
 ## 2-2 Exploratory Data Visualization
 
-### Line Charts
+### Line Charts(折れ線グラフ)
 
 グラフの描写には`matprotlib.pyplot`を使う。
 
@@ -223,12 +223,11 @@ plt.show()
   - `figure.add_subplot(縦分割数, 横分割数, 分割した何番目に配置するか)`で作成する
   - 実際のデータを描写する
   - データ、軸、軸ラベルなどを持つ
-  - `axes.plot(x_values, y_values)`でデータをプロットする
+  - `axes.plot(x_values, y_values)`でデータをプロットする(`plt.plot()`の実体である)
 
 #### 手動でグラフを作る
 
 - `plt.plot()`を使った場合は自動的に figure と axes が作成されているが、カスタマイズ等する場合はこれらを手動で作る必要がある
-- `plt.plot()`の実体は`axes.plot()`である
 - axes を手動で生成したとき、デフォルトでは
   - x 軸 y 軸ともに値のレンジが 0 から 1 になる
   - グリッドラインは表示されない
@@ -239,11 +238,12 @@ fig = plt.figure()
 ax1 = fig.add_subplot(2,1,1)
 ax2 = fig.add_subplot(2,1,2)
 
-ax1.plot(unrate[0:12]['DATE'], unrate[0:12]['VALUE'])
-ax2.plot(unrate[12:24]['DATE'], unrate[12:24]['VALUE'])
+ax1.plot(x_values1, y_values1)
+ax2.plot(x_values2, y_values2)
 
 ax1.set_xlabel('...') # .xlabel()ではない点に注意
 ax1.set_ylabel('...')
+ax1.set_title('...')
 
 plt.show()
 ```
@@ -256,23 +256,22 @@ plt.show()
   - 初回 --- axes を作成したうえでラインを追加する
   - 2 回目以降 --- 初回に作成した axes にラインを追加する
 
-これらを踏まえると、下記の手順が一番効率的である。
-
 ```py
+# 上記を踏まえると、下記のようにグラフを描写できる。
 plt.figure(figsize=(5,3)) # サイズ指定などのカスタマイズはここで行える
 plt.plot(...)
 plt.plot(...)
 plt.plot(...)
 plt.show()
 
-# 上記は下記と等価。こっちのほうが読みやすいかも？
+# だけど、こっちのほうが明示的で読みやすいかも？
 fig = plt.figure(figsize=(5,3))
 axes = fig.add_subplot(1,1,1)
 axes.plot(...)
 axes.plot(...)
 plt.show()
 
-# figureとaxesを同時に作る方法もある(subplots())
+# なお、figureとaxesを同時に作る方法もある
 figure, axes = plt.subplots()
 ```
 
@@ -296,12 +295,10 @@ plt.plot(label='1948')
 plt.legend(loc='upper left')
 ```
 
-### Bar Plots And Scatter Plots
-
-#### 棒グラフ
+### Bar Plots(棒グラフ)
 
 - クラス分け x 数値 の組み合わせのデータに最適
-- 最大値、最小値を見るために使う
+- 最大値、最小値などを見るために使う
 - クラスが多すぎると見にくくなるので注意
 - 縦棒グラフなら`axes.bar()`、横棒グラフなら`axes.barh()`を使う
 - 以下、縦棒グラフの場合で説明
@@ -328,7 +325,7 @@ axes.set_xticklabels(['a','b','c','d','e'], rotation=90)
 axes.bar(bar_positions, bar_height, bar_width)
 ```
 
-#### 散布図
+### Scatter Plots(散布図)
 
 相関を調べるのに使う。
 
@@ -340,9 +337,7 @@ axes.set_xlim(0, 5)
 axes.set_ylim(0, 5)
 ```
 
-### Histograms And Box Plots
-
-#### ヒストグラム
+### Histograms(ヒストグラム)
 
 - ヒストグラム --- 値の区切り(bin)を作って、そこに含まれるデータの数を観察する
 
@@ -360,14 +355,14 @@ axes.hist(
 axes.set_ylim(0, 100) # 縦軸（出現数）の表示範囲
 ```
 
-#### ボックスプロット
+### Box Plots(ボックスプロット)
 
 - 値がどのように分布しているかを把握するために使う
 - box-and-whisker(箱とひげ)を用いて四分位でデータ表現する([参考図](https://www.simplypsychology.org/boxplots.html))
 - box で表現される真ん中の二分位を interquartile range または **IQR** という
 - ボックスの長さ(IQR)と髭の長さを比べることで、分布の様子がわかる
 - ひげの書き方には[変種がある](https://ja.wikipedia.org/wiki/%E7%AE%B1%E3%81%B2%E3%81%92%E5%9B%B3)。デフォルトでは後者で描写される。
-  - 方法 1：最小値と最大値をひげの端にする方法
+  - 方法 1：最小値と最大値をひげの端にする
   - 方法 2：第 1or 第 3 四分位点から 1.5IQR 以上離れた値を外れ値(**outlier**, extreme values)とし、残った値の端をひげの端とする
 
 ```py
@@ -382,4 +377,82 @@ target_columns = ['RT_user_norm', 'Metacritic_user_nom', 'IMDB_norm', 'Fandango_
 values = df[target_columns].values # => [[1,2,3,4], [2,1,3,4],,,,]
 axes.boxplot(values)
 axes.set_xticklabels(target_columns)
+```
+
+### Guided Project: Visualizing Earnings Based On College Majors
+
+#### DataFrame から直接グラフを作る方法
+
+- DataFrame や Series を基にしてグラフを描写できる
+- matplotlib を直接使うときと異なり、多くの設定を省略できる
+- カスタマイズが必要な場合は axes をいじることで行う
+
+```py
+# セットアップ
+%matplotlib inline
+
+# 散布図
+axes = df.plot(
+  x='column1',
+  y='column2',
+  kind='scatter',
+  title='Employed vs. Unemployed',
+  figsize=(5,10),
+)
+
+# 棒グラフ
+axes = df['column1'].plot(kind='bar')
+axes = df.plot.bar(x='column1', y='column2')
+
+# ヒストグラム
+axes = df['column1'].hist()
+```
+
+#### Scatter matrix
+
+- 複数の列に関して、ヒストグラムと散布図を[ひと目で俯瞰できる図](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.plotting.scatter_matrix.html)
+
+```py
+from pandas.plotting import scatter_matrix
+scatter_matrix(df[['Age','Weight','Sex']], figsize=(10,10))
+```
+
+## 2-3 Storytelling Through Data Visualization
+
+### Improving Plot Aesthetics
+
+見やすいグラフに必要なこと
+
+- **良いグラフは、説明するのではなく比較を促す**
+- 注目したいデータと対になるデータを追加する
+  - 政党支持率だけでなく不支持率も合わせて表記するなど
+- 不要な要素(chartjunk)を[取り除く](https://www.darkhorseanalytics.com/blog/data-looks-better-naked)
+- [data-ink ratio](https://infovis-wiki.net/wiki/Data-Ink_Ratio) を高める
+  - data-ink とは、折れ線グラフなら線、散布図なら点の部分。それ以外の要素をなるべく減らせ。
+- non-data ink の部分に一貫性を持たせ、比較を容易にすること
+  - 例えば上限値・下限値を揃えるなど
+
+#### tick mark(棘)を消す
+
+```py
+axes.tick_params(
+    bottom='off',
+    top='off',
+    left='off',
+    right='off',
+)
+```
+
+#### spine(軸線)を消す
+
+spines は dict で管理されている。それぞれで`set_visible()`を実行する。
+
+```py
+print(axes.spines)
+# {'bottom': <matplotlib.spines.Spine object at 0x7fcaa3476ac8>,
+# 'top': <matplotlib.spines.Spine object at 0x7fcaa2f534e0>,
+# 'right': <matplotlib.spines.Spine object at 0x7fcaa34762b0>,
+# 'left': <matplotlib.spines.Spine object at 0x7fcaa3476390>}
+for spine in axes.spines.values():
+    spine.set_visible(False)
 ```
