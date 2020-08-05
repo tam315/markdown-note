@@ -18,7 +18,6 @@ data_ndarray = np.array([10, 20, 30])
 
 ### Exploring Data with pandas: Fundamentals
 
-- まず`df.info()`でデータを俯瞰する
 - ベクトル計算のメリット
   - パフォーマンスに優れる
   - 計算処理の記述が簡素になる (`series_a - series_b`など)
@@ -40,7 +39,7 @@ data_ndarray = np.array([10, 20, 30])
 - インデックス列を列番号で指定する方法
   - `pd.read_csv('some.csv', index_col=0)`
   - 指定しなければ連番がセットされる
-- インデックス名を削除する
+- インデックス「名」を削除する
   - `df.index.name = None`
 - インデックス|カラムによる選択を行う
   - `df.loc[]`
@@ -60,11 +59,16 @@ data_ndarray = np.array([10, 20, 30])
   df[is_john | adult] # or
   ```
 - 並べ替える
+  - `df.sort_index(ascending=False)`
   - `df.sort_values('age', ascending=False)`
 - ユニークな値を配列として取得する
   - `df['firstname'].unique()`
 
 ### Data Cleaning Basics
+
+#### データを俯瞰する
+
+まず`df.info()`により、カラム名、格納されているデータの数と種類などを俯瞰する
 
 #### カラム名を整理する
 
@@ -110,6 +114,11 @@ data_ndarray = np.array([10, 20, 30])
   - `s.map({'wrong': 'correct'})` --- マップにはすべての値を含める必要があるので注意する
 - 文字列の一部を抜き出す
   - `2016-03-26 17:47:46`という形式の列から日付を抜き出すには`autos['date_crawled'].str[:10]`
+
+#### 日付列
+
+- 日付データを扱う時の下準備
+  - `df['mydate'] = pd.to_datetime(df['mydate'])`
 
 #### 外れ値
 
@@ -174,17 +183,15 @@ pd.Series(
 
 ### Line Charts
 
-- 日付データを扱う時の下準備
-- `df['mydate'] = pd.to_dataframe(df['mydate'])`
-- グラフの描写には`matprotlib`を使う。
-- 流れ
-  - データを使って plot を作成する
-  - plot の見た目を調整する
-  - plot を表示する
-  - 満足するまで繰り返す
+グラフの描写には`matprotlib.pyplot`を使う。
+
+- データを使って plot を作成する
+- plot の見た目を調整する
+- plot を表示する
+- 満足するまで繰り返す
 
 ```py
-# データをセット(x,y)
+# データをセット(x_values, y_values)
 plt.plot(df['DATE'], df['VALUE'])
 
 # ラベルの回転角度
@@ -199,4 +206,86 @@ plt.title('Monthly Unemployment Trends, 1948')
 
 # グラフの描写
 plt.show()
+```
+
+### Multiple plots
+
+#### matplotlib のクラスを理解する
+
+[参考](https://matplotlib.org/1.5.1/faq/usage_faq.html#parts-of-a-figure)
+
+- Figure Object
+  - `plt.figure()`で作成する
+  - 一番親玉のコンテナであり、複数の Axes を内包する
+  - 描写領域を確保する
+  - dpi、背景色、線色などを管理する
+- Axes Object
+  - `figure.add_subplot(縦分割数, 横分割数, 分割した何番目に配置するか)`で作成する
+  - 実際のデータを描写する
+  - データ、軸、軸ラベルなどを持つ
+  - `axes.plot(x_values, y_values)`でデータをプロットする
+
+#### 手動でグラフを作る
+
+- `plt.plot()`を使った場合は自動的に figure と axes が作成されているが、カスタマイズ等する場合はこれらを手動で作る必要がある
+- `plt.plot()`の実体は`axes.plot()`である
+- axes を手動で生成したとき、デフォルトでは
+  - x 軸 y 軸ともに値のレンジが 0 から 1 になる
+  - グリッドラインは表示されない
+  - データは表示されない
+
+```py
+fig = plt.figure()
+ax1 = fig.add_subplot(2,1,1)
+ax2 = fig.add_subplot(2,1,2)
+
+ax1.plot(unrate[0:12]['DATE'], unrate[0:12]['VALUE'])
+ax2.plot(unrate[12:24]['DATE'], unrate[12:24]['VALUE'])
+
+plt.show()
+```
+
+#### 複数のデータを同じ axes に描写する
+
+- `plt.figure()`
+  - 複数回呼んでも figure は一つしか作られない
+- `plt.plot()`
+  - 初回 --- axes を作成したうえでラインを追加する
+  - 2 回目以降 --- 初回に作成した axes にラインを追加する
+
+これらを踏まえると、下記の手順が一番効率的である。
+
+```py
+plt.figure(figsize=(5,3)) # サイズ指定などのカスタマイズはここで行える
+plt.plot(...)
+plt.plot(...)
+plt.plot(...)
+plt.show()
+
+# 上記は下記と等価。こっちのほうが読みやすいかも？
+fig = plt.figure(figsize=(5,3))
+axes = fig.add_subplot(1,1,1)
+axes.plot(...)
+axes.plot(...)
+plt.show()
+```
+
+#### Figure のサイズ調整
+
+```py
+# インチで指定
+plt.figure(figsize=(12, 5))
+```
+
+#### 色の指定
+
+```py
+plt.plot(c='red')
+```
+
+#### 凡例
+
+```py
+plt.plot(label='1948')
+plt.legend(loc='upper left')
 ```
