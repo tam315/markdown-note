@@ -242,6 +242,9 @@ ax2 = fig.add_subplot(2,1,2)
 ax1.plot(unrate[0:12]['DATE'], unrate[0:12]['VALUE'])
 ax2.plot(unrate[12:24]['DATE'], unrate[12:24]['VALUE'])
 
+ax1.set_xlabel('...') # .xlabel()ではない点に注意
+ax1.set_ylabel('...')
+
 plt.show()
 ```
 
@@ -268,6 +271,9 @@ axes = fig.add_subplot(1,1,1)
 axes.plot(...)
 axes.plot(...)
 plt.show()
+
+# figureとaxesを同時に作る方法もある(subplots())
+figure, axes = plt.subplots()
 ```
 
 #### Figure のサイズ調整
@@ -288,4 +294,50 @@ plt.plot(c='red')
 ```py
 plt.plot(label='1948')
 plt.legend(loc='upper left')
+```
+
+### Bar Plots And Scatter Plots
+
+#### 棒グラフ
+
+- 棒グラフに適するもの
+  - クラス分け x 数値
+  - クラスが多すぎると見にくくなるので注意
+- 縦棒グラフなら`axes.bar()`、横棒グラフなら`axes.barh()`を使う
+- 以下、縦棒グラフの場合で説明
+
+```py
+# バーの開始位置
+# => [0.75, 1.75, 2.75, 3.75, 4.75]
+from numpy import arange
+bar_positions = arange(5) + 0.75
+
+# 実際に表示するデータ群
+bar_height = [2,5,3,5,7]
+
+# バーの幅
+bar_width = 0.5
+
+# バーを表示する
+axes.bar(bar_positions, bar_height, bar_width)
+```
+
+#### 軸ラベル
+
+```py
+# X軸ラベルの位置を数値の配列で指定
+axes.set_xticks([1,2,3,4,5])
+
+# X軸ラベルに表示する値を指定
+axes.set_xticklabels(['a','b','c','d','e'], rotation=90)
+```
+
+#### 散布図
+
+```py
+axes.scatter(x_values, y_values)
+
+# X軸とY軸の下限、上限をセットする
+axes.set_xlim(0, 5)
+axes.set_ylim(0, 5)
 ```
