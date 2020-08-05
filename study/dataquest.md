@@ -300,9 +300,9 @@ plt.legend(loc='upper left')
 
 #### 棒グラフ
 
-- 棒グラフに適するもの
-  - クラス分け x 数値
-  - クラスが多すぎると見にくくなるので注意
+- クラス分け x 数値 の組み合わせのデータに最適
+- 最大値、最小値を見るために使う
+- クラスが多すぎると見にくくなるので注意
 - 縦棒グラフなら`axes.bar()`、横棒グラフなら`axes.barh()`を使う
 - 以下、縦棒グラフの場合で説明
 
@@ -318,21 +318,19 @@ bar_height = [2,5,3,5,7]
 # バーの幅
 bar_width = 0.5
 
-# バーを表示する
-axes.bar(bar_positions, bar_height, bar_width)
-```
-
-#### 軸ラベル
-
-```py
 # X軸ラベルの位置を数値の配列で指定
 axes.set_xticks([1,2,3,4,5])
 
 # X軸ラベルに表示する値を指定
 axes.set_xticklabels(['a','b','c','d','e'], rotation=90)
+
+# バーを表示する
+axes.bar(bar_positions, bar_height, bar_width)
 ```
 
 #### 散布図
+
+相関を調べるのに使う。
 
 ```py
 axes.scatter(x_values, y_values)
@@ -340,4 +338,48 @@ axes.scatter(x_values, y_values)
 # X軸とY軸の下限、上限をセットする
 axes.set_xlim(0, 5)
 axes.set_ylim(0, 5)
+```
+
+### Histograms And Box Plots
+
+#### ヒストグラム
+
+- ヒストグラム --- 値の区切り(bin)を作って、そこに含まれるデータの数を観察する
+
+|                    | ヒストグラム     | 棒グラフ       |
+| ------------------ | ---------------- | -------------- |
+| 目的               | 離散値の視覚化   | 連続値の視覚化 |
+| X 軸上のバーの位置 | 重要な意味を持つ | 意味を持たない |
+
+```py
+axes.hist(
+  values,
+  bins=20, # 区切りの数
+  range=(0,5), # 横軸(値)の表示範囲
+)
+axes.set_ylim(0, 100) # 縦軸（出現数）の表示範囲
+```
+
+#### ボックスプロット
+
+- 値がどのように分布しているかを把握するために使う
+- box-and-whisker(箱とひげ)を用いて四分位でデータ表現する([参考図](https://www.simplypsychology.org/boxplots.html))
+- box で表現される真ん中の二分位を interquartile range または **IQR** という
+- ボックスの長さ(IQR)と髭の長さを比べることで、分布の様子がわかる
+- ひげの書き方には[変種がある](https://ja.wikipedia.org/wiki/%E7%AE%B1%E3%81%B2%E3%81%92%E5%9B%B3)。デフォルトでは後者で描写される。
+  - 方法 1：最小値と最大値をひげの端にする方法
+  - 方法 2：第 1or 第 3 四分位点から 1.5IQR 以上離れた値を外れ値(**outlier**, extreme values)とし、残った値の端をひげの端とする
+
+```py
+values = [2,3,4,5,2,2,3,5]
+axes.boxplot(values)
+axes.set_ylim(0, 5)
+axes.set_xticklabels(['some label'])
+
+# 一つのaxis内に複数のbox plotを並べたいときは、
+# DataFrame.values を使ってarray of arrayにして値を渡す
+target_columns = ['RT_user_norm', 'Metacritic_user_nom', 'IMDB_norm', 'Fandango_Ratingvalue']
+values = df[target_columns].values # => [[1,2,3,4], [2,1,3,4],,,,]
+axes.boxplot(values)
+axes.set_xticklabels(target_columns)
 ```
