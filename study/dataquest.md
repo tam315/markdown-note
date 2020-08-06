@@ -181,7 +181,7 @@ pd.Series(
 
 ## 2-2 Exploratory Data Visualization
 
-### Line Charts(折れ線グラフ)
+### 基本
 
 グラフの描写には`matprotlib.pyplot`を使う。
 
@@ -191,7 +191,9 @@ pd.Series(
 - 満足するまで繰り返す
 
 ```py
-# データをセット(x_values, y_values)
+import matprotlib.pyplot as plt
+
+# データをセット(折れ線グラフの場合)
 plt.plot(df['DATE'], df['VALUE'])
 
 # ラベルの回転角度
@@ -206,6 +208,16 @@ plt.title('Monthly Unemployment Trends, 1948')
 
 # グラフの描写
 plt.show()
+```
+
+### Line Charts(折れ線グラフ)
+
+- 「連続値(日時等) × 数値」のデータに最適
+- 変化を見る
+
+```py
+# (x_values, y_values)
+plt.plot(df['DATE'], df['VALUE'])
 ```
 
 ### Multiple plots
@@ -238,6 +250,10 @@ fig = plt.figure()
 ax1 = fig.add_subplot(2,1,1)
 ax2 = fig.add_subplot(2,1,2)
 
+# figureとaxesを同時に作る方法もある
+# fig, ax = plt.subplots()
+# fig, axs = plt.subplots(2, 2)
+
 ax1.plot(x_values1, y_values1)
 ax2.plot(x_values2, y_values2)
 
@@ -256,8 +272,9 @@ plt.show()
   - 初回 --- axes を作成したうえでラインを追加する
   - 2 回目以降 --- 初回に作成した axes にラインを追加する
 
+上記を踏まえると、下記のようにグラフを描写できる。
+
 ```py
-# 上記を踏まえると、下記のようにグラフを描写できる。
 plt.figure(figsize=(5,3)) # サイズ指定などのカスタマイズはここで行える
 plt.plot(...)
 plt.plot(...)
@@ -270,9 +287,6 @@ axes = fig.add_subplot(1,1,1)
 axes.plot(...)
 axes.plot(...)
 plt.show()
-
-# なお、figureとaxesを同時に作る方法もある
-figure, axes = plt.subplots()
 ```
 
 #### Figure のサイズ調整
@@ -297,8 +311,8 @@ plt.legend(loc='upper left')
 
 ### Bar Plots(棒グラフ)
 
-- クラス分け x 数値 の組み合わせのデータに最適
-- 最大値、最小値などを見るために使う
+- 「クラス(離散値) × 数値」のデータに最適
+- クラスをまたいで最大値、最小値などを比較するために使う
 - クラスが多すぎると見にくくなるので注意
 - 縦棒グラフなら`axes.bar()`、横棒グラフなら`axes.barh()`を使う
 - 以下、縦棒グラフの場合で説明
@@ -327,7 +341,8 @@ axes.bar(bar_positions, bar_height, bar_width)
 
 ### Scatter Plots(散布図)
 
-相関を調べるのに使う。
+- 「数値 × 数値」のデータに最適
+- 相関を調べるのに使う
 
 ```py
 axes.scatter(x_values, y_values)
@@ -343,7 +358,7 @@ axes.set_ylim(0, 5)
 
 |                    | ヒストグラム     | 棒グラフ       |
 | ------------------ | ---------------- | -------------- |
-| 目的               | 離散値の視覚化   | 連続値の視覚化 |
+| 目的               | 連続値の視覚化   | 離散値の視覚化 |
 | X 軸上のバーの位置 | 重要な意味を持つ | 意味を持たない |
 
 ```py
@@ -429,7 +444,7 @@ scatter_matrix(df[['Age','Weight','Sex']], figsize=(10,10))
 - 不要な要素(chartjunk)を[取り除く](https://www.darkhorseanalytics.com/blog/data-looks-better-naked)
 - [data-ink ratio](https://infovis-wiki.net/wiki/Data-Ink_Ratio) を高める
   - data-ink とは、折れ線グラフなら線、散布図なら点の部分。それ以外の要素をなるべく減らせ。
-- non-data ink の部分に一貫性を持たせ、比較を容易にすること
+- non data-ink の部分に一貫性を持たせ、比較を容易にすること
   - 例えば上限値・下限値を揃えるなど
 
 #### tick mark(棘)を消す
@@ -440,6 +455,8 @@ axes.tick_params(
     top='off',
     left='off',
     right='off',
+    # ラベルを消したい時は`label`をつける
+    labelbottom='off'
 )
 ```
 
@@ -455,4 +472,93 @@ print(axes.spines)
 # 'left': <matplotlib.spines.Spine object at 0x7fcaa3476390>}
 for spine in axes.spines.values():
     spine.set_visible(False)
+```
+
+### Color, Layout, and Annotations
+
+- **Color Blind 10** など[色盲に配慮した配色](http://tableaufriction.blogspot.com/2012/11/finally-you-can-use-tableau-data-colors.html)にする
+- 線は適度に太くする
+
+```py
+ax.plot(
+  # 色
+  c=(255/255, 128/255, 14/255),
+  # 先の太さ
+  linewidth=3
+)
+```
+
+- 凡例は実データのすぐそばに書く(x, y はデータの値で指定する)
+
+```py
+ax.text(x, y, "Starting Point")
+```
+
+- 補助線を入れる
+
+```py
+ax.axhline(
+  50, # y軸上の位置
+  c=(171/255, 171/255, 171/255),
+  alpha=0.3)
+```
+
+### Guided Project: Visualizing The Gender Gap In College Degrees
+
+画像ファイルとして出力する
+
+```py
+plt.savefig('biology_degrees.png')
+```
+
+### Conditional Plots
+
+- seaborn とは matplotlib のラッパー
+- matplotlib を直接使う場合と比べて、楽にきれいなグラフを作ることができる。
+- seaborn では null の値はエラーになるので取り除いておくこと
+
+#### Histogram & kernel density plot
+
+```py
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Histogram & kernel density plot
+sns.distplot(df["MyColumn"])
+
+# kernel density plotのみ
+sns.kdeplot(
+  titanic["Age"],
+  shade=True, # 塗りつぶしたい場合
+)
+
+plt.show()
+```
+
+- [スタイル](http://keisanbutsuriya.hateblo.jp/entry/2016/06/01/021943)を設定できる
+- data-ink ratio を上げるためのおすすめ設定は以下の通り
+
+```py
+# 白背景にする
+sns.set_style("white")
+# 全てのspineを消す(デフォルトでは左と下は残る)
+sns.despine(left=True, bottom=True)
+```
+
+#### 複数のデータサブセットからグラフを作る
+
+- データの subset(facet)ごとのグラフを作るには`FacetGrid`を使うと便利
+  - はじめから data-ink ratio の高いグラフが生成される
+  - 目盛りがあらかじめ統一されている
+- `FacetGrid`
+  - 第一引数: DataFrame
+  - `col`: クラス分けに使用する列名(この列のユニークな値の数だけグラフが作られる)
+  - `size`: グラフの高さ
+- `FacetGrid.map()`
+  - 第一引数: matplotlib or seaborn の関数(`sns.kdeplot`,`plt.hist`など)
+  - 第二引数: 列名
+
+```py
+g = sns.FacetGrid(titanic, col="Survived", size=6)
+g.map(sns.kdeplot, "Age", shade=True)
 ```
