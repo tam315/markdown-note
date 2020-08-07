@@ -259,7 +259,7 @@ ax2.plot(x_values2, y_values2)
 
 ax1.set_xlabel('...') # .xlabel()ではない点に注意
 ax1.set_ylabel('...')
-ax1.set_title('...')
+ax1.set_title('...') # .title()ではない点に注意
 
 plt.show()
 ```
@@ -545,9 +545,9 @@ sns.set_style("white")
 sns.despine(left=True, bottom=True)
 ```
 
-#### 複数のデータサブセットからグラフを作る
+#### FacetGrid
 
-- データの subset(facet)ごとのグラフを作るには`FacetGrid`を使うと便利
+- クラス分けにより分割した複数のデータサブセットを元に複数のグラフを作るには`FacetGrid`を使う
   - はじめから data-ink ratio の高いグラフが生成される
   - 目盛りがあらかじめ統一されている
 - `FacetGrid`
@@ -559,6 +559,248 @@ sns.despine(left=True, bottom=True)
   - 第二引数: 列名
 
 ```py
-g = sns.FacetGrid(titanic, col="Survived", size=6)
+# 1 つのクラス分けを使ってグラフを作る場合(横一列に並ぶ)
+g = sns.FacetGrid(
+  titanic,
+  col="Survived",
+  size=6)
+# 2 つのクラス分けを使ってグラフを作る場合(縦横に並ぶ)
+g = sns.FacetGrid(
+  titanic,
+  col="Survived",
+  row="Pclass",
+  size=12)
+# 3 つのクラス分けを使ってグラフを作る場合(縦横に並んだうえで2つのグラフが重ねて表示される)
+g = sns.FacetGrid(
+  titanic,
+  col="Survived",
+  row="Pclass",
+  hue="Sex",
+  size=12).add_legend()
+
 g.map(sns.kdeplot, "Age", shade=True)
+```
+
+### Visualizing Geographic Data
+
+- 緯度経度の情報を二次元にマップするには`basemap toolkit`を使う
+- これは Matplotlib の拡張で、緯度経度(球面座標)を平面座標(デカルト座標)にマップするためのもの
+
+#### 散布図の描写
+
+```py
+basemap = Basemap(
+  projection='merc', # メルカトル図法
+  llcrnrlon=-180, # 左下の経度
+  llcrnrlat=-80, # 左下の緯度
+  urcrnrlon=180, # 右上の経度
+  urcrnrlat=80, # 右上の緯度
+)
+
+# BasemapインスタンスはListしか受け付けないのであらかじめ変換しておく
+longitudes = df["longitude"].tolist()
+latitudes = df["latitude"].tolist()
+
+# 平面座標に変換する
+x_positions, y_positions = basemap(longitudes, latitudes)
+
+# basemapはmatplotlibを使っているので
+# カスタマイズはmaptplotlibと同じ方法で行える
+plt.figure(figsize=(15,20))
+plt.title("Scaled Up Earth With Coastlines")
+
+# 海岸線を描写する
+basemap.drawcoastlines()
+
+# データを散布図として描写する
+basemap.scatter(
+  x_positions,
+  y_positions,
+  s=1, # マーカーのサイズ
+)
+
+plt.show()
+```
+
+#### 効率的な軌跡(great circle)の描写
+
+マップの端をまたぐ軌跡や、差が 180 度を超える軌跡は描写できないので注意
+
+```py
+basemap.drawgreatcircle(
+  start_lon,
+  start_lat,
+  end_lon,
+  end_lat,
+)
+```
+
+## 2-4 Data Cleaning and Analysis
+
+### Data Aggregation
+
+- Aggregation とはグループ分けしたデータ群に対して統計処理を行うこと
+- Aggregation すると次元が一つ減る。つまり、ひとつのグループあたりの計算結果は単一となる。
+  - Split - Apply - Combine
+
+#### GroupBy オブジェクト
+
+- DataFrame を抽象的にグループ分けしたもの
+- 「抽象的」とは、GroupBy オブジェクトのメソッドが実行されるまで実際には何もしない、の意
+
+```py
+# GroupByオブジェクトの作成
+grouped = df.groupby('Region')
+# GroupByオブジェクトの作成(対象列を事前に絞り込む場合)
+grouped = df.groupby('Region')['column1']
+grouped = df.groupby('Region')[['column1', 'column2']]
+
+# サブセットの取得　その1 (get_groupを使う方法)
+df_asia = grouped.get_group('Asia')
+
+# {グループした値: 「DataFrame上の行位置」の配列} の形式のdictを取得する
+grouped.groups
+
+# サブセットの取得　その2 (groupsを使う方法)
+indexes = grouped.groups['North America']
+df_asia = df.iloc[indexes]
+```
+
+#### 統計処理
+
+- グループごとに統計処理を行いたい場合は以下の関数を使う
+- 結果は以下のような Series か Dataframe になる
+  - index --- 個々のグループ名　例：）「県」列でグルーピングしたなら「北海道、青森、秋田、、、、」
+  - values --- 計算結果
+
+```py
+grouped.mean()
+grouped.sum()
+grouped.size() # 総数
+grouped.count() # 列ごとの総数
+grouped.min()
+grouped.max()
+
+# 複数の計算を同時に行いたい時はagg()を使う
+grouped.agg(np.mean) # 結果はSeries
+grouped.agg([np.mean, np.max]) # 結果はDataFrame
+grouped.agg(my_custom_method) # カスタムの集計関数
+
+def my_custom_method(group) -> pd.Series:
+    return (group.max() - group.mean())
+```
+
+#### Pivot table
+
+```py
+pv = df.pivot_table(
+    values='Weight', # 計算に使う列
+    values=['Happiness Score', 'Family'], # 計算に使う列(複数の場合)
+    index='Sex', # グルーピングに使う列
+    aggfunc=np.mean, # 計算方法
+    aggfunc=[np.mean, np.min , np.max], # 計算方法(複数の場合)
+    margins=True, # 結果に「All」が追加される
+)
+
+# Pivot tableは単なるDataFrameなのでそのままグラフにできる
+pv.plot(
+    kind='barh',
+    xlim=(0,10),
+    title='Mean Happiness Scores by Region',
+    legend=False,
+)
+```
+
+### Combining Data With Pandas
+
+#### concat
+
+- DataFrame を水平・垂直方向に結合する方法 --- `pd.concat()`
+- 3 つ以上の DataFrame を同時に結合できる
+- 列名を頼りに垂直方向に結合する場合
+  - inner join --- 共通する列だけが保持される
+  - outer join --- すべての列が保持される(**デフォルト**)
+- インデックスを頼りに水平方向に結合する場合
+  - inner join --- インデックスが一致するものだけが保持される
+  - outer join --- 全てのインデックスが保持される
+- 欠損値は NaN になる
+- `df.append()`は`pd.concat()`のショートカット
+
+```py
+# 縦方向に結合(デフォルト)
+pd.contat([df1, df2, df3])
+
+# 横方向に結合
+pd.contat([df1, df2, df3], axis=1)
+```
+
+縦方向に結合するとインデックスが重複して無意味になる場合が多いので、リセットしておくと良い。
+
+```py
+pd.contat([df1, df2], ignore_index=True)
+```
+
+#### merge
+
+- 下記の場合に最適な結合方法 --- `pd.merge()`
+  - 巨大な DataFrame を**水平方向**に結合する
+  - 高速に結合する
+  - 柔軟に結合する
+- 一度に処理できる DataFrame は 2 つまで
+- `df.join()`は`pd.merge()`のショートカット
+
+```py
+pd.merge(
+  left=df1,
+  right=df2,
+
+  on='my_id', # 特定のカラムを結合キーとして使う場合
+  # or
+  left_index = True, # インデックスを結合キーとして使う場合
+  right_index = True, # インデックスを結合キーとして使う場合
+
+  how='left', # 結合方法(inner, outer, left, right)
+  suffixes=('_1', '_2') # 列名が重複したときに末尾に追加したい文字列
+)
+```
+
+### Transforming Data With Pandas
+
+- element-wise(要素ごと)な処理を行う
+  - `Series.map()` --- 関数に引数を与える必要がない時
+  - `Series.apply()` --- 関数に引数を与える必要がある時
+  - `DataFrame.applymap()` --- DataFrame の複数列に一括して`map`を使いたいとき
+
+```py
+def label(age):
+    if age > 18:
+        return 'Adult'
+    else:
+        return 'Child'
+
+age_series.map(label) # -> 結果はSeriesで返ってくる
+
+# DataFrameの複数列に一括して`map`したいとき
+df['column1','column2'].applymap(label) # -> 結果はDataFrameで返ってくる
+```
+
+```py
+def label(age, boundary):
+    if age > boundary:
+        return 'High'
+    else:
+        return 'Low'
+
+age_series.apply(label, boundary=80) # applyでは引数を与えられる
+```
+
+### DataFrame.apply
+
+- データフレームの軸方向に順に処理を行う
+- デフォルトでは列方向に順に処理を行い、結果を DataFrame で返す
+- 与える関数は「Series に対して動作する関数」である必要がある
+  - 「element-wise（個々の要素に対して）に動作する関数」を与えると当然エラーになる
+
+```py
+df.apply(pd.value_counts)
 ```
