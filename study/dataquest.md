@@ -135,10 +135,10 @@ data_ndarray = np.array([10, 20, 30])
 #### 欠損値の処理
 
 ```py
-# 欠損値の数を把握する
+# 列ごとの欠損値数を把握する
 df.isnull().sum()
 
-# 欠損値の出現数を確認する
+# 特定の列における欠損値の出現数を確認する
 df['os_version'].value_counts(dropna=False)
 
 # 欠損値のある行に関連する他の列の値を見る。
@@ -258,7 +258,7 @@ ax1.plot(x_values1, y_values1)
 ax2.plot(x_values2, y_values2)
 
 ax1.set_xlabel('...') # .xlabel()ではない点に注意
-ax1.set_ylabel('...')
+ax1.set_ylabel('...') # .ylabel()ではない点に注意
 ax1.set_title('...') # .title()ではない点に注意
 
 plt.show()
@@ -639,9 +639,12 @@ basemap.drawgreatcircle(
 
 ### Data Aggregation
 
-- Aggregation とはグループ分けしたデータ群に対して統計処理を行うこと
-- Aggregation すると次元が一つ減る。つまり、ひとつのグループあたりの計算結果は単一となる。
-  - Split - Apply - Combine
+- Aggregation
+  - グループ分けしたデータ群に対して統計処理を行うこと
+  - 次元(列)が一つ減る
+  - 列のユニークな値が行ラベルとなる
+  - 行ごとの計算結果は単一となる
+- Split - Apply - Combine
 
 #### GroupBy オブジェクト
 
@@ -794,13 +797,95 @@ def label(age, boundary):
 age_series.apply(label, boundary=80) # applyでは引数を与えられる
 ```
 
-### DataFrame.apply
+#### DataFrame.apply
 
 - データフレームの軸方向に順に処理を行う
+  - row-wise or column-wise(行ごと or 軸ごと)
+  - column-wise で使うことが多い
 - デフォルトでは列方向に順に処理を行い、結果を DataFrame で返す
 - 与える関数は「Series に対して動作する関数」である必要がある
   - 「element-wise（個々の要素に対して）に動作する関数」を与えると当然エラーになる
 
 ```py
 df.apply(pd.value_counts)
+```
+
+#### pd.melt
+
+- パフォーマンス的な面から、`df.apply`よりも Vectorized Method を優先して使用する
+- pd.melt をうまく使うことでベクトル計算が可能になる場合がある
+
+|     | Country     | Happiness Score | Economy | Family  | Health  |
+| --- | ----------- | --------------- | ------- | ------- | ------- |
+| 0   | Switzerland | 7.587           | 1.39651 | 1.34951 | 0.94143 |
+| 1   | Iceland     | 7.561           | 1.30232 | 1.40223 | 0.94784 |
+
+```py
+pd.melt(
+  df,
+  # 列として残したい列
+  id_vars=['Country'],
+  # 行に変換したい列
+  value_vars=['Economy', 'Family', 'Health'],
+)
+```
+
+こうすることで`value_vars`に指定した列が、`variable`及び`value`という 2 つの行に統合される。
+
+|     | Country     | variable | value   |
+| --- | ----------- | -------- | ------- |
+| 0   | Switzerland | Economy  | 1.39651 |
+| 1   | Iceland     | Economy  | 1.30232 |
+| 2   | Switzerland | Family   | 1.34951 |
+| 3   | Iceland     | Family   | 1.40223 |
+| 4   | Switzerland | Health   | 0.94143 |
+| 5   | Iceland     | Health   | 0.94784 |
+
+- このように変換されたデータを tidy なデータという
+  - value の値に一括してベクトル計算を行うことが可能になる
+  - Aggregation もやりやすい
+  - un-melt なデータに戻すには`df.pivot()`を使う。詳細略。
+
+### Working With Strings In Pandas
+
+- 文字列に関する[全ベクトル化メソッド](https://pandas.pydata.org/pandas-docs/stable/user_guide/text.html#method-summary)
+- ベクトル化メソッドのメリット
+  - より良いパフォーマンス
+  - 書きやすい、読みやすいコード
+  - 自動的に欠損値は無視してくれる
+
+#### regex に関するベクトル化メソッド
+
+含まれるかどうかを Series で取得
+
+```py
+pattern = r"[Nn]ational accounts"
+
+series.str.contains(
+  pattern,
+  na=False, # 欠損値をFalseとしたい場合(boolean indexing時に最適)
+)
+```
+
+含まれる最初の値を Series で取得
+
+```py
+# '2019'のような値を抽出したい時
+pattern = r"([1-2][0-9]{3})" # capturing groupであるもののみ抽出される
+
+series.str.extract(
+  pattern,
+  expand=True, # 結果をDataFrameで取得したいときに指定する
+)
+```
+
+含まれる全ての値を DataFrame で取得
+
+```py
+# '2019'のような値を抽出したい時
+pattern = r"(?P<Years>[1-2][0-9]{3})" # Named capturing group
+# '2019/2020'のような値も想定されるとき
+pattern = r"(?P<First_Year>[1-2][0-9]{3})/?(?P<Second_Year>[1-2][0-9]{3})?"
+
+series.str.extractall(pattern)
 ```
