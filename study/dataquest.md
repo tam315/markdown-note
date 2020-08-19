@@ -769,10 +769,11 @@ pd.merge(
 
 ### Transforming Data With Pandas
 
-- element-wise(要素ごと)な処理を行う
-  - `Series.map()` --- 関数に引数を与える必要がない時
-  - `Series.apply()` --- 関数に引数を与える必要がある時
-  - `DataFrame.applymap()` --- DataFrame の複数列に一括して`map`を使いたいとき
+#### element-wise(要素ごと)
+
+- `Series.map()` --- 関数に引数を与える必要がない時
+- `Series.apply()` --- 関数に引数を与える必要がある時
+- `DataFrame.applymap()` --- DataFrame の複数列に一括して`map`を使いたいとき
 
 ```py
 def label(age):
@@ -797,11 +798,11 @@ def label(age, boundary):
 age_series.apply(label, boundary=80) # applyでは引数を与えられる
 ```
 
-#### DataFrame.apply
+#### row|column-wise(行ごと or 軸ごと)
 
+- `DataFrame.apply`を使う
 - データフレームの軸方向に順に処理を行う
-  - row-wise or column-wise(行ごと or 軸ごと)
-  - column-wise で使うことが多い
+- column-wise で使うことが多い
 - デフォルトでは列方向に順に処理を行い、結果を DataFrame で返す
 - 与える関数は「Series に対して動作する関数」である必要がある
   - 「element-wise（個々の要素に対して）に動作する関数」を与えると当然エラーになる
@@ -852,7 +853,7 @@ pd.melt(
 - ベクトル化メソッドのメリット
   - より良いパフォーマンス
   - 書きやすい、読みやすいコード
-  - 自動的に欠損値は無視してくれる
+  - 自動的に欠損値を無視してくれる
 
 #### regex に関するベクトル化メソッド
 
@@ -863,7 +864,7 @@ pattern = r"[Nn]ational accounts"
 
 series.str.contains(
   pattern,
-  na=False, # 欠損値をFalseとしたい場合(boolean indexing時に最適)
+  na=False, # 欠損値をNaNではなくFalseとしたい場合(boolean indexing時に最適)
 )
 ```
 
@@ -875,7 +876,7 @@ pattern = r"([1-2][0-9]{3})" # capturing groupであるもののみ抽出され�
 
 series.str.extract(
   pattern,
-  expand=True, # 結果をDataFrameで取得したいときに指定する
+  expand=True, # 結果をSeriesではなくDataFrameで取得したいときに指定する
 )
 ```
 
@@ -884,8 +885,42 @@ series.str.extract(
 ```py
 # '2019'のような値を抽出したい時
 pattern = r"(?P<Years>[1-2][0-9]{3})" # Named capturing group
-# '2019/2020'のような値も想定されるとき
+# 前述の条件に加え'2019/2020'のような値も想定されるとき
 pattern = r"(?P<First_Year>[1-2][0-9]{3})/?(?P<Second_Year>[1-2][0-9]{3})?"
 
 series.str.extractall(pattern)
+```
+
+### Working With Missing And Duplicate Data
+
+#### 欠損値の判断
+
+- その列が分析を完了するために必要か
+- 削除したらどのような影響があるか
+  - 欠損値のある行は、全体の何％か
+  - 欠損値のある行の他の列に、価値のある情報があるか
+  - 欠損値の出現パターンが特定できるか
+
+#### 欠損値の処理手順
+
+- cleaning/transformation 処理をする前に、欠損値を確認しておく
+- cleaning/transformation 処理を行い、エラーが出てないか確認する
+- 他の情報源(他年度の似た情報など)を使って、欠損値を埋める
+  - `pd.merge()`と key-value 的な Series を組み合わせて行うとよい
+- 行・列を破棄する
+  - `pd.drop([列名,,,], axis=1)`
+  - `pd.drop(threth=123, axis=1)` non-null が指定した件数以下の列を削除する
+- 他のデータを使って計算した値で、欠損値を埋める(**imputation**)
+  - non-numeric の場合--- 定数(`unknown`など)
+  - numeric の場合 --- 中央値、平均値、最頻値
+  - その値で埋めることが適切か考えること
+
+#### 重複値
+
+```py
+# 国と年度が一致するデータをboolean indexで取得する
+df.duplicated(['COUNTRY','YEAR'])
+
+# 国と年度が一致するデータを削除してDFを返す(デフォルトでは最初のデータが保持される)
+df.drop_duplicates(['COUNTRY','YEAR'])
 ```
