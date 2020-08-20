@@ -924,3 +924,13 @@ df.duplicated(['COUNTRY','YEAR'])
 # 国と年度が一致するデータを削除してDFを返す(デフォルトでは最初のデータが保持される)
 df.drop_duplicates(['COUNTRY','YEAR'])
 ```
+
+### Regular Expression Basics
+
+```py
+# マッチする件数を取得する
+df.str.contains('e-?mail').sum()
+
+# マッチするデータのみをフィルタする
+df[df.str.contains('e-?mail')]
+```

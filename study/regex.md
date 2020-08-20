@@ -6,19 +6,23 @@
 
 - `.` any character except newline
 - `\w \d \s` word, digit, whitespace
+- `[abc]` (Set) --- any of a, b, or c
+- `[a-g]` (Range) --- character between a & g
+
+### Negative Character classes
+
 - `\W \D \S` not word, digit, whitespace
-- `[abc]` any of a, b, or c
-- `[^abc]` not a, b, or c
-- `[a-g]` character between a & g
+- `[^abc]` (Set) --- not a, b, or c
 
 ### Anchors
 
 - `^someWord$` start / end of the string
-- `\b \B` word, not-word boundary
+- `\b` word boundary
+- `\B` not-word boundary
 
 ### Escaped characters
 
-- `\. \* \\` escaped special characters
+- `\. \* \\ \[` escaped special characters
 - `\t \n \r` tab, linefeed, carriage return
 
 ### Groups & Lookaround
@@ -31,13 +35,22 @@
 - `(?!someWord)` negative lookahead
 - `(?<!someWord)` negative lookbehind
 
-### Quantifiers & Alternation
+### Quantifiers
 
-- `a* a+ a?` 0 or more, 1 or more, 0 or 1
-- `a{5} a{2,}` exactly five, two or more
-- `a{1,3}` between one & three
-- `a*? a+? a{2,}?` match as few as possible (lazy mode | non-greedy mode)
-- `ab|cd` match ab or cd
+直前の文字等の数を指定するための文法
+
+- `a*` 0 or more
+- `a+` 1 or more
+- `a?` 0 or 1
+- `a{5}` exactly five
+- `a{2,}` two or more
+- `a{2,4}` between two & four
+- `a{,4}` four or less
+- `a*? a+? a{2,}?` match as few as possible (lazy mode, non-greedy mode)
+
+### Alternation
+
+- `ab|cd` ab or cd
 
 ## global match
 

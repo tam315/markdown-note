@@ -595,6 +595,23 @@ t = tuple()
 print(l, d, s, t) # => [] {} set() ()
 ```
 
+#### regex
+
+```py
+import re
+
+pattern = '[RL]ock'
+re.search(pattern, "Rock'n Roll!") # -> Match Object or None
+
+# エスケープに関する諸問題を回避するため、常にraw stringを使うこと
+pattern = r'hello\b world'
+
+# フラグの使い方
+re.search(pattern,
+          "Rock'n Roll!",
+          flags=re.IGNORECASE)
+```
+
 ## 関数
 
 ### 関数の基本
@@ -855,7 +872,7 @@ lambda num: num ** 2
 上記は JavaScript でいう下記と一緒
 
 ```js
-num => num ** 2;
+(num) => num ** 2;
 ```
 
 ## Flask
