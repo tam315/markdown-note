@@ -2,6 +2,14 @@
 
 [[toc]]
 
+## animation, transition, transform
+
+下記がよくまとまっているので参照すること
+
+- [animation](https://qiita.com/7968/items/1d999354e00db53bcbd8)
+- [transition](https://qiita.com/7968/items/812d6a21fc4dd9ae9c75)
+- [transform](https://qiita.com/7968/items/eddfeb4b424d7c2d2d34)
+
 ## フォントサイズ
 
 ### 絶対値
