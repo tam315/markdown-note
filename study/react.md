@@ -16,3 +16,7 @@
   value={123} // マージしない属性
 />
 ```
+
+### ReactNode, ReactChild, ReactElement の違い
+
+[こちらを参照](https://dackdive.hateblo.jp/entry/2019/08/07/090000)
