@@ -20,3 +20,11 @@
 ### ReactNode, ReactChild, ReactElement の違い
 
 [こちらを参照](https://dackdive.hateblo.jp/entry/2019/08/07/090000)
+
+### IE11 対応
+
+create-react-app の場合は下記を`index.html`の`head`タグに入れれば OK かも
+
+```js
+<script src="https://cdn.polyfill.io/v2/polyfill.min.js"></script>
+```
