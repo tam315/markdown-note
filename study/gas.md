@@ -34,65 +34,88 @@ function USDTOJPY(dollars) {
 
 以上をスクリプトとして記述した後、セルに`=USDTOJPY(123)`とするだけで使える。
 
-### SpreadSheet と Sheet で共用されているメソッドの動作の違い
+### 基本
 
-```js
-// アクティブなシートにおいて、列を削除する
-Spreadsheet.deleteColumn();
-// これは下記と等価
-Spreadsheet.getActiveSheet().deleteColumn();
-
-// 特定のシートにおいて、列を削除する
-Sheet.deleteColumn();
-```
-
-### 基本操作
-
-SpreadSheet
+#### SpreadSheet
 
 ```js
 // 取得
-const mySS = SpreadsheetApp.getActiveSpreadsheet();
+const spreadsheet =
+  SpreadsheetApp.getActiveSpreadsheet() || spreadsheet.getSheetByName('name');
 // リネーム
-mySS.rename('2017 Avocado Prices in Portland, Seattle');
+spreadsheet.rename('2017 Avocado Prices in Portland, Seattle');
+// シートの追加
+spreadsheet.insertSheet(name);
 ```
 
-Sheet
+#### Sheet
 
 ```js
 // 取得
-var mySS = SpreadsheetApp.getActiveSpreadsheet();
+const sheet = SpreadsheetApp.getActiveSpreadsheet();
 // 複製
-var duplicateSheet = mySS.duplicateActiveSheet();
+sheet.duplicateActiveSheet();
 // リネーム
-duplicateSheet.setName('MySheet');
+sheet.setName('MySheet');
 // リサイズ
-duplicateSheet.autoResizeColumns(1, 5);
+sheet.autoResizeColumns(1, 5);
 // 固定行の設定
-duplicateSheet.setFrozenRows(2);
+sheet.setFrozenRows(2);
 // id取得
-duplicateSheet.getSheetId();
+sheet.getSheetId();
+// 最終行を取得
+sheet.getLastRow();
+// アクティブにする
+sheet.activate();
 ```
 
-Range
+#### Range
 
 ```js
 // F2より下にあるすべての値を、C2の位置に移動する
-const myRange = duplicateSheet.getRange("F2:F");
-myRange.moveTo(duplicateSheet.getRange('C2'));
+const range = sheet.getRange('F2:F');
+range.moveTo(sheet.getRange('C2'));
 
 // 指定した範囲の値について、3番目の列の値で並べ替える
-const myRange2 = duplicateSheet.getRange('A3:D55')
-myRange2.sort(3)
-}
+const range = sheet.getRange('A3:D55');
+range.sort(3);
 
 // 範囲をずらしたり広げたりする
-var titleAuthorRange = activeRange.offset(
+range.offset(
   0, // 行方向のオフセット
   0, // 列方向のオフセット
-  activeRange.getHeight(), // 高さ
-  activeRange.getWidth(), // 幅
+  range.getHeight(), // 高さ
+  range.getWidth(), // 幅
 );
+
+// 列数、行数を取得する
+range.getNumRows();
+range.getNumColumns();
+
+// - バンディング（配色の組み合わせ）を設定する
+// - 例えば行ごとに交互に色をつけるなど
+// - すでにバンディングがあるとエラーになるので、チェックしてから設定する
+if (!range.getBandings()[0]) {
+  range.applyRowBanding(SpreadsheetApp.BandingTheme.LIGHT_GREY, false, false);
+}
+
+// スタイル
+range
+  .setFontWeight('bold')
+  .setFontStyle('italic')
+  .setFontColor('#ffffff')
+  .setBackgroundColor('#007272')
+  .setNumberFormat('mmmm dd, yyyy (dddd)')
+  .setBorder(
+    true,
+    true,
+    true,
+    true,
+    null,
+    null,
+    null,
+    SpreadsheetApp.BorderStyle.SOLID_MEDIUM,
+  );
 ```
 
 ### メニューを作る
@@ -161,4 +184,78 @@ function fetchBookInfo(ISBN) {
 
   return bookInfo;
 }
+```
+
+### Utils
+
+#### 列名を元に列番号を取得する
+
+```js
+function columnIndexOf(findingColumnName) {
+  var sheet = SpreadsheetApp.getActiveSheet();
+  var columnHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn());
+  var [columnNames] = columnHeaders.getValues();
+  const index =
+    columnNames.findIndex((columnName) => columnName === findingColumnName) + 1;
+  return index;
+}
+```
+
+### SpreadSheet と Sheet で共用されているメソッドの動作の違い
+
+```js
+// 特定のシートにおいて、3つめの列を削除する
+Sheet.deleteColumn(3);
+
+// アクティブなシートにおいて、3つめの列を削除する
+Spreadsheet.deleteColumn(3);
+// これは下記と等価
+Spreadsheet.getActiveSheet().deleteColumn(3);
+```
+
+### モーダル
+
+```js
+const htmlOutput = HtmlService.createHtmlOutput('<p>HTMLで記述できます</p>')
+    .setHeight(120)
+    .setWidth(350),
+SpreadsheetApp.getUi().showModalDialog(
+  htmlOutput,
+  'Created a presentation!',
+);
+```
+
+### チャートの作成
+
+```js
+const sheet = SpreadsheetApp.getActiveSheet();
+const chartDataRange = sheet.getRange('A2:F102');
+const lineChartBuilder = sheet.newChart().asLineChart();
+const chart = lineChartBuilder
+  .addRange(chartDataRange)
+  .setPosition(5, 8, 0, 0)
+  .setTitle('USD Exchange rates')
+  .setNumHeaders(1)
+  .setLegendPosition(Charts.Position.RIGHT)
+  .setOption('hAxis', {
+    slantedText: true,
+    slantedTextAngle: 60,
+    gridlines: {
+      count: 12,
+    },
+  })
+  .build();
+
+sheet.insertChart(chart);
+```
+
+### チャートをスライドに貼り付け
+
+```js
+const slides = SlidesApp.create('slide-title');
+slides.getSlides()[0].remove(); // デフォルトページを削除
+sheet.getCharts().forEach((chart) => {
+  var newSlide = slides.appendSlide();
+  newSlide.insertSheetsChart(chart);
+});
 ```
