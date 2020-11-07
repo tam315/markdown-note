@@ -90,3 +90,42 @@ module.exports = {
   },
 };
 ```
+
+### 軽量な Next.js 環境を作る
+
+Dockerfile
+
+```Dockerfile
+FROM node:12.18.4 AS BUILD_IMAGE
+
+WORKDIR /usr/src/app
+
+COPY ./package.json ./yarn.lock ./
+RUN yarn install
+
+COPY . .
+RUN yarn build
+
+RUN rm -rf node_modules
+RUN yarn install --prod
+
+#
+# Reasons to create another container:
+# - As building fails on alpine linux
+# - To keep node_modules small by excluding node_modules caches which is generated on install
+#
+# https://medium.com/trendyol-tech/how-we-reduce-node-docker-image-size-in-3-steps-ff2762b51d5a
+#
+
+FROM node:12.18.4-alpine as RUNNER
+
+ENV NODE_ENV=production
+
+COPY . .
+COPY --from=BUILD_IMAGE /usr/src/app/node_modules ./node_modules
+COPY --from=BUILD_IMAGE /usr/src/app/.next ./.next
+
+EXPOSE 8080
+
+CMD ["yarn", "next", "start", "-p", "8080"]
+```

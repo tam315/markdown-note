@@ -72,3 +72,34 @@ functions logs read # chrome-devtools 用の URI をコピーしてブラウザ�
 functions reset helloWorld #デバッグモードを離脱
 functions reset helloWorld --keep # デバッグモードを維持したまま再起動。URI は変わる。
 ```
+
+## Cloud Run
+
+デプロイ用スクリプト(カレントディレクトリに`Dockerfile`がある前提)
+
+```sh
+#/bin/sh
+
+image_name="my_image"
+gcp_project_id='my-gcp-project-1234'
+gcr_host='asia.gcr.io'
+
+set -e
+
+case $1 in
+  'production'|'staging')
+    tag=$1
+    ;;
+  *)
+    echo '引数が不正です'
+    exit 1
+    ;;
+esac
+
+full_image_name="$image_name:$tag"
+gcr_destination="$gcr_host/$gcp_project_id/$full_image_name"
+
+docker build --target RUNNER -t "$full_image_name" .
+docker tag "$full_image_name" "$gcr_destination"
+docker push "$gcr_destination"
+```
