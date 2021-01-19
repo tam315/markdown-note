@@ -1,0 +1,16 @@
+{
+  "name": "markdown-notes",
+  "dockerComposeFile": [
+    "docker-compose.yml"
+  ],
+  "service": "markdown-notes",
+  "workspaceFolder": "/workspace",
+  "settings": {
+    "terminal.integrated.shell.linux": null
+  },
+  "extensions": [
+    "dbaeumer.vscode-eslint",
+    "eamodio.gitlens",
+    "esbenp.prettier-vscode",
+  ],
+}
