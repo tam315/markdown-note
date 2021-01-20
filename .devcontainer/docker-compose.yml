@@ -6,7 +6,7 @@ services:
     command: /bin/sh -c "while sleep 1000; do :; done"
     container_name: markdown-notes
     ports:
-      - '3000:3000'
+      - '8080:8080'
     volumes:
       - ../:/workspace:cached
       - /workspace/node_modules/ # for disk performance
