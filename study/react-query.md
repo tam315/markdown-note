@@ -229,11 +229,19 @@ const { isIdle, data: projects } = useQuery(
 
 ## Infinite Queries
 
+略
+
 ## Placeholder Query Data
+
+略
 
 ## Initial Query Data
 
+略
+
 ## Prefetching
+
+略
 
 ## Mutations
 
@@ -394,7 +402,11 @@ mutation.mutate({
 
 ## 楽天的更新
 
+略
+
 ## Query Cancellation
+
+略
 
 ## Scroll Restoration
 
@@ -430,10 +442,59 @@ await queryClient.refetchQueries('posts', { active: true });
 
 ## SSR & Next.js
 
+略
+
 ## Caching
+
+略
 
 ## Default Query Function
 
+```tsx
+// デフォルトクエリ関数を作る
+const defaultQueryFn = async ({ queryKey }) => {
+  const { data } = await axios.get(
+    `https://jsonplaceholder.typicode.com${queryKey[0]}`,
+  );
+  return data;
+};
+
+// クライアント作成時にデフォルトクエリ関数をセットしておく
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      queryFn: defaultQueryFn,
+    },
+  },
+});
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <YourApp />
+    </QueryClientProvider>
+  );
+}
+
+// 使用するときはキーだけ渡せばOK
+function Posts() {
+  const { status, data, error, isFetching } = useQuery('/posts');
+  // ...
+}
+
+// なお、デフォルトクエリ関数がセットされている場合は、第二引数にクエリ関数ではなくオプションを記載できる
+function Post({ postId }) {
+  const { status, data, error, isFetching } = useQuery(`/posts/${postId}`, {
+    enabled: !!postId,
+  });
+  // ...
+}
+```
+
 ## Suspense
 
+実験的なモードです
+
 ## Testing
+
+略
