@@ -360,12 +360,10 @@ if let Coin::Quarter(state) = coin {
 - package
   - library crate(0 or 1)
     - root module(created from `src/lib.rs` which is 'crate root')
-    - other module
   - binary crate(0 to many)
     - root module(created from `src/main.rs` which is 'crate root')
-    - other module
   - binary crate ...
-    - other binary module (created from `src/bin/***.rs`)
+    - other binary module (created from `src/bin/***.rs` which is 'crate root')
 
 ### Modules
 
@@ -405,4 +403,93 @@ crate(暗黙的に命名される)
          ├── take_order
          ├── serve_order
          └── take_payment
+```
+
+### Path
+
+- パスの種類
+  - Absolute path --- crate name 又は`crate`のリテラルから始まる
+  - Relative path --- `self`、`super`又は current module の識別子から始まる
+- `::`で区切る
+- Private と Public の管理
+  - デフォルトでは：
+    - 呼び出した関数と同一レベルにあるモジュールには`pub`なしでアクセス可能
+    - 子モジュールやその内部は Private。パブリックにするには`pub mod`や`pub fn`などが必要。
+    - 親モジュールは Public
+
+```rs
+mod front_of_house {
+    pub mod hosting {
+        fn add_to_waitlist() {}
+    }
+}
+
+pub fn eat_at_restaurant() {
+    // Absolute path
+    crate::front_of_house::hosting::add_to_waitlist();
+
+    // Relative path
+    front_of_house::hosting::add_to_waitlist();
+}
+```
+
+`super`を使うと親モジュールにアクセスできる
+
+```rs
+fn serve_order() {}
+
+mod back_of_house {
+    fn fix_incorrect_order() {
+        cook_order();
+        super::serve_order();
+    }
+
+    fn cook_order() {}
+}
+```
+
+struct の属性はデフォルトで非公開
+
+```rs
+mod back_of_house {
+    pub struct Breakfast {
+        pub toast: String,
+        seasonal_fruit: String,
+    }
+
+    impl Breakfast {
+        // この関数なしではBreakfastは初期化すらできない
+        pub fn summer(toast: &str) -> Breakfast {
+            Breakfast {
+                toast: String::from(toast),
+                seasonal_fruit: String::from("peaches"),
+            }
+        }
+    }
+}
+
+pub fn eat_at_restaurant() {
+    let mut meal = back_of_house::Breakfast::summer("Rye");
+    // 変更可能
+    meal.toast = String::from("Wheat");
+
+    // 以下のコードはコンパイル不可
+    meal.seasonal_fruit = String::from("blueberries");
+}
+```
+
+一方、enum はデフォルトで公開
+
+```rs
+mod back_of_house {
+    pub enum Appetizer {
+        Soup,
+        Salad,
+    }
+}
+
+pub fn eat_at_restaurant() {
+    let order1 = back_of_house::Appetizer::Soup;
+    let order2 = back_of_house::Appetizer::Salad;
+}
 ```
