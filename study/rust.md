@@ -339,9 +339,9 @@ if let Coin::Quarter(state) = coin {
   - crate
     - library crate 又は binary crate
   - crate root
-    - ソースファイル
+    - source file
+    - becomes **root module** of the crate
     - コンパイラが読み込みをスタートする地点
-    - クレートのルートモジュールとなる
   - package
     - 一つ以上の crate で構成される
     - なんらかの機能を提供する
@@ -355,4 +355,54 @@ if let Coin::Quarter(state) = coin {
   - `src/main.rs`が binary crate になる。crate 名はパッケージ名になる
   - `src/bin/`以下のファイルが、それぞれ独立した binary crate になる。
 
+構成の例
+
+- package
+  - library crate(0 or 1)
+    - root module(created from `src/lib.rs` which is 'crate root')
+    - other module
+  - binary crate(0 to many)
+    - root module(created from `src/main.rs` which is 'crate root')
+    - other module
+  - binary crate ...
+    - other binary module (created from `src/bin/***.rs`)
+
 ### Modules
+
+- クレート内でコードをグルーピングするために使う
+- 可読性と再利用可能性を向上させるためにある
+- プライバシーの管理のためにある
+  - Public --- コードの外でも使える
+  - Private --- コードの外では使えない
+
+```rs
+mod front_of_house {
+    mod hosting {
+        fn add_to_waitlist() {}
+
+        fn seat_at_table() {}
+    }
+
+    mod serving {
+        fn take_order() {}
+
+        fn serve_order() {}
+
+        fn take_payment() {}
+    }
+}
+```
+
+上記のようなコードを crate root に定義した場合、モジュールツリーは以下のようになる
+
+```
+crate(暗黙的に命名される)
+ └── front_of_house
+     ├── hosting
+     │   ├── add_to_waitlist
+     │   └── seat_at_table
+     └── serving
+         ├── take_order
+         ├── serve_order
+         └── take_payment
+```
