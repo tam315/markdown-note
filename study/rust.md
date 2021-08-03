@@ -237,8 +237,8 @@ impl Rectangle {
 ```rust
 // 基本形
 enum IpAddrKind {
-V4,
-V6,
+  V4,
+  V6,
 }
 let four = IpAddrKind::V4;
 let six = IpAddrKind::V6;
@@ -335,35 +335,24 @@ if let Coin::Quarter(state) = coin {
 
 ### Packages, Crates
 
-- 用語
-  - crate
-    - library crate 又は binary crate
-  - crate root
-    - source file
-    - becomes **root module** of the crate
-    - コンパイラが読み込みをスタートする地点
-  - package
-    - 一つ以上の crate で構成される
-    - なんらかの機能を提供する
-    - `cargo.toml`を含む。ここには crate のビルド方法が書かれている
-- パッケージのルール
-  - library crate は 0 または 1 つだけ
-  - binary crate はいくつでも
-  - 少なくとも１つ以上の crate が必要
-- どのファイルが crate になるか
-  - `src/lib.rs`が library crate になる。crate 名はパッケージ名になる
-  - `src/main.rs`が binary crate になる。crate 名はパッケージ名になる
-  - `src/bin/`以下のファイルが、それぞれ独立した binary crate になる。
-
-構成の例
-
 - package
-  - library crate(0 or 1)
-    - root module(created from `src/lib.rs` which is 'crate root')
-  - binary crate(0 to many)
-    - root module(created from `src/main.rs` which is 'crate root')
-  - binary crate ...
-    - other binary module (created from `src/bin/***.rs` which is 'crate root')
+  - 一つ以上の crate で構成される。crate の数の要件は以下の通り。
+    - library crate は 0 または 1 つだけ
+    - binary crate はいくつでも
+    - 少なくとも１つ以上の crate が必要
+  - なんらかの機能を提供する
+  - `cargo.toml`を含む。ここには crate のビルド方法が書かれている
+- crate
+  - library crate 又は binary crate のこと
+- crate root
+  - 下記のいずれか
+    - `src/lib.rs`(library crate)
+      - パッケージ名が crate 名になる
+    - `src/main.rs`(binary crate)
+      - パッケージ名が crate 名になる
+    - `src/bin/**.rs`(binary crate)
+  - その crate の root module になる
+  - コンパイラが読み込みをスタートする地点
 
 ### Modules
 
@@ -409,7 +398,7 @@ crate(暗黙的に命名される)
 
 - パスの種類
   - Absolute path --- crate name 又は`crate`のリテラルから始まる
-  - Relative path --- `self`、`super`又は current module の識別子から始まる
+  - Relative path --- `self`、`super`又は同一レベルにあるモジュール名から始まる
 - `::`で区切る
 - Private と Public の管理
   - デフォルトでは：
@@ -420,7 +409,7 @@ crate(暗黙的に命名される)
 ```rs
 mod front_of_house {
     pub mod hosting {
-        fn add_to_waitlist() {}
+        pub fn add_to_waitlist() {}
     }
 }
 
@@ -448,7 +437,7 @@ mod back_of_house {
 }
 ```
 
-struct の属性はデフォルトで非公開
+struct の要素はデフォルトで非公開
 
 ```rs
 mod back_of_house {
@@ -478,7 +467,7 @@ pub fn eat_at_restaurant() {
 }
 ```
 
-一方、enum はデフォルトで公開
+一方、enum の要素はデフォルトで公開
 
 ```rs
 mod back_of_house {
