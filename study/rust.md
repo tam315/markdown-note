@@ -482,3 +482,81 @@ pub fn eat_at_restaurant() {
     let order2 = back_of_house::Appetizer::Salad;
 }
 ```
+
+### use
+
+下記のようにすると、他のモジュールを接頭詞無しでつかえる。
+
+```rs
+use crate::front_of_house::hosting;
+
+// - 絶対パスでも相対パスでもOK
+// - 以降、`hosting::***`のように使える
+```
+
+慣例として、関数はひとつ上のモジュールを読み込む。これは、関数がローカルのものではないことを明確にするため。
+
+```rs
+use crate::front_of_house::hosting;
+hosting::add_to_waitlist();
+```
+
+慣例として、Enum の場合はそれ自身を読み込む。特に理由はない。
+
+```rs
+use std::collections::HashMap;
+let mut map = HashMap::new();
+```
+
+例外として、名前が重複する場合はそのひとつ上のモジュールから読み込む。
+
+```rs
+use std::fmt;
+use std::io;
+
+fn function1() -> fmt::Result {...}
+fn function2() -> io::Result {...}
+```
+
+もしくは下記のように別名をつける。
+
+```rs
+use std::io::Result as IoResult;
+```
+
+`pub use`とすると再エクスポートできる。
+
+```rs
+// 外部のコードから`hosting`を呼び出せるようになる
+pub use crate::front_of_house::hosting;
+```
+
+外部ライブラリを使いたいときは、`Cargo.toml`に記載したうえで`use`する。
+
+```toml
+[dependencies]
+rand = "0.8.3"
+```
+
+```rs
+// TODO: traitってなに？？Rng.***にはならないのか？
+use rand::Rng;
+let rng = rand::thread_rng()
+```
+
+省略記法
+
+```rs
+use std::io;
+use std::io::Write;
+use std::io::Read;
+
+// 上記は下記の通り書ける
+use std::io::{self, Write, Read}
+```
+
+glob operator も使えるが、基本的にテストでのみ使用すること。見通しが悪くなるため。
+
+```rs
+use std::collections::*;
+```
