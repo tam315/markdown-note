@@ -560,3 +560,20 @@ glob operator も使えるが、基本的にテストでのみ使用すること
 ```rs
 use std::collections::*;
 ```
+
+### モジュールをファイルに切り出す
+
+`mod`のあとにファイル名を記載することで、そのファイル内のモジュールを呼び出せる。
+
+```rs
+// src/front_of_house.rs
+pub mod hosting {
+  pub fn add_to_waitlist() {}
+}
+```
+
+```rs
+// src/lib.rs
+mod front_of_house;
+front_of_house::hosting::add_to_waitlist();
+```
