@@ -577,3 +577,39 @@ pub mod hosting {
 mod front_of_house;
 front_of_house::hosting::add_to_waitlist();
 ```
+
+## Collections
+
+- 予め用意されている便利なデータ構造のこと
+- 複数の値を保持できるのが特徴
+- Array や Tuple と異なり、ヒープメモリに保持されるため、コンパイル時にサイズを確定させなくてもいい
+
+### Vector
+
+- 単一型である
+- 複数の値を保持できる
+- 可変長である
+- `Vec<T>`
+
+```rs
+// 初期値がない場合
+let v: Vec<i32> = Vec::new();
+
+// 初期値がある場合
+let v = vec![1, 2, 3];
+```
+
+値の追加
+
+```rs
+let mut v = Vec::new();
+
+v.push(5);
+v.push(6);
+v.push(7);
+v.push(8);
+```
+
+### String
+
+### Hashmap
