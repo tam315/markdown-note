@@ -138,6 +138,7 @@ for number in (1..4) {
 - 代入しても所有権が移動しない(Copy される)型
   - 整数型、論理値型、浮動小数点型、文字型
   - 上記から成るタプル
+  - 参照
 - 代入すると所有権が移動する(Move される)型
   - String 型その他
 
@@ -145,8 +146,8 @@ for number in (1..4) {
 
 ### 参照と借用
 
-- 関数の引数として渡すと、所有権は関数に渡る。そうしたくない時は参照(`&`)を使う。
-- そうすることで、新たな変数（参照）が作られる。
+- 引数に値を渡すと、その値の所有権は関数に移る。
+- 引数に参照を渡すと、その参照の所有権は移転しない。
 
 ```rust
 fn main() {
@@ -337,10 +338,10 @@ if let Coin::Quarter(state) = coin {
 
 - package
   - 一つ以上の crate で構成される。crate の数の要件は以下の通り。
+    - 少なくとも１つ以上の crate が必要
     - library crate は 0 または 1 つだけ
     - binary crate はいくつでも
-    - 少なくとも１つ以上の crate が必要
-  - なんらかの機能を提供する
+  - なんらかのまとまった機能を提供する
   - `cargo.toml`を含む。ここには crate のビルド方法が書かれている
 - crate
   - library crate 又は binary crate のこと
@@ -357,8 +358,8 @@ if let Coin::Quarter(state) = coin {
 ### Modules
 
 - クレート内でコードをグルーピングするために使う
-- 可読性と再利用可能性を向上させるためにある
-- プライバシーの管理のためにある
+- 可読性と再利用可能性を向上させるために使う
+- プライバシーを管理するために使う
   - Public --- コードの外でも使える
   - Private --- コードの外では使えない
 
@@ -539,7 +540,7 @@ rand = "0.8.3"
 ```
 
 ```rs
-// TODO: traitってなに？？Rng.***にはならないのか？
+// TODO: traitってなに？？ Rng.***ではないのか？
 use rand::Rng;
 let rng = rand::thread_rng()
 ```
@@ -595,7 +596,7 @@ front_of_house::hosting::add_to_waitlist();
 // 初期値がない場合
 let v: Vec<i32> = Vec::new();
 
-// 初期値がある場合
+// 初期値がある場合（マクロを使って初期化できる）
 let v = vec![1, 2, 3];
 ```
 
@@ -610,6 +611,95 @@ v.push(7);
 v.push(8);
 ```
 
+値の取得には２種類の方法がある。いずれも参照を取得する。
+
+```rs
+// 結果を&Tとして受け取る
+// 存在しなければパニックになる
+let third = &v[2];
+
+// 結果をOption<&T>として受け取る
+// 存在しなければNoneを返し、存在すればSome(&T)を返す。
+let third = v.get(2);
+```
+
+反復処理
+
+```rs
+// 参照のみ
+let v = vec![1,2,3];
+for i in &v {
+  println!("{}", i);
+}
+
+// 変更あり
+let mut v = vec![1,2,3];
+for i in &mut v {
+  // Dereference operatorを使う
+  *i += 50;
+}
+```
+
+異なる型をベクターに保存したい場合は、予め Enum として作成しておくことで対応する。
+
+```rs
+enum SpreadsheetCell {
+    Int(i32),
+    Float(f64),
+    Text(String),
+}
+
+let row = vec![
+    SpreadsheetCell::Int(3),
+    SpreadsheetCell::Text(String::from("blue")),
+    SpreadsheetCell::Float(10.12),
+];
+```
+
 ### String
 
-### Hashmap
+String とは？
+
+- String literal(`str`)
+  - rust で唯一の組み込みの文字列型
+  - string slice(`&str`)として使用される。なぜなら、文字列自体はバイナリに組み込まれる完全に変更不可能なものであり、String literal はそこへの参照としてしか存在できないから。
+- String type(`String`)
+  - ライブラリにより提供される
+  - 拡張、変更、所有が可能
+
+rust の世界で'String'と言った場合、String type 又は String slice を指すことが多い。どちらも UTF-8。
+
+String の作り方
+
+```rs
+let s = "aaa".to_string();
+let s = String::from("aaa");
+```
+
+末尾に文字列を追加する。なお、`push_str()`は参照(string literal)を引数として取るので、所有権の移転は発生しない。
+
+```rs
+let mut s = String::from("foo");
+s.push_str("bar");
+```
+
+文字列の結合(+を使う方法)
+
+- `s1`の所有権は s に移る。再利用されるということ。少し効率的。
+- `+`に与えることができるのは`&str`型。なお、`&String`は自動的に変換される。deref coercion という。
+
+```rs
+let s1 = String::from("tic");
+let s2 = String::from("tac");
+let s3 = String::from("toe");
+
+let s = s1 + "-" + &s2 + "-" + &s3;
+```
+
+文字列の結合(`format!`を使う方法)
+
+- この場合は所有権の移転は一切発生しない。
+
+```rs
+let s = format!("{}-{}-{}", s1, s2, s3);
+```
