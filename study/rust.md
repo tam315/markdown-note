@@ -740,3 +740,62 @@ for b in "नमस्ते".bytes() {}
 
 // graphene clustersで取り出して繰り返すには外部ライブラリが必要
 ```
+
+### Hash Map
+
+作成
+
+```rs
+use std::collections::HashMap;
+
+let mut scores = HashMap::new();
+
+scores.insert(String::from("Blue"), 10);
+scores.insert(String::from("Yellow"), 50);
+```
+
+複数の vector を組み合わせて作成することもできる
+
+```rs
+let teams = vec![
+  String::from("Blue"),
+  String::from("Yellow")
+];
+let initial_scores = vec![
+  10,
+  50,
+];
+let scores: HashMap<_, _> =
+    teams.into_iter().zip(initial_scores.into_iter()).collect();
+```
+
+値の取得(Option 型が得られる)
+
+```rs
+let score = scores.get("Blue");
+```
+
+イテレーション
+
+```rs
+for (key, value) in &scores {}
+```
+
+値の更新
+
+```rs
+let mut scores = HashMap::new();
+scores.insert(String::from("Blue"), 10);
+
+// 上書き
+scores.insert(String::from("Blue"), 25);
+
+// 既存のデータを使って上書き
+let count = scores.entry("Blue").or_insert(0);
+*count += 1;
+
+// 値がなければ挿入、あれば何もしない
+scores.entry(String::from("Blue")).or_insert(50);
+
+
+```
