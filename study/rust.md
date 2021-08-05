@@ -826,4 +826,148 @@ RUST_BACKTRACE=1 cargo run
 
 ### Result
 
-TODO: ここから
+- プログラムを止めるまでもないエラーの場合、`Result`型が使われる。
+- `Result`, `Ok`, `Err`は prelude により用意されるので、接頭子をつけずに使える。
+
+```rs
+enum Reeult<T, E> {
+  Ok(T),
+  Err(E),
+}
+```
+
+処理結果を確認して、以降の処理を分岐する方法
+
+```rs
+use std::fs::File;
+let f = File::open("hello.txt");
+
+let f = match f {
+  Ok(file) => file,
+  Err(error) => panic!("{:?}", error),
+};
+
+// `unwrap()`を使うと、上記の処理を短く書ける
+let f = File::open("hello.txt").unwrap();
+
+// expectはunwrapと同じだが、わかりやすいメッセージを表示することができる
+let f = File::open("hello.txt").expect("Failed to open hello.txt");
+
+```
+
+より複雑な場合分けにはマッチガードを使う
+
+```rs
+let f = match f {
+  Ok(file) => file,
+  // if... の部分がマッチガード
+  // refの意味はようわからん
+  Err(ref error) if error.kind() == ErrorKind::NotFound => match File::create("hello.txt") {
+    Ok(fc) => fc,
+    Err(e) => {
+      panic!("Tried to create file but there was a problem: {:?}", e)
+    }
+  },
+  Err(error) => {
+    panic!("There was a problem opening the file: {:?}", error)
+  }
+};
+```
+
+Tips: 型を調べたいときは、全然違う型に代入して意図的にエラーを起こし、エラーメッセージで確認する
+
+```rs
+let f: u32 = File::open("hello.txt");
+// メッセージ => found enum `Result<File, std::io::Error>`
+```
+
+エラーの処理を関数の呼び出し元にまかせる（**エラーの委譲**）には、関数の返り値の型を Result にする。
+
+```rs
+use std::io;
+use std::io::Read;
+use std::fs::File;
+
+fn read_username_from_file() -> Result<String, io::Error> {
+    let f = File::open("hello.txt");
+
+    let mut f = match f {
+        Ok(file) => file,
+        // エラーを呼び出し元に返す
+        Err(e) => return Err(e),
+    };
+
+    let mut s = String::new();
+
+    match f.read_to_string(&mut s) {
+        Ok(_) => Ok(s),
+        // エラーを呼び出し元に返す
+        Err(e) => Err(e),
+    }
+}
+```
+
+`?`演算子を使うことで、上記と同等の処理をよりシンプルに書ける
+
+```rs
+fn read_username_from_file() -> Result<String, io::Error> {
+    let mut s = String::new();
+
+    // ?と書くだけでエラーの委譲を行える
+    let mut f = File::open("hello.txt")?;
+    f.read_to_string(&mut s)?;
+
+    // 又は連結して一文で書くことも可能
+    File::open("hello.txt")?.read_to_string(&mut s)?;
+
+    Ok(s)
+}
+```
+
+### panic と Result の使い分け方
+
+- ユースケースごとの使い分け
+  - サンプルコード、プロトタイプコード、テストコードの場合
+    - panic(unwrap, expect) が最適。
+    - 意図が明確になるため。テストコードを適切に失敗させるため。
+  - 開発者がコンパイラよりも情報を持っており、正しさを確信できる場合
+    - 例えば、下記は常に正しいので panic してよい。
+      ```rs
+      let home: IpAddr = "127.0.0.1".parse().unwrap();
+      ```
+    - 逆に、IP アドレスがユーザ入力等で与えられる場合は Result を使って処理する。
+
+エラー処理のガイドライン
+
+- パニックが最適
+  - 悪い状態(前提、保証、契約、不変性が破られたこと)である、かつ以下のいずれかを満たす場合
+    - その悪い状態が絶対に起きてはならないことである
+    - その時点以降、良い状態であることを前提にコードが書かれている
+    - 型を使って問題の発生を防ぐ方法がない
+- Result が最適
+  - 失敗が予想されるとき(HTTP リクエストなど)
+
+型を使って値が正しいことを保証するには、下記のような Constructor と Getter を使う。
+
+```rs
+pub struct Guess {
+    // この値は基本的に非公開。モジュールとして呼び出される場合。
+    value: u32,
+}
+
+impl Guess {
+    pub fn new(value: u32) -> Guess {
+        if value < 1 || value > 100 {
+            panic!("Value must be between 1 and 100, got {}.", value);
+        }
+
+        Guess {
+            value
+        }
+    }
+
+    pub fn value(&self) -> u32 {
+        self.value
+    }
+}
+```
