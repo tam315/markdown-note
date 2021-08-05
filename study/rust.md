@@ -754,7 +754,7 @@ scores.insert(String::from("Blue"), 10);
 scores.insert(String::from("Yellow"), 50);
 ```
 
-複数の vector を組み合わせて作成することもできる
+複数の vector を zip して作成することもできる
 
 ```rs
 let teams = vec![
@@ -796,6 +796,34 @@ let count = scores.entry("Blue").or_insert(0);
 
 // 値がなければ挿入、あれば何もしない
 scores.entry(String::from("Blue")).or_insert(50);
-
-
 ```
+
+## エラー
+
+rust には 2 種類のエラーがある。他の言語ではこれらは区別されないことが多い。
+
+- recoverable なエラー
+  - `Result<T, E>`型
+  - 例）ファイルが見つからなかった場合
+- unrecoverable なエラー
+  - `panic!`マクロ
+  - 例）Array の範囲外にアクセスした場合
+
+### panic!
+
+- [コラム] バイナリサイズを可能な限り小さくしたい場合は`Unwinding`を`abort`に変更する([参考](https://doc.rust-lang.org/book/ch09-01-unrecoverable-errors-with-panic.html#unwinding-the-stack-or-aborting-in-response-to-a-panic))
+
+```toml
+[profile] # リリース環境ならprofile.release
+panic = 'abort'
+```
+
+- Backtrace を取得するには以下のようにする。
+
+```sh
+RUST_BACKTRACE=1 cargo run
+```
+
+### Result
+
+TODO: ここから
