@@ -150,7 +150,7 @@ for number in (1..4) {
 ### ムーブ
 
 - 代入しても所有権が移動しない(Copy される)型
-  - 整数型、論理値型、浮動小数点型、文字型
+  - 整数型、論理値型、浮動小数点型、文字列スライス(`&str`)
   - 上記から成るタプル
   - 参照
 - 代入すると所有権が移動する(Move される)型
@@ -160,8 +160,9 @@ for number in (1..4) {
 
 ### 参照と借用
 
-- 引数に値を渡すと、その値の所有権は関数に移る。
-- 引数に参照を渡すと、その参照の所有権は移転しない。
+- 引数に**値**を渡すと、値の所有権は関数に**移転する**。
+- 引数に**値への参照**を渡すと、値の所有権は関数に**移転しない**。
+  - この、関数の引数に参照を取ることを**借用**と呼ぶ
 
 ```rust
 fn main() {
@@ -172,9 +173,11 @@ fn main() {
     println!("The length of '{}' is {}.", s1, len);
 }
 
+// 借用
 fn calculate_length(s: &String) -> usize {
     s.len()
-    // sはこの後破棄されるが、参照なので問題ない
+    // 参照であるsはここで破棄されるが、もとの値は破棄されない。
+    // 一時的に借りただけ、というイメージ。
 }
 ```
 
@@ -270,15 +273,16 @@ let m = Message::Move { x: 1, y: 2 };
 
 ### Option 型
 
-Null になりうる値は Option 型として使う必要がある
+Null になりうる値は Option 型として使う必要がある。Option, Some 及び None は標準ライブラリに定義されているため、接頭子なしで使用できる。
 
 ```rust
-// 標準ライブラリに定義されている。SomeとNoneは接頭子なしで使用できる。
+// Option型の定義
 enum Option<T> {
     Some(T),
     None,
 }
 
+// 使い方の例
 let mut maybe_number: Option<i32>;
 maybe_number = None;
 maybe_number = Some(5);
@@ -861,8 +865,11 @@ let f = match f {
   Ok(file) => file,
   Err(error) => panic!("{:?}", error),
 };
+```
 
-// `unwrap()`を使うと、上記の処理を短く書ける
+「成功した場合は値を取得し、失敗した場合はパニックする」という処理は定型的であるため、`unwrap()`や`expect()`という関数を使って短縮できるようになっている。
+
+```rs
 let f = File::open("hello.txt").unwrap();
 
 // expectはunwrapと同じだが、わかりやすいメッセージを表示することができる
@@ -922,7 +929,7 @@ fn read_username_from_file() -> Result<String, io::Error> {
 }
 ```
 
-`Result`型の値に`?`演算子を使うことで、上記と同等の処理をよりシンプルに書ける
+「成功した場合は値を取得し、失敗したときは呼び出し元にエラー処理を委譲する」ことは定型的な処理であるため、`?`演算子を使って簡潔に記載できる様になっている。
 
 ```rs
 fn read_username_from_file() -> Result<String, io::Error> {
