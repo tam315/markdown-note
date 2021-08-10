@@ -2,40 +2,62 @@
 
 [[toc]]
 
-## User Interface
+## ✅ User Interface ✅
 
-### Widget の基本
+## Introduction to widgets
 
-#### 最小構成
+### Hello world
+
+ミニマル構成
 
 ```dart
-import 'package:flutter/material.dart';
-
 void main() {
-  runApp(MaterialApp(
-      home: Scaffold(
-          appBar: AppBar(
-            title: Text('Welcome to Flutter'),
-          ),
-          body: Center(
-            child: Text('Hello World'),
-          ))));
+  runApp(
+    const Center(
+      child: Text(
+        'Hello, world!',
+        textDirection: TextDirection.ltr,
+      ),
+    ),
+  );
 }
 ```
 
+- root widget(上記の場合 Center)は画面全体を占める仕様になっている
 - `StatelessWidget` 又は `StatefulWidget` を継承したウィジェットを組み合わせて画面を作っていく。
-  - 上記の`MaterialApp`,`Scaffold`などは Stateful、`Text`は Stateless
 - Widget の主たる役割は`build()`メソッドを実装すること。
 
-#### 基本ウィジェット
+### 基本ウィジェット
 
-- `Text` --- テキスト
-- `Column`|`Row` --- 縦・横方向に要素を並べる
-- `Expanded` --- 余白を埋めきるまで拡張する。または収まるように縮小する。`flex`により拡張率を設定できる。
-- `Stack` --- 複数の要素を絶対配置する。出現順に z 方向に重ねて表示する。
-- `Container` --- web でいう div。`BoxDecoration`で装飾する。
+- `Text`
+  - テキスト
+- `Column`|`Row`
+  - 縦・横方向に要素を並べる
+  - web でいう flexbox
+- `Stack`
+  - 複数の要素を出現順に z 方向に重ねて表示する
+  - `Positioned`widget で位置を調節できる
+  - web でいう absolute 配置
+- `Container`
+  - web でいう div
+  - `BoxDecoration`で装飾する。
+- `Expanded`
+  - スペースを使い切るまで拡張する。または収まるように縮小する。
+  - `child`の中で使う
+  - `flex`により拡張率を設定できる。
+
+widget を引数として別の Widget に与える(React の children に相当)のは便利で強力なテクニックである。
 
 #### マテリアルコンポーネントの利用
+
+- Material design を使うには以下の設定を予め行っておくこと
+
+```yaml
+# pubspec.yaml
+name: my_app
+flutter:
+  uses-material-design: true
+```
 
 - `MaterialApp`ウィジェット
   - テーマや`Navigator`、`routes`など、マテリアルデザインに必須の機能を提供する。
