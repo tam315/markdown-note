@@ -458,3 +458,56 @@ Image.asset('images/pic1.jpg');
 - Widget はあくまで設計図・設定・雛形である。実際には Widget を基にして Element という実体が作成され、それが画面上に配置される。
 - Element tree が web で言うところの DOM tree にあたり、Widget tree が仮想 DOM にあたるイメージかな？
 - `InheritedWidget` を使うと、React の Context のようなことが実現できる。詳しくは[こちら](https://medium.com/flutter-jp/inherited-widget-37495200d965)を読むとわかりやすい。
+
+## Creating adaptive & responsive apps
+
+パス
+
+## Building adaptive apps
+
+パス
+
+## レイアウトの要件(Constraints)を理解する
+
+- Constraint とは以下の４つのこと。
+  - min width
+  - max width
+  - min height
+  - max height
+
+### レイアウトの 3 原則
+
+- Flutter のレイアウトは**Constraints go down. Sizes go up. Parent sets position.**の３つのルールで動作する。web のレイアウトとは全く異なるルールなので要注意。具体的な動作は以下の通り。
+  - ウィジェットは、**parent**から**constraint**を受け取る。
+  - ウィジェットは、**children**に**constraint**を伝えたうえで、children がどういう**size**になりたいか聞く。
+  - ウィジェットは、**children**を一つ一つ配置(**position**)していく。
+  - 最後に、ウィジェット自身がどういう**size**になりたいか親に伝える。
+
+### レイアウトの制約事項
+
+- ウィジェットは希望するサイズになれない場合もある。なぜなら親の決めた constraint が優先されるから。
+- ウィジェットは position を自分で決められないし、知ることもできない。なぜなら、それを決めるのは親だから。
+- ウィジェットの size や position を正確に設定するためには、ツリー全体を把握する必要がある。なぜなら、親の size や position もそのまた親に依存するから。
+- alignment は具体的に設定する必要がある。なぜなら、もし child が parent とは違うサイズになりたいのに、parent が十分な情報を持っていない場合、child のサイズは無視される事がある。
+
+### レイアウトの挙動を例で学ぶ
+
+[このページ](https://flutter.dev/docs/development/ui/layout/constraints)の Examples を眺めていくとだいたい分かる。以下、ハッとしたことリスト：
+
+- サイズ決定ロジックは意外と複雑なので注意。例えば `Container` なら、子要素があれば最小サイズ、なければ最大サイズになるなど。
+- `ConstrainedBox`は子に constraint を**加える**。言い換えると、もともと親から与えられている constraint がある場合はそちらが優先されるので注意。
+- `UnconstrainedBox`は子にいかなる制約も加えないため、子を自然なサイズで描写できる
+- `OverflowBox`は、動作は`UnconstrainedBox`と同じだが、黄色いゼブラの警告を表示しない点が異なる。
+- bounded という言葉の意味は、`double.infinity`ではない width と height を持っているということ。
+- `Row`は子にいかなる constraint も加えないため、自然のサイズで表示される。
+  - ただし、`Expanded`で子をラップした場合、子のサイズは無視される。
+  - `Expanded`の兄弟に`Flexible`がいる。こちらは、子に同じサイズになるように強要しない。
+
+### Tight vs loose constraints
+
+- Tight constraint
+  - (min|max)Width に同じ値を指定し、かつ (min|max)Height にも同じ値を指定すること
+  - 例：root screen の constraint: 子要素に画面幅・高さと同じになるように強要。
+- Loose constraint
+  - max(Width|Height)のみ指定し、min(Width|Height)は 0 であること
+  - 例：Center の constraint: 子要素は小さくなっていい。ただし画面高と高さは超えないように。
