@@ -48,7 +48,7 @@ void main() {
 
 widget を引数として別の Widget に与える(React の children に相当)のは便利で強力なテクニックである。
 
-#### マテリアルコンポーネントの利用
+### マテリアルコンポーネントの利用
 
 - Material design を使うには以下の設定を予め行っておくこと
 
@@ -59,10 +59,11 @@ flutter:
   uses-material-design: true
 ```
 
-- `MaterialApp`ウィジェット
-  - テーマや`Navigator`、`routes`など、マテリアルデザインに必須の機能を提供する。
+- `MaterialApp`ウィジェットの役割
+  - `Navigator`をセットアップする
+    - Navigator は routes を管理するために使う。routes は Widget のスタックとして管理されており、個々の Widget(各画面)は文字列で識別される。
   - マテリアルデザインのウィジェットを使うときには必ず先祖に必要。
-  - 特に理由がなければ`MaterialApp`+`Scaffold`ウィジェットを使うのがグッドプラクティス。
+  - `MaterialApp`を最上位に配置し、各画面を`Scaffold`ウィジェットで作るのがグッドプラクティス。
 
 ```dart
 void main() {
@@ -76,77 +77,73 @@ class TutorialHome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.menu),
-          tooltip: 'Navigation menu',
-          onPressed: null,
-        ),
-        title: Text('Example title'),
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.search),
-            tooltip: 'Search',
-            onPressed: null,
-          ),
-        ],
-      ),
-      body: Center(
-        child: Text('Hello, world!'),
-      ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Add',
-        child: Icon(Icons.add),
-        onPressed: null,
-      ),
+      appBar: ...,
+      body: ...,
+      floatingActionButton: ...,
     );
   }
 }
 ```
 
-#### 子ウィジェットへの引数の渡し方
+### 子ウィジェットへの引数の渡し方
 
 ```dart
 class MyText extends StatelessWidget {
-  MyText({this.firstName, this.lastName});
+  const MyText({
+    // 引数を取り出してメンバ変数にセット？
+    // 必須のもの
+    required this.firstName,
+    // 必須でないもの
+    this.lastName = "",
+    // keyについてはよくわからんがsuperを呼ぶときに渡すらしい
+    Key? key,
+  }) : super(key: key);
 
+  // メンバ変数の定義？
   final String firstName, lastName;
 
   @override
-  build(context) {
-    return Text(firstName + ' ' + lastName);
+  Widget build(BuildContext context) {
+    return Center(child: Text(firstName + ' ' + lastName));
   }
 }
 
-// 親側
+
+// 使い方
 MyText(
   firstName: 'John',
   lastName: 'Doe',
 )
 ```
 
-#### ジェスチャーへの反応
+### ジェスチャー
 
-`GestureDetector`を使う。
+- ボタンなどの場合は`onPressed()`などが用意されているのでそれを使う。
+- それらがない場合は`GestureDetector`で要素をラップする。
 
 ```dart
-class MyButton extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-        onTap: () {
-          print('MyButton was tapped!');
-        },
-        child: Text('tap me'));
-  }
-}
+GestureDetector(
+  onTap: ..., // タップ時に行いたい処理
+  child: ..., // ボタンなど
+)
 ```
 
-#### StatefulWidget
+### StatefulWidget
+
+- State を生成し保持することのできる特別な widget
+- `StatefulWidget`と`State`が別オブジェクトである理由：
+  - StatefulWidget は一時的なもの。再描写のたびに再生成される。
+  - State は継続的なもの。再描写されても同じものが使い回され(`createState()`は初回のみ呼ばれる)、状態を保持する。
+- StatefulWidget の内容を減らし、StatelessWidget に抽出していくことが重要
+- Stateful| Stateless は関係ない話だが、より上位の Widget で値を管理するということは、その値の寿命を伸ばすことを意味する。極端な話、`runApp()`に渡されるコンポーネントで管理される値は、アプリが起動している間中、ずっと保持される。
 
 ```dart
 class Counter extends StatefulWidget {
-  Counter({this.name});
+  // - このクラスはstateの設定である。
+  // - 親から与えられた引数を保持する
+  //   - これらはstateのbuildメソッドから`widget.***`としてアクセス可能
+  //   - これらは常にfinalとして扱われる
+  const Counter({this.name = 'my counter', Key? key}) : super(key: key);
 
   final String name;
 
@@ -159,7 +156,7 @@ class _CounterState extends State<Counter> {
 
   void _increment() {
     setState(() {
-      // setStateを呼ぶことでbuildが再実行されて画面が更新される
+      // setStateの中で値を変更することで画面が再描写される。
       _counter++;
     });
   }
@@ -173,43 +170,31 @@ class _CounterState extends State<Counter> {
           child: Text('Increment'),
         ),
 
-        // `StatefulWidget`のプロパティにアクセスするには
-        // `widget.名前`を使う
-        Text('Name: ' + widget.name),
-
-        // インスタンス変数にアクセスするには`$名前`を使う
-        Text('Count: $_counter'),
+        // `StatefulWidget`のメンバ変数とstateを組み合わせて使用できる
+        Text(widget.name + _counter.toString()),
       ],
     );
   }
-}
-
-// 使う時
-Counter(name: 'num of click');
+};
 ```
 
-- `StatefulWidget`と`State`が別オブジェクトである理由：
-  - 関心を分離して再利用性を高めるため？いまひとつよくわからない
-  - StatefulWidget は表示を担当する。親の`build()`が実行されるたびに再生成される一時的なもの。
-  - State は状態の保持を担当する。親の`build()`が実行されても同じものが使い回される。
+### widget の変更検知
 
-#### widget の変更検知
-
-widget(StatefulWidget のプロパティのこと。React の props のようなもの)の変更を検知したいときは`didUpdateWidget`をオーバーライドする。
+StatefulWidget の引数を State で利用している場合（`widget.***`を使っている場合）、それらの変更は自動的に反映される。もし手動で変更を検知してなにかしたいときは`didUpdateWidget`をオーバーライドする。
 
 ```dart
 class _CounterState extends State<Counter> {
   @override
   void didUpdateWidget(Counter oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 処理
+    // 処理をここに書く
   }
 }
 ```
 
-#### State のライフサイクル
+### ライフサイクルメソッド
 
-ライフサイクルメソッドは`initState`や`dispose`をオーバーライドして記述する。
+StatefulWidget にはライフサイクルメソッドがある。`initState`や`dispose`をオーバーライドして記述する。
 
 ```dart
 class _CounterState extends State<Counter> {
@@ -217,40 +202,87 @@ class _CounterState extends State<Counter> {
   @override
   void initState() {
     super.initState();
-    // 処理
+    // 処理をここに書く
   }
 
   // アンマウント時に行いたい処理
   @override
   void dispose() {
-    // 処理
+    // 処理をここに書く
     super.dispose();
   }
 }
 ```
 
-#### key
+### Local key
 
-key を指定しない場合、差分判定はコンポーネントの位置で行われる。
-
-```dart
-[
-  if (showFirst) MyWidget(), // 1
-  MyWidget(), // 2
-]
-```
-
-このため例えば上記の showFirst が true から false になった時、削除されるのは 2 番である。これを防ぐには key を使う。
-
-- `ValueKey` --- 数値などの値で区別する
-- `ObjectKey` --- オブジェクトの id で区別する
-- `UniqueKey` --- 絶対に重複しない。これを指定したコンポーネントは必ず毎回作り直される。
+- Loacl key を使うことで、例えば無限リスト等において、Widget の再利用が効率的に行われる様になる。
+  - `ValueKey` --- 数値などの値で区別する
+  - `ObjectKey` --- オブジェクトの id で区別する
+  - `UniqueKey` --- 絶対に重複しない。これを指定したコンポーネントは必ず毎回作り直される。
 
 ```dart
-// 使用例
 MyTextField(key: ValueKey(2))
+MyTextField(key: ValueKey("asdf"))
 MyTextField(key: ObjectKey(someObject))
 MyTextField(key: Uniquekey())
+```
+
+- Local key を指定しない場合、widget の再利用はコンポーネントの位置と種類に基づいて行われる。
+- 例えば下記のコードで、showFirst が true から false になった時には以下の処理が行われるが、これは非効率である。本来は 1 を削除するだけでよいため。
+  - 2 の要素が削除される
+  - 1 の要素の引数を`'world'`に変更する
+
+```dart
+if (showFirst) MyWidget('hello'), // 1
+MyWidget('world'), // 2
+```
+
+### Global key
+
+- State クラスの state やメソッドに対し、外部からアクセスしたいときに使う（そんなことしてええんか？）
+- 当然ながら Stateful widget に対してのみ使用できる。また、対象の State クラス、State、メンバ変数などが Pubric である必要がある。
+- [この動画](https://www.youtube.com/watch?v=jlZ8GV_3nnk)を見るとわかりやすい。
+
+```dart
+class HomeScreen extends StatelessWidget {
+  // 1. グローバルキーを用意する
+  final counterGlobalKey = GlobalKey<CounterState>();
+
+  void someParentFunction() {
+    // 3. 親側から子のStateやメソッドにアクセスできるようになる
+    print(counterGlobalKey.currentState?.count);
+    counterGlobalKey.currentState?.increment();
+  }
+
+  @override
+  build(BuildContext context) {
+    // 2. グローバルキーをStatefulWidgetに与える
+    return Counter(key: counterGlobalKey);
+  }
+}
+
+class Counter extends StatefulWidget {
+  const Counter({Key? key}) : super(key: key);
+
+  @override
+  createState() => CounterState();
+}
+
+// Must be public
+class CounterState extends State<Counter> {
+  // Must be public
+  int count = 0;
+
+  // Must be public
+  void increment() {
+    setState(() {
+      count += 1;
+    });
+  }
+
+  /* 以下省略 */
+}
 ```
 
 ### レイアウト
