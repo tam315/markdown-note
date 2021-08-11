@@ -39,8 +39,9 @@ void main() {
   - `Positioned`widget で位置を調節できる
   - web でいう absolute 配置
 - `Container`
-  - web でいう div
+  - パディング、マージン、ボーダー、背景色を使いたい時に利用する
   - `BoxDecoration`で装飾する。
+  - web でいう div
 - `Expanded`
   - スペースを使い切るまで拡張する。または収まるように縮小する。
   - `child`の中で使う
@@ -285,24 +286,23 @@ class CounterState extends State<Counter> {
 }
 ```
 
-### レイアウト
+## ✅✅ レイアウトの作成 ✅✅
 
-Flutter においてはほぼ全てのものがウィジェットである。
+## レイアウトの概要
 
-- レイアウトのためのウィジェット --- `Row`や`Center`など
-- UI エレメントを作るためのウィジェット（目に見えるウィジェット） --- `Text`や`RaisedButton`など
+- Flutter においてはほぼ全てのものがウィジェットである。
+  - レイアウトのためのウィジェット --- `Row`や`Center`など
+  - UI エレメントを作るためのウィジェット（目に見えるウィジェット） --- `Text`や`RaisedButton`など
 
-`Container` --- パディング、マージン、ボーダー、背景色を使いたい時に利用する
+### 1 つのウィジェットを配置する手順
 
-#### レイアウトの手順
-
-[レイアウトウィジェット](https://flutter.dev/docs/development/ui/widgets/layout)を選ぶ
+まず、[レイアウトウィジェット](https://flutter.dev/docs/development/ui/widgets/layout)を選ぶ
 
 ```dart
 Center(child:null)
 ```
 
-目に見えるウィジェットを作成する。例えば`Text`や`Icon`など。
+次に、目に見えるウィジェットを作成する。例えば`Text`や`Icon`など。
 
 ```dart
 Text('hello')
@@ -314,44 +314,35 @@ Text('hello')
 Center(child:Text('hello'))
 ```
 
-レイアウトウィジェットをページに配置する。親ウィジェットの`build`メソッドや、マテリアルアプリであれば`Scaffold`の`body`に追加することで行う。
+ウィジェットをページに配置する。
 
-```dart
-class MyComponent extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Text('hello'));
-  }
-}
-```
+### 複数のウィジェットを配置する手順
 
-#### ハイレベルなウィジェット
-
-下記のようなハイレベルなウィジェットが用意されているので積極的に活用すること。
-
-- Row の代わりに使える[`ListTile`](https://api.flutter.dev/flutter/material/ListTile-class.html)
-- Column の代わりに使える[`ListView`](https://api.flutter.dev/flutter/widgets/ListView-class.html)
-
-#### 配置
-
-`Row`や`Column`は配置の設定を行うことができる。
-
-- main axis は flex でいう`justify-content`
-- cross axis は flex でいう`align-items`
+`Row`や`Column`を使って複数の widget を縦又は横方向に並べて配置できる。
 
 ```dart
 Row(
+  // `justify-content`相当
   mainAxisAlignment: MainAxisAlignment.spaceAround,
+  // `align-items`相当
   crossAxisAlignment: CrossAxisAlignment.center,
-  children: []
+  children: [
+    /* ...並べたいwidgets */
+  ]
 )
 ```
+
+- 下記のような抽象度の高いウィジェットも用意されているので適宜活用すること。
+  - Row の代わりに使える[`ListTile`](https://api.flutter.dev/flutter/material/ListTile-class.html)
+    - 行頭末にアイコンを追加したり、3 行までのテキストを表示することが簡単に行える
+  - Column の代わりに使える[`ListView`](https://api.flutter.dev/flutter/widgets/ListView-class.html)
+    - カラムレイアウトを簡単に作成できる。コンテンツが縦にあふれる場合は自動でスクロールが表示される。
 
 #### Row や Column をはみ出す場合
 
 - 画像等が大きすぎて画面内に要素が収まらない場合、黄色と黒色のボーダーが警告として画面上に表示される。
 - 画面内に収めたい場合は`Expanded`で`Row`等の各子要素を囲む。
-  - `flex`を指定することで拡大率を設定できる。
+- `flex`を指定することで拡大率を設定できる。
 
 ```dart
 Row(
@@ -388,7 +379,8 @@ Row(
 
 #### 読みやすいコードにする
 
-Flutter のコードは、ネストが深くなるとすぐに読みづらくなる。変数や関数に切り出してネストが深くならないように心がけること。
+- Flutter のコードは、ネストが深くなるとすぐに読みづらくなる。
+- UI のまとまりごとに**変数や関数 に切り出す**ことを心がけること。
 
 #### 画像
 
@@ -413,29 +405,31 @@ flutter:
 Image.asset('images/pic1.jpg');
 ```
 
-### 基本的なウィジェット
+### よく使うレイアウト用のウィジェット
 
-[ウィジェットカタログ](https://flutter.dev/docs/development/ui/widgets)
+- まずはこれらの基本的なウィジェットを使って画面を作ってみよう。
+- [ウィジェットカタログ](https://flutter.dev/docs/development/ui/widgets)
+- Standard widgets と Material widgets がある。後者は MaterialApp 内でしか使えない。
 
 #### Container
 
 - パディング、マージン、ボーダーを使う時
 - 背景色や背景画像を変えたい時
+- 単一の子を持つ
 
 #### GridView
 
 - ウィジェットを格子状に配置したい時
 - はみ出した部分は自動でスクロール可能になる
-- `GridView.count` 指定した数で縦横を分割するとき
-- `GridView.extent` アイテムごとの最大幅を指定して分割するとき
+- `GridView.count` 指定した数で縦横を分割する
+- `GridView.extent` アイテムの最大幅を指定して分割する
 
 #### ListView
 
 - リスト形式で項目を並べるときに使う
 - 縦方向、横方向のどちらでも使用できる
 - はみ出す場合は自動的にスクロール可能になる
-- `Column`より設定できる項目は少ないが、使いやすく、スクロールも簡単にできる。
-- `Column`では自動的にスクロールはできない点に注意
+- `Column`より設定項目は少ないものの、使いやすく、スクロールも自動的に設定される。
 
 #### Stack
 
@@ -444,14 +438,17 @@ Image.asset('images/pic1.jpg');
 - スクロールは不可
 - はみだした部分を表示するかどうかは選択できる
 
-#### Card
+#### Card (Material widget)
 
 - マテリアルデザインのカードを使いたいとき
 - 関連する情報をまとまりにしたいとき
 - 丸角と影がつく
 - スクロールは不可
+- 初期サイズは 0x0 なので注意。`SizedBox`を使うとサイズを指定できる。
+- `ListTile` と組みあわせて使うことが多い
 
-#### ListTile
+#### ListTile (Material widget)
 
 - マテリアルデザインの[リストタイル](https://flutter.dev/docs/development/ui/layout#listtile)を使いたいとき
+- 3 行までのテキストと、行頭 or 行末の任意のアイコンから構成される
 - `Row`より設定項目は少ないが、簡単に使うことができる
