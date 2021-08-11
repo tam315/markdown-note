@@ -90,8 +90,11 @@ class TutorialHome extends StatelessWidget {
 
 ```dart
 class MyText extends StatelessWidget {
+  // メンバ変数の定義
+  final String firstName, lastName;
+
   const MyText({
-    // 引数を取り出してメンバ変数にセット？
+    // 引数を取り出してメンバ変数にセット
     // 必須のもの
     required this.firstName,
     // 必須でないもの
@@ -99,9 +102,6 @@ class MyText extends StatelessWidget {
     // keyについてはよくわからんがsuperを呼ぶときに渡すらしい
     Key? key,
   }) : super(key: key);
-
-  // メンバ変数の定義？
-  final String firstName, lastName;
 
   @override
   Widget build(BuildContext context) {
@@ -140,13 +140,13 @@ GestureDetector(
 
 ```dart
 class Counter extends StatefulWidget {
+  final String name;
+
   // - このクラスはstateの設定である。
   // - 親から与えられた引数を保持する
   //   - これらはstateのbuildメソッドから`widget.***`としてアクセス可能
   //   - これらは常にfinalとして扱われる
   const Counter({this.name = 'my counter', Key? key}) : super(key: key);
-
-  final String name;
 
   @override
   _CounterState createState() => _CounterState();
@@ -452,3 +452,9 @@ Image.asset('images/pic1.jpg');
 - マテリアルデザインの[リストタイル](https://flutter.dev/docs/development/ui/layout#listtile)を使いたいとき
 - 3 行までのテキストと、行頭 or 行末の任意のアイコンから構成される
 - `Row`より設定項目は少ないが、簡単に使うことができる
+
+### 番外編
+
+- Widget はあくまで設計図・設定・雛形である。実際には Widget を基にして Element という実体が作成され、それが画面上に配置される。
+- Element tree が web で言うところの DOM tree にあたり、Widget tree が仮想 DOM にあたるイメージかな？
+- `InheritedWidget` を使うと、React の Context のようなことが実現できる。詳しくは[こちら](https://medium.com/flutter-jp/inherited-widget-37495200d965)を読むとわかりやすい。
