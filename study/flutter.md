@@ -550,7 +550,7 @@ State の管理には 3 つのアプローチがある。
 
 ## アセットと画像
 
-TODO: 下記の項目が記載されている。一旦パス。
+下記の項目が記載されている。必要になったら読む。
 
 - 画像の読み込み方法
 - 画像の Variant (Dark or Light)を扱う方法
@@ -694,4 +694,132 @@ Provider.of<CartModel>(context, listen: false).removeAll();
 
 ## JSON & serialization
 
-TODO: パス
+JSON のシリアライズ・デシリアライズをどうやるか？
+
+- PoC などの小さなプロジェクトでは manual serialization が最適
+  - `dart:convert`を使う
+  - 生の JSON を`jsonDecode()`に与えると`Map<String, dynamic>`が得られる。
+  - 容易にランタイムエラーが起こるので注意
+- 中規模・大規模なプロジェクトでは Code generation が最適
+  - `json_serializable`や`build_value`などの外部ライブラリを使って行う
+  - コンパイル時点でエラーチェックが可能
+  - モデルクラスを監視し、自動的にエンコーディング用のコードを生成する
+
+### 手動シリアライズ (inline)
+
+- タイポにより容易にエラーが起こりうる
+- 型情報が失われている
+
+```dart
+Map<String, dynamic> user = jsonDecode(jsonString);
+
+print('Howdy, ${user['name']}!');
+print('We sent the verification link to ${user['email']}.');
+```
+
+### 手動シリアライズ (inside model classes)
+
+- モデルにエンコード・デコードの機能をもたせる方法
+- 型情報は設定されるものの、冗長で、これ以上の複雑化には耐えられない。
+
+```dart
+class User {
+  final String name;
+  final String email;
+
+  User(this.name, this.email);
+
+  User.fromJson(Map<String, dynamic> json)
+      : name = json['name'],
+        email = json['email'];
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'email': email,
+      };
+}
+```
+
+### Code generation によるシリアライズ
+
+以下、json_serializable を使った例を記載。まず、`pubspec.yaml`の設定を行う。
+
+```yaml
+dependencies:
+  json_annotation: <latest_version>
+
+dev_dependencies:
+  build_runner: <latest_version>
+  json_serializable: <latest_version>
+```
+
+モデルクラスを json_serializable クラスに置き換える。
+
+```dart
+// user.dart
+
+import 'package:json_annotation/json_annotation.dart';
+
+// Userクラスが自動生成されたコードにアクセスするためのおまじない。
+// 生成されるファイル名である`<元のソースファイル名>.g.dart`を指定する。
+part 'user.g.dart';
+
+// json_serializableの処理対象にする
+@JsonSerializable()
+class User {
+  User(this.name, this.email);
+
+  String name;
+  String email;
+
+  // おまじない
+  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+
+  // おまじない
+  Map<String, dynamic> toJson() => _$UserToJson(this);
+}
+```
+
+サーバサイドとフロントサイドでキー名が違う場合などは、下記のようにする。
+
+```dart
+// フィールドごとに設定する方法
+@JsonKey(name: 'registration_date_millis')
+final int registrationDateMillis;
+
+// 一括で設定する方法(JSONのスネークケース<=>モデルのキャメルケース)
+ @JsonSerializable(fieldRename: FieldRename.snake)
+```
+
+その他、必須要件なども設定できる
+
+```dart
+@JsonKey(defaultValue: false) // なければこの値をセットする
+@JsonKey(required: true) // なければエラーを上げる
+@JsonKey(ignore: true) // コード自動生成の処理対象から外す
+```
+
+コードの自動生成方法
+
+- 一回のみ
+  `flutter pub run build_runner build`
+- 継続してウォッチ
+  `flutter pub run build_runner watch`
+
+実際の利用方法は以下の通り。これで、もはやシリアライズに関する責務はライブラリに委譲された。
+
+```dart
+// デコーディング
+Map<String, dynamic> userMap = jsonDecode(jsonString);
+var user = User.fromJson(userMap);
+
+// エンコーディング
+var userMap = User.toJson(user);
+String json = jsonEncode(userMap);
+```
+
+なお、モデルをネストさせることも可能。ただし、ネストしたモデルは JSON にしたときにデフォルトでは展開されないので、`explicitToJson`の指定が必要。詳細は[こちら](https://flutter.dev/docs/development/data-and-backend/json#generating-code-for-nested-classes)。
+
+```dart
+@JsonSerializable(explicitToJson: true)
+```
