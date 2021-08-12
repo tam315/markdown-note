@@ -586,13 +586,76 @@ TODO: めちゃくちゃ分量が多いので一旦パス
 
 ## - Provider package
 
-- 最もシンプルな State の管理方法。
+- 最もシンプルな State の管理方法。React の Context に似ている。
 - `InheritedWidget`, `InheritedNotifier`, `InheritedModel`という低レベルなものを使いやすくしたもの
-- provider を使うには以下の３つのことをりかいする必要がある
+- provider を使うには以下の３つのことを理解する必要がある
   - ChangeNotifier
   - ChangeNotifierProvider
   - Consumer
 
 ### ChangeNotifier
 
-- 変更を通知する役割を持つ。購読することができる。
+- `notifyListeners()`により、子孫に変更を通知する役割を持つ
+- 逆に言うと、Consumer は ChangeNotifier を購読することができる
+- `flutter:foundation`由来
+
+```dart
+class CartModel extends ChangeNotifier {
+  final List<Item> _items = [];
+
+  get items => ListView(_items);
+
+  int get totalPrice => _items.length * 12345;
+
+  void add(Item item) {
+    _items.add(item);
+    notifyListeners(); // 通知
+  }
+
+  void removeAll() {
+    _items.clear();
+    notifyListeners(); // 通知
+  }
+}
+```
+
+### ChangeNotifierProvider
+
+- `ChangeNotifier`のインスタンスを子孫に渡す役割を持つ
+- 最も近い共通の祖先に配置する
+- `provider`パッケージ由来
+
+```dart
+ChangeNotifierProvider(
+  create: (context) => CartModel(),
+  child: const CommonAncestor(),
+)
+
+// 複数使う場合は以下のようにする
+MultiProvider(
+  providers: [
+    ChangeNotifierProvider(create: (context) => CartModel()),
+    Provider(create: (context) => SomeOtherClass()),
+  ],
+  child: const MyApp(),
+),
+```
+
+### Comsumer
+
+- Generic は必須。型情報を基に、どの Notifier の値を取得するかが決定されるため。
+- child はパフォーマンス最適化のために使われる。詳細は[こちら](https://flutter.dev/docs/development/data-and-backend/state-mgmt/simple#consumer)を参照。
+
+```dart
+Consumer<CartModel>(
+  builder: (context, cart, child) {
+    return Text("Total price: ${cart.totalPrice}");
+  },
+);
+```
+
+- なお、メソッドだけにアクセスできれば足りる場合は、`Consumer`だとコストが高くつくため、`Provider.of`を`listen: false`にして使うと良い。
+
+```dart
+Provider.of<CartModel>(context, listen: false).removeAll();
+```
