@@ -4,8 +4,6 @@
 
 ## --- User Interface ---
 
-## Introduction to widgets
-
 ### Hello world
 
 ミニマル構成
@@ -23,7 +21,7 @@ void main() {
 }
 ```
 
-- root widget(上記の場合 Center)は画面全体を占める仕様になっている
+- root widget は画面全体を占める仕様になっている。詳細は後述の constraints を参照。
 - `StatelessWidget` 又は `StatefulWidget` を継承したウィジェットを組み合わせて画面を作っていく。
 - Widget の主たる役割は`build()`メソッドを実装すること。
 
@@ -86,7 +84,7 @@ class TutorialHome extends StatelessWidget {
 }
 ```
 
-### 子ウィジェットへの引数の渡し方
+### 子ウィジェットへ引数を渡す
 
 ```dart
 class MyText extends StatelessWidget {
@@ -286,9 +284,9 @@ class CounterState extends State<Counter> {
 }
 ```
 
-## - レイアウトの作成
+## レイアウトの作成
 
-## - レイアウトの概要
+## レイアウトの概要
 
 - Flutter においてはほぼ全てのものがウィジェットである。
   - レイアウトのためのウィジェット --- `Row`や`Center`など
@@ -459,15 +457,15 @@ Image.asset('images/pic1.jpg');
 - Element tree が web で言うところの DOM tree にあたり、Widget tree が仮想 DOM にあたるイメージかな？
 - `InheritedWidget` を使うと、React の Context のようなことが実現できる。詳しくは[こちら](https://medium.com/flutter-jp/inherited-widget-37495200d965)を読むとわかりやすい。
 
-## - Creating adaptive & responsive apps
+## Creating adaptive & responsive apps
 
 TODO: 一旦パス
 
-## - Building adaptive apps
+## Building adaptive apps
 
 TODO: 一旦パス
 
-## - レイアウトの要件(Constraints)を理解する
+## レイアウトの要件(Constraints)を理解する
 
 - Constraint とは以下の４つのこと。
   - min width
@@ -475,7 +473,7 @@ TODO: 一旦パス
   - min height
   - max height
 
-### - レイアウトの 3 原則
+### レイアウトの 3 原則
 
 - Flutter のレイアウトは**Constraints go down. Sizes go up. Parent sets position.**の３つのルールで動作する。web のレイアウトとは全く異なるルールなので要注意。具体的な動作は以下の通り。
   - ウィジェットは、**parent**から**constraint**を受け取る。
@@ -559,17 +557,15 @@ TODO: 下記の項目が記載されている。一旦パス。
 - 解像度の異なる画像を読み込む方法
 - json などのテキストファイルを読み込む方法
 
-## Navigation & routing
-
-## - Navigation in Flutter
+## Navigation in Flutter
 
 TODO: めちゃくちゃ分量が多いので一旦パス
 
-## - Deep linking
+## Deep linking
 
 モバイルだけに関係する話のようなので一旦パス
 
-## - URL 戦略
+## URL 戦略
 
 - web の開発において、URL の形式を「ハッシュあり」と「ハッシュなし」から選ぶことができる。デフォルトはハッシュあり。変更したい場合は[こちら](https://flutter.dev/docs/development/ui/navigation/url-strategies)を参考に設定する。
 - 必要があれば Base URL の設定も行える
@@ -584,7 +580,11 @@ TODO: めちゃくちゃ分量が多いので一旦パス
 
 他のリアクティブ or 宣言的な環境(React など)の知見があればこの章はスキップしていいとのことなので、一部のみ抜粋。
 
-## - Provider package
+- 用語
+  - Ephemeral state --- アニメーションの状態など
+  - App state --- ユーザが入力中の文字など
+
+## Provider package
 
 - 最もシンプルな State の管理方法。React の Context に似ている。
 - `InheritedWidget`, `InheritedNotifier`, `InheritedModel`という低レベルなものを使いやすくしたもの
@@ -631,7 +631,7 @@ ChangeNotifierProvider(
   child: const CommonAncestor(),
 )
 
-// 複数使う場合は以下のようにする
+// 複数のNotifierを使いたい場合は以下のようにする
 MultiProvider(
   providers: [
     ChangeNotifierProvider(create: (context) => CartModel()),
@@ -659,3 +659,39 @@ Consumer<CartModel>(
 ```dart
 Provider.of<CartModel>(context, listen: false).removeAll();
 ```
+
+## State 管理の選択肢
+
+- setState
+  - 原始的。Ephemeral state の管理に最適。
+- InheritedWidget & InheritedModel
+  - 祖先と子孫の間で state をやり取りするための低レベルな手法。
+  - provider は実質的にはこれらを使っている
+- Redux
+  - 説明不要
+- Fish-Redux
+  - 省略。中から大規模なアプリに最適とのこと。
+- BLoC / Rx
+  - Stream, Observable ベース
+- GetIt
+  - Service locator ベース
+  - `BuildContext`が不要
+- MobX
+  - Observable, reaction ベース
+- Flutter Commands
+  - Command パターン
+  - `ValueNotifiers`を使っている
+  - GetIt と組み合わせるのがおすすめ
+- Binder
+  - recoid にインスパイアされている
+  - `InheritedWidget`を使っている
+- GetX
+- Riverpod
+  - provider と似たアプローチだが、悪い部分を改善している
+  - Flutter SDK への依存が一切ない
+- states_rebuilder
+  - dependency injection による状態管理 + integrated router から構成される
+
+## JSON & serialization
+
+TODO: パス
