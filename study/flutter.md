@@ -2,7 +2,22 @@
 
 [[toc]]
 
+## 雑多メモ
+
+- プロジェクト名にアンダースコアがあると起動できないかも？
+- パフォーマンス計測はリリースモードで行うこと。デバッグモードでは性能が落ちるため。
+- `_`で名前が始まる変数はプライベートになる
+- Anonymous function を関数に渡す方法
+  ```dart
+  some_func(() {/* ここに処理を記載 */})
+  ```
+- DevTools の使用方法
+  - `flutter run -d chrome`で flutter を開始し、`ws://`から始まるアプリのアドレスをコピーする
+  - VSCode で`Dart: Open DevTools`を選び、先程のアドレスをコピーして`Connect`ボタンをクリックする
+
 ## --- User Interface ---
+
+## ウィジェットの基本
 
 ### Hello world
 
@@ -284,9 +299,7 @@ class CounterState extends State<Counter> {
 }
 ```
 
-## レイアウトの作成
-
-## レイアウトの概要
+## レイアウト
 
 - Flutter においてはほぼ全てのものがウィジェットである。
   - レイアウトのためのウィジェット --- `Row`や`Center`など
