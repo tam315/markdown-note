@@ -488,7 +488,7 @@ Image.asset('images/pic1.jpg');
 - ウィジェットは希望するサイズになれない場合もある。なぜなら親の決めた constraint が優先されるから。
 - ウィジェットは position を自分で決められないし、知ることもできない。なぜなら、それを決めるのは親だから。
 - ウィジェットの size や position を正確に設定するためには、ツリー全体を把握する必要がある。なぜなら、親の size や position もそのまた親に依存するから。
-- alignment は具体的に設定する必要がある。なぜなら、もし child が parent とは違うサイズになりたいのに、parent が十分な情報を持っていない場合、child のサイズは無視される事がある。
+- alignment は具体的に設定する必要がある。なぜなら、もし child が parent とは違うサイズになりたいのに、parent が十分な情報を持っていない場合、child のサイズは無視される事があるから。
 
 ### レイアウトの挙動を例で学ぶ
 
@@ -498,16 +498,43 @@ Image.asset('images/pic1.jpg');
 - `ConstrainedBox`は子に constraint を**加える**。言い換えると、もともと親から与えられている constraint がある場合はそちらが優先されるので注意。
 - `UnconstrainedBox`は子にいかなる制約も加えないため、子を自然なサイズで描写できる
 - `OverflowBox`は、動作は`UnconstrainedBox`と同じだが、黄色いゼブラの警告を表示しない点が異なる。
-- bounded という言葉の意味は、`double.infinity`ではない width と height を持っているということ。
-- `Row`は子にいかなる constraint も加えないため、自然のサイズで表示される。
-  - ただし、`Expanded`で子をラップした場合、子のサイズは無視される。
-  - `Expanded`の兄弟に`Flexible`がいる。こちらは、子に同じサイズになるように強要しない。
+- bounded という言葉の意味は、`double.infinity`ではない width と height を持っているということ。逆は unbounded。
+- `Row`は子にいかなる constraint も加えないため、自然のサイズで表示される。ただし、`Expanded`で子をラップした場合、子のサイズは無視される。
 
 ### Tight vs loose constraints
 
-- Tight constraint
+- Tight constraint --- `FlexFit.tight`
   - (min|max)Width に同じ値を指定し、かつ (min|max)Height にも同じ値を指定すること
-  - 例：root screen の constraint: 子要素に画面幅・高さと同じになるように強要。
-- Loose constraint
+  - 例：root screen の constraint: 子要素に画面サイズと同じになるように強制する。この場合、子要素で width を指定しても無視される。
+- Loose constraint --- `FlexFit.loose`
   - max(Width|Height)のみ指定し、min(Width|Height)は 0 であること
-  - 例：Center の constraint: 子要素は小さくなっていい。ただし画面高と高さは超えないように。
+  - 例：Center の constraint: 子要素は小さくなっていい。ただし画面サイズは超えないように。
+
+Expanded と Flexible の違い
+
+- `Flexible` --- デフォルトでは`fit:FlexFit.loose`である。子に縮小を許可する。
+- `Expanded` --- `Flexible`を`fit:FlexFit.tight`したものと等価。子のサイズを無視する。
+
+`Center`などのいくつかの Widget は、constraints を緩める(loosen)する効果を持つ。
+
+### Box constraints
+
+Flutter の内部では`RenderBox`というオブジェクトを用いて widget を画面に配置している。
+
+- 1. なるべく大きくなろうとする Box
+     例）`Center`, `ListView`
+- 2. children と同じサイズになろうとする Box
+     例）`Transform`, `Opacity`
+- 3. 特定のサイズになろうとする Box
+     例）`Image`, `Text`
+- 特殊な Box
+  例）`Container` --- デフォルトで 1、子があれば 2、width を指定すれば 3 になる
+  例）`Row|Column` --- 親から受け取った Constraints によって変わる（後述）
+
+unbounded に関する注意
+
+- unbounded(最大幅や高さが無限大) な constraint と上記の 1 を組み合わせるとエラーになる。
+  - `Row|Column`とスクロール可能なウィジェット`ListView|ScrollView`を変な方向で組み合わせたときに起こりがちなので注意する。
+- Flex box(`Row|Column`)は、bounded か unbounded かにより挙動が変わる。
+  - bounded なら、そのサイズまで最大限拡張する
+  - unbounded なら、子のサイズまで縮小する。このとき、`flex`プロパティや`Expanded`コンポーネントは当然ながら使えない。
