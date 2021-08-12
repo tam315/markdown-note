@@ -2,7 +2,7 @@
 
 [[toc]]
 
-## ✅ User Interface ✅
+## --- User Interface ---
 
 ## Introduction to widgets
 
@@ -286,9 +286,9 @@ class CounterState extends State<Counter> {
 }
 ```
 
-## ✅✅ レイアウトの作成 ✅✅
+## - レイアウトの作成
 
-## レイアウトの概要
+## - レイアウトの概要
 
 - Flutter においてはほぼ全てのものがウィジェットである。
   - レイアウトのためのウィジェット --- `Row`や`Center`など
@@ -459,15 +459,15 @@ Image.asset('images/pic1.jpg');
 - Element tree が web で言うところの DOM tree にあたり、Widget tree が仮想 DOM にあたるイメージかな？
 - `InheritedWidget` を使うと、React の Context のようなことが実現できる。詳しくは[こちら](https://medium.com/flutter-jp/inherited-widget-37495200d965)を読むとわかりやすい。
 
-## Creating adaptive & responsive apps
+## - Creating adaptive & responsive apps
 
-パス
+TODO: 一旦パス
 
-## Building adaptive apps
+## - Building adaptive apps
 
-パス
+TODO: 一旦パス
 
-## レイアウトの要件(Constraints)を理解する
+## - レイアウトの要件(Constraints)を理解する
 
 - Constraint とは以下の４つのこと。
   - min width
@@ -475,7 +475,7 @@ Image.asset('images/pic1.jpg');
   - min height
   - max height
 
-### レイアウトの 3 原則
+### - レイアウトの 3 原則
 
 - Flutter のレイアウトは**Constraints go down. Sizes go up. Parent sets position.**の３つのルールで動作する。web のレイアウトとは全く異なるルールなので要注意。具体的な動作は以下の通り。
   - ウィジェットは、**parent**から**constraint**を受け取る。
@@ -538,3 +538,61 @@ unbounded に関する注意
 - Flex box(`Row|Column`)は、bounded か unbounded かにより挙動が変わる。
   - bounded なら、そのサイズまで最大限拡張する
   - unbounded なら、子のサイズまで縮小する。このとき、`flex`プロパティや`Expanded`コンポーネントは当然ながら使えない。
+
+## State をどこで管理するか
+
+State の管理には 3 つのアプローチがある。
+
+- 1. ウィジェット自身で管理する
+  - アニメーションの状態など、親が知りたくもない情報はウィジェット自身で管理するとよい。
+- 2. 親が管理する
+  - チェックボックスのチェック状態やインプット欄のテキストなど、ユーザの入力データは親が管理すると良い。
+- 3. 上記の 1 と２を適宜組み合わせる
+  - アニメーションの状態はウィジェット自身で管理し、ユーザの入力データは親が管理するなど。
+
+## アセットと画像
+
+TODO: 下記の項目が記載されている。一旦パス。
+
+- 画像の読み込み方法
+- 画像の Variant (Dark or Light)を扱う方法
+- 解像度の異なる画像を読み込む方法
+- json などのテキストファイルを読み込む方法
+
+## Navigation & routing
+
+## - Navigation in Flutter
+
+TODO: めちゃくちゃ分量が多いので一旦パス
+
+## - Deep linking
+
+モバイルだけに関係する話のようなので一旦パス
+
+## - URL 戦略
+
+- web の開発において、URL の形式を「ハッシュあり」と「ハッシュなし」から選ぶことができる。デフォルトはハッシュあり。変更したい場合は[こちら](https://flutter.dev/docs/development/ui/navigation/url-strategies)を参考に設定する。
+- 必要があれば Base URL の設定も行える
+
+## Animations
+
+パス
+
+## --- Data & backend ---
+
+## State management
+
+他のリアクティブ or 宣言的な環境(React など)の知見があればこの章はスキップしていいとのことなので、一部のみ抜粋。
+
+## - Provider package
+
+- 最もシンプルな State の管理方法。
+- `InheritedWidget`, `InheritedNotifier`, `InheritedModel`という低レベルなものを使いやすくしたもの
+- provider を使うには以下の３つのことをりかいする必要がある
+  - ChangeNotifier
+  - ChangeNotifierProvider
+  - Consumer
+
+### ChangeNotifier
+
+- 変更を通知する役割を持つ。購読することができる。
