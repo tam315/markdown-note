@@ -1,19 +1,6 @@
 # Flutter navigation
 
-https://medium.com/flutter/learning-flutters-new-navigation-and-routing-system-7c9068155ade
-
-## \_
-
-### Navigator と Router
-
-- Navigator 2.0
-  - 宣言的に使える。
-  - 従来どおり、命令的に使うことも可能。
-  - 従来は、複数ページの push|pop や、カレントページの下側にあるページを削除したりすることが難しかった。これらを簡単に行えるようにした。
-- Router
-  - 適切なページを表示する役割を持つ
-
-### Navigator 1.0
+## Navigator 1.0
 
 - `Navigator`
   - Route オブジェクトをスタックとして管理する widget
@@ -22,7 +9,7 @@ https://medium.com/flutter/learning-flutters-new-navigation-and-routing-system-7
   - `MaterialPageRoute`クラス等によって実装されることが多い
   - Named routes と Anonymous routes がある
 
-#### Anonymous routes
+### Anonymous routes
 
 任意のタイミングで一時的に画面を作成して表示したいとき
 
@@ -39,7 +26,7 @@ Navigator.push(
 Navigator.pop(context);
 ```
 
-#### Named routes
+### Named routes
 
 - 事前定義した名前付きの画面に遷移したいとき
 - [引数を画面に渡すことが可能](https://flutter.dev/docs/cookbook/navigation/navigate-with-arguments)
@@ -64,7 +51,7 @@ Navigator.pushNamed(
 Navigator.pop(context);
 ```
 
-#### onGenerateRoute
+### onGenerateRoute
 
 - 最も柔軟な route の作成方法。
 - Url をパースして値を取得し、画面に渡すことも可能
@@ -91,80 +78,14 @@ MaterialApp(
 );
 ```
 
-### Navigator 2.0
+## Navigator 2.0
 
-- `Page`
-  - 変更不可なオブジェクト
-  - Navigator の history stack をセットするために使う
-- `Router`
-  - どのページを表示すべきかという設定情報
-  - Navigator に利用される
-  - TODO: よくわからん
-- `RouterInformationParser`
-  - `RouterInformation`を`RouterInformationProvider`から取得し、パースしてユーザが定義した形式に変換する。
-- `RouterDelegate`
-  - TODO: よくわからん
-- `BackButtonDispather`
-  - 戻るボタンが押されたことを Router に報告する
+- Navigator2.0 はあまりにも複雑で、一般的な開発者が扱うには向いていない。
+- Flutter 開発チームもこういった評価を認識しており、より簡易なパッケージの開発が始まっている。
+- いまのところは Navigator 1.0 を使うか、Navigator 2.0 が必要な場合はサードパーティのラッパーライブラリを使うとよい。2021/08 現在では[routemaster](https://pub.dev/packages/routemaster)が使い良さそう。詳細後述。
+- なお、web の場合は URL との同期が必要となることが多いので、v2 がほぼ必須となる。
 
-![全体図](https://res.cloudinary.com/ds0prnqhx/image/upload/v1628815745/markdown/20210813094904.jpg)
+参考資料
 
-全体の流れ
-
-1. 新しい route(例えば`books/2`など)が emit される。
-1. `RouteInformationParser`が、それを事前定義した抽象型(例えば`BooksRoutePath`など）に変換する。
-1. `RouterDelegate`の`setNewRoutePath()`が先ほどのデータと共に呼ばれる。App state が適切に更新され、`notifyListeners()`が呼ばれる。
-1. `Router`が`RouterDelegate.build()`をする（再構築する）。
-1. 新しい Navigator が生成される。この Navigator は app state の更新を反映している(例えば選択中の book の id など)
-
-#### Pages
-
-- v2 では、画面のスタックを宣言的に管理するための部品として`Page`が用意された。
-- これを使用するには、`MaterialApp`の初期化方法を変更する必要がある。
-- もし、URL との同期が不要であれば、これだけで画面遷移を実現できる。
-
-```dart
-//　v1ではこうだったのが
-MaterialApp(
-  title: 'Flutter Tutorial',
-  home: TutorialHome(),
-)
-
-// v2ではこうなる
-MaterialApp(
-  title: 'Flutter Tutorial',
-  home: Navigator(
-    // スタックしたいページ群を宣言的に記載する
-    pages: [
-      MaterialPage(
-        key: ValueKey('TutorialHome'),
-        child: TutorialHome(),
-      ),
-      // stateをつかってpagesを動的に更新することで、
-      // 必要に応じて画面遷移が自動的に発生する。すごい！
-      if(someAppState == true)
-        SomeOtherPage(...);
-    ],
-    onPopPage: _onPopPage, // 後述
-  ),
-);
-```
-
-onPopPage では以下のことを行うとよい
-
-- pop が成功したのか確認し、失敗したのなら何もしない
-- App の state を更新する。例えば選択中のアイテムを変更し、もって pages が変更されるよう設計しておく。
-
-```dart
-onPopPage: (route, result) {
-  if (!route.didPop(result)) {
-    return false;
-  }
-
-  setState(() {
-    _selectedBook = null;
-  });
-
-  return true;
-},
-```
+- https://zenn.dev/ntaoo/articles/6641e846765da1
+- https://medium.com/flutter/learning-flutters-new-navigation-and-routing-system-7c9068155ade
