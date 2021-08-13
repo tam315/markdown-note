@@ -126,7 +126,7 @@ Consumer(
 ),
 ```
 
-#### `useProvider(HookConsumerWidget)`を使う方法
+#### `HookConsumerWidget`を使う方法
 
 ```dart
 class Count extends HookConsumerWidget {
@@ -140,6 +140,7 @@ class Count extends HookConsumerWidget {
 
 - `HookConsumerWidget`では下記の表記ができる。これは、`ConsumerWidget`では使えないもの。
 - このとき、`isAbove5`が変更されない限り、再描写はされないので効率的。(たとえば 1 が 2 になったとき)
+- なお、`useProvider`は hooks_riverpod の v1 から廃止され、`ref.watch`を使った方法に統一される([参考](https://zenn.dev/riscait/books/flutter-riverpod-practical-introduction/viewer/migrate-to-v1#useprovider-%E3%81%8C%E5%89%8A%E9%99%A4))。
 
 ```dart
 // 下記のような記法がつかえる。
