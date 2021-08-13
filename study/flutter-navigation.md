@@ -24,7 +24,7 @@ https://medium.com/flutter/learning-flutters-new-navigation-and-routing-system-7
 
 #### Anonymous routes
 
-任意のタイミングで on the fly で画面を表示したいとき
+任意のタイミングで一時的に画面を作成して表示したいとき
 
 ```dart
 // 遷移したいとき
@@ -43,7 +43,7 @@ Navigator.pop(context);
 
 - 事前定義した名前付きの画面に遷移したいとき
 - [引数を画面に渡すことが可能](https://flutter.dev/docs/cookbook/navigation/navigate-with-arguments)
-- しかし、url をパースして値を取得するようなことはできない。例）`/details/:itemId`
+- しかし、url をパースして値を取得することはできない。例）`/details/:itemId`
 
 ```dart
 // ルーティング設定
@@ -67,7 +67,7 @@ Navigator.pop(context);
 #### onGenerateRoute
 
 - 最も柔軟な route の作成方法。
-- Url をパースして画面に渡すことも可能
+- Url をパースして値を取得し、画面に渡すことも可能
 
 ```dart
 MaterialApp(
@@ -89,4 +89,82 @@ MaterialApp(
     return MaterialPageRoute(builder: (context) => UnknownScreen());
   },
 );
+```
+
+### Navigator 2.0
+
+- `Page`
+  - 変更不可なオブジェクト
+  - Navigator の history stack をセットするために使う
+- `Router`
+  - どのページを表示すべきかという設定情報
+  - Navigator に利用される
+  - TODO: よくわからん
+- `RouterInformationParser`
+  - `RouterInformation`を`RouterInformationProvider`から取得し、パースしてユーザが定義した形式に変換する。
+- `RouterDelegate`
+  - TODO: よくわからん
+- `BackButtonDispather`
+  - 戻るボタンが押されたことを Router に報告する
+
+![全体図](https://res.cloudinary.com/ds0prnqhx/image/upload/v1628815745/markdown/20210813094904.jpg)
+
+全体の流れ
+
+1. 新しい route(例えば`books/2`など)が emit される。
+1. `RouteInformationParser`が、それを事前定義した抽象型(例えば`BooksRoutePath`など）に変換する。
+1. `RouterDelegate`の`setNewRoutePath()`が先ほどのデータと共に呼ばれる。App state が適切に更新され、`notifyListeners()`が呼ばれる。
+1. `Router`が`RouterDelegate.build()`をする（再構築する）。
+1. 新しい Navigator が生成される。この Navigator は app state の更新を反映している(例えば選択中の book の id など)
+
+#### Pages
+
+- v2 では、画面のスタックを宣言的に管理するための部品として`Page`が用意された。
+- これを使用するには、`MaterialApp`の初期化方法を変更する必要がある。
+- もし、URL との同期が不要であれば、これだけで画面遷移を実現できる。
+
+```dart
+//　v1ではこうだったのが
+MaterialApp(
+  title: 'Flutter Tutorial',
+  home: TutorialHome(),
+)
+
+// v2ではこうなる
+MaterialApp(
+  title: 'Flutter Tutorial',
+  home: Navigator(
+    // スタックしたいページ群を宣言的に記載する
+    pages: [
+      MaterialPage(
+        key: ValueKey('TutorialHome'),
+        child: TutorialHome(),
+      ),
+      // stateをつかってpagesを動的に更新することで、
+      // 必要に応じて画面遷移が自動的に発生する。すごい！
+      if(someAppState == true)
+        SomeOtherPage(...);
+    ],
+    onPopPage: _onPopPage, // 後述
+  ),
+);
+```
+
+onPopPage では以下のことを行うとよい
+
+- pop が成功したのか確認し、失敗したのなら何もしない
+- App の state を更新する。例えば選択中のアイテムを変更し、もって pages が変更されるよう設計しておく。
+
+```dart
+onPopPage: (route, result) {
+  if (!route.didPop(result)) {
+    return false;
+  }
+
+  setState(() {
+    _selectedBook = null;
+  });
+
+  return true;
+},
 ```
