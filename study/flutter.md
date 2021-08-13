@@ -14,6 +14,13 @@
 - DevTools の使用方法
   - `flutter run -d chrome`で flutter を開始し、`ws://`から始まるアプリのアドレスをコピーする
   - VSCode で`Dart: Open DevTools`を選び、先程のアドレスをコピーして`Connect`ボタンをクリックする
+- 文字の埋め込みは以下のようにする。
+  ```dart
+  final myNumber = 123;
+  final message = "hello$a";
+  // 日本語圏の場合は区切りが曖昧なので{}を省略しないほうがいいかも
+  final message = "hello${a}";
+  ```
 
 ## --- User Interface ---
 
@@ -505,8 +512,8 @@ TODO: 一旦パス
 
 [このページ](https://flutter.dev/docs/development/ui/layout/constraints)の Examples を眺めていくとだいたい分かる。以下、ハッとしたことリスト：
 
-- サイズ決定ロジックは意外と複雑なので注意。例えば `Container` なら、子要素があれば最小サイズ、なければ最大サイズになるなど。
-- `ConstrainedBox`は子に constraint を**加える**。言い換えると、もともと親から与えられている constraint がある場合はそちらが優先されるので注意。
+- サイズ決定ロジックは意外と複雑な場合があるので注意。例えば `Container` なら、子要素があれば最小サイズ、なければ最大サイズになるなど。
+- `ConstrainedBox`は子に constraint を**消極的に加える**。言い換えると、もともと親から与えられている constraint がある場合はそちらが優先されるので注意。
 - `UnconstrainedBox`は子にいかなる制約も加えないため、子を自然なサイズで描写できる
 - `OverflowBox`は、動作は`UnconstrainedBox`と同じだが、黄色いゼブラの警告を表示しない点が異なる。
 - bounded という言葉の意味は、`double.infinity`ではない width と height を持っているということ。逆は unbounded。
@@ -818,10 +825,18 @@ Provider.of<CartModel>(context, listen: false).removeAll();
   - `InheritedWidget`を使っている
 - GetX
 - Riverpod
-  - provider と似たアプローチだが、悪い部分を改善している
+  - provider を使いやすく改造したもの。
   - Flutter SDK への依存が一切ない
 - states_rebuilder
   - dependency injection による状態管理 + integrated router から構成される
+
+## Riverpod
+
+[Riverpod](https://github.com/rrousselGit/river_pod)の特徴
+
+- エラーをコンパイル時点で検出できる
+- ネストをなくせる
+- テスト可能である
 
 ## JSON & serialization
 
@@ -954,3 +969,8 @@ String json = jsonEncode(userMap);
 ```dart
 @JsonSerializable(explicitToJson: true)
 ```
+
+## HTTP 通信の方法
+
+下記を使う。
+https://github.com/dart-lang/http
