@@ -162,10 +162,9 @@ GestureDetector(
 class Counter extends StatefulWidget {
   final String name;
 
-  // - このクラスはstateの設定である。
-  // - 親から与えられた引数を保持する
-  //   - これらはstateのbuildメソッドから`widget.***`としてアクセス可能
-  //   - これらは常にfinalとして扱われる
+  // このクラスは親から与えられた引数を保持する
+  // - 引数はstateのbuildメソッドから`widget.***`としてアクセス可能
+  // - 引数は常にfinalとして扱われる
   const Counter({this.name = 'my counter', Key? key}) : super(key: key);
 
   @override
@@ -775,7 +774,7 @@ MultiProvider(
     ChangeNotifierProvider(create: (context) => CartModel()),
     Provider(create: (context) => SomeOtherClass()),
   ],
-  child: const MyApp(),
+  child: const CommonAncestor(),
 ),
 ```
 
