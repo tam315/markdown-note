@@ -76,7 +76,7 @@ final myProvider = Provider((ref) {
 - 今のところ以下の２種類しかない。
 
 ```dart
-final myAutoDisposeProvider = StateProvider.autoDispose<String>((ref) => 0);
+final myAutoDisposeProvider = StateProvider.autoDispose<int>((ref) => 0);
 final myFamilyProvider = Provider.family<String, int>((ref, id) => '$id');
 ```
 
@@ -86,9 +86,9 @@ Provider の値を読む方法はいくつかある。
 
 ![フローチャート](https://res.cloudinary.com/ds0prnqhx/image/upload/v1628838794/markdown/20210813161312.jpg)
 
-### 読み取れる値の種類は複数ある場合がある
+### なにを読み取るか決める
 
-たとえば StreamProvider を使ったとき、取得できる値の種類は３つある。詳しくは[こちら](https://riverpod.dev/docs/concepts/reading#deciding-what-to-read)。
+読み取れる値の種類は複数ある場合がある。たとえば StreamProvider を使ったとき、取得できる値の種類は３つある。詳しくは[こちら](https://riverpod.dev/docs/concepts/reading#deciding-what-to-read)。
 
 - `Stream`として受け取る
 - `Future`として受け取る
@@ -150,7 +150,8 @@ bool isAbove5 = ref.watch(counterProvider.select((s) => s.state > 5));
 
 #### `context.read(myProvider)`を使う方法
 
-- 値の操作はしたいけど listen はしたくないときに使う。パフォーマンス最適化のために使う。
+- 値の取得を一回だけしたいけど、その後の listen はしたくないときに使う。
+- パフォーマンス最適化のために使う。
 - 下記の場合、カウントアップされてもボタンは再描写されない。
 
 ```dart
@@ -182,10 +183,10 @@ ProviderListener<StateController<int>>(
 ### 他のプロバイダの中で読み取る
 
 ```dart
-final myValue1Provider = Provider((ref) => MyValue1());
+final myValue1Provider = Provider((ref) => 123);
 final myValue2Provider = Provider((ref) {
   final myValue1 = ref.watch(myValue1Provider)
-  return MyValue2(myValue1);
+  return myValue1 + 456
 });
 ```
 
@@ -193,3 +194,11 @@ final myValue2Provider = Provider((ref) {
 
 - `ProviderContainer`を使う。詳細は省略。
 - 主にウィジェットではないクラスのテスト時などが想定される
+
+## プロバイダを組み合わせる
+
+省略
+
+## ProviderObserver
+
+グローバルレベルで provider を監視する方法。プロバイダの値が変わったときなどに何らかの処理を発動できる。詳しくは[こちら](https://riverpod.dev/docs/concepts/provider_observer)。
