@@ -29,13 +29,13 @@
 ```yaml
 # pubspec.yaml
 dependencies:
-  # package containing annotations for freezed
+  # freezedのアノテーションを利用可能にする
   freezed_annotation:
 
 dev_dependencies:
-  # tool to run code-generators
+  # コードジェネレータのランナー
   build_runner:
-  # code generator
+  # コードジェネレータ
   freezed:
 ```
 
@@ -51,7 +51,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 // 自動生成されるコードを読み込む
 part 'main.freezed.dart';
 
-// モデルの宣言(_$Personと_Personは後で自動生成されるクラス)
+// モデルの宣言(_$Personと_Personは後で自動生成されるクラスのこと)
 class Person with _$Person {
   factory Person({
     String? name,
