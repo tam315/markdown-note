@@ -515,7 +515,8 @@ TODO: 一旦パス
 - `ConstrainedBox`は子に constraint を**消極的に加える**。言い換えると、もともと親から与えられている constraint がある場合はそちらが優先されるので注意。
 - `UnconstrainedBox`は子にいかなる制約も加えないため、子を自然なサイズで描写できる
 - `OverflowBox`は、動作は`UnconstrainedBox`と同じだが、黄色いゼブラの警告を表示しない点が異なる。
-- bounded という言葉の意味は、`double.infinity`ではない width と height を持っているということ。逆は unbounded。
+- bounded という言葉の意味は、width と height に値を持っているということ。
+  逆は unbounded で、width と height が`double.infinity`であるということ。
 - `Row`は子にいかなる constraint も加えないため、自然のサイズで表示される。ただし、`Expanded`で子をラップした場合、子のサイズは無視される。
 
 ### Tight vs loose constraints
