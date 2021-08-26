@@ -48,10 +48,10 @@ module.exports = {
     '@vuepress/google-analytics': {
       ga: 'UA-116967778-5',
     },
-    '@vuepress/pwa': {
-      serviceWorker: true,
-      updatePopup: true,
-    },
+    // '@vuepress/pwa': {
+    //   serviceWorker: true,
+    //   updatePopup: true,
+    // },
   },
   serviceWorker: true,
 };

@@ -11,7 +11,6 @@
   "license": "ISC",
   "dependencies": {
     "@vuepress/plugin-google-analytics": "^1.8.0",
-    "@vuepress/plugin-pwa": "^1.8.0",
     "markdown-it-imsize": "^2.0.1",
     "markdown-it-katex": "^2.0.3",
     "vuepress": "^1.8.0"
