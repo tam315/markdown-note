@@ -8,10 +8,13 @@
 - 右辺の`extends`は、型の検査(===や!==に近いイメージ)に使う
   - ここでUnion型を使った場合は、総当りで処理されるイメージになる(詳細は`Exclude`を参照)
 - オブジェクトのkey名部分では`[P in ***]`のような表記ができる。この`P`は右辺でそのまま使える。
-- `SomeArr[number]`で配列型をUnion型に変換できる
+- `SomeArr[number]`で、配列型をUnion型に変換できる
   ```ts
   type List = (string | number | boolean)[]
-  type Elem = List[number] // string | number | boolean になる
+
+  // - string | number | boolean になる
+  // - 配列が持ちうる全ての型を、Union型にまとめる感じ
+  type Elem = List[number]
   ```
 
 ## --- Challenges - Easy ---
@@ -62,6 +65,9 @@ type MyReadonly<T> = {
 ## Tuple to object
 
 ```ts
+// as const の表記が重要。
+// - これがあるから、typeof tuple は ['tesla', 'model 3', 'model X', 'model Y'] という配列型になる
+// - これがないと、typeof tuple はただのstring[]になる
 const tuple = ['tesla', 'model 3', 'model X', 'model Y'] as const;
 
 // expected { tesla: 'tesla', 'model 3': 'model 3', 'model X': 'model X', 'model Y': 'model Y'}
@@ -253,3 +259,21 @@ type MyReadonly2<T, K extends keyof T> = T & {
   readonly [P in K]: T[P]
 }
 ```
+
+## Deep Readonly
+
+pass
+あまりいい実装がない
+
+## Tuple to Union
+
+```ts
+// 変数ではなく tuple type である点に注意
+type Arr = ['1', '2', '3']
+const a: TupleToUnion<Arr> // expected to be '1' | '2' | '3'
+```
+
+```ts
+type TupleToUnion<T extends any[]> = T[number]
+```
+
