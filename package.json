@@ -10,9 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@vuepress/plugin-google-analytics": "^1.8.0",
+    "@vuepress/plugin-google-analytics": "^1.9.7",
     "markdown-it-imsize": "^2.0.1",
     "markdown-it-katex": "^2.0.3",
-    "vuepress": "^1.8.0"
+    "vuepress": "^1.9.7"
   }
 }
