@@ -127,6 +127,7 @@ echo クロロエチルメチルエーテル | sed -E 's/(エ..)(...)/\2\1/g'
 ## 1.3.b grep による検索
 
 - `xargs` は出力を横に並べるためのコマンド
+- 入力は 1 行ごとでも、スペース区切りでも OK
 
 ```bash
 # 0を含むもの
@@ -283,6 +284,8 @@ seq 4 | awk '{print "mkdir " ($1%2==0 ? "even_" : "odd_") $1 }' | bash
 
 ## Q1 ファイル名の検索
 
+テキストファイルからの抽出の例：
+
 ```sh
 # 王道
 cat ./qdata/1/files.txt | grep '\.exe$'
@@ -308,7 +311,7 @@ ls *.png \
 ls *.png | sed 's/\.png//' | xargs -I@ convert @.png @.jpg
 ```
 
-- ファイルの中身を調べる - `file some_image.jpg`
+- ファイルの内容を調べる - `file some_image.jpg`
 - 実行時間を計測する - `time ワンライナー`
 - 並列実行する - `xargs -P4 コマンド`
 - コマンド置き換え - `$(コマンド)`
@@ -318,3 +321,24 @@ ls *.png | sed 's/\.png//' | xargs -I@ convert @.png @.jpg
 # 以上を踏まえた発展型(時間計測と、並列実行による高速化)
 time ls *.png | sed 's/\.png//' | xargs -P$(nproc) -I@ convert @.png @.jpg
 ```
+
+## Q3 ファイル名の一括変更
+
+`1`から`10000`までのファイルがあるとして、0 埋めにファイル名を変更せよ
+
+```sh
+seq 1000 | xargs -P2 touch
+
+ls | awk '{printf("%d %04d ",$1,$1)}' | xargs -n2 mv
+```
+
+## Q4 特定の内容のファイルを探す
+
+```sh
+grep -l -R SOME_PATTERN | xargs rm
+```
+
+- `ls -U` - ファイル名等で並べ替えない。結果が大量にある場合は速度的に有利。
+- `grep -l` - 一致した部分ではなくファイル名を表示する
+- `grep -R` - ディレクトリ内のファイルを再帰的に読み込む
+- `grep some_pattern ./*` - ディレクトリ内のファイル内容を検索
