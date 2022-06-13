@@ -545,6 +545,12 @@ echo $? #=> 0
 # 文字列比較
 b="hola"
 [ "$a" = "hello" ]
+
+# ファイル存在チェック
+[ -e some.txt ]
+
+# ファイル存在チェック（ディレクトリやリンクを除く）
+[ -f some.txt ]
 ```
 
 ### `&&` と `||`
@@ -809,5 +815,32 @@ xargs -n2 | \
 sed 's/すず/鈴木/g;s/さと/佐藤/g;s/やま/山田/g;s/ /: /g'
 ```
 
-### 練習2.1.a
+### Q13 存在しなければファイル作成
 
+```sh
+[ -f some.txt ] || touch some.txt
+```
+
+### Q14 羊を数える
+
+```sh
+# 共通部分
+do
+  echo "羊が${n}匹"
+  n=$((n+1))
+  sleep 1
+done
+
+# while+変数
+n=1
+while [ $n -le 10 ]
+
+# seq
+seq 5 | while read n
+
+# for + seq
+for n in $(seq 100)
+
+# シーケンス式
+for n in {1..100}
+```
