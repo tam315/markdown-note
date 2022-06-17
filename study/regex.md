@@ -31,8 +31,8 @@
 - `\1` backreference to group #1
 - `(?:someWord)` non-capturing group
 - `(?=someWord)` positive lookahead
-- `(?<=someWord)` positive lookbehind
 - `(?!someWord)` negative lookahead
+- `(?<=someWord)` positive lookbehind
 - `(?<!someWord)` negative lookbehind
 
 ### Quantifiers
