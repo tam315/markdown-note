@@ -2,11 +2,13 @@
 
 ## メモ
 
-- - B が A のである、ということは、B が A の持つ全ての性質を持っているということ（包含）
-  - partial という言葉から受けるイメージとは逆なので注意
-- `value != null`で`{[key: string]: unknown}`(`Record<string, unknown>`と等価)型に絞り込める
-  - どんなプロパティ名でアクセスしても unknown 型になる
-  - JS の使用上、null と undefined 以外の値はプロパティアクセスが可能
+- - B が A の部分型である、ということは、B が A の持つ全ての性質を持っているということ
+  - どちらかといえば包含では？partial という言葉から受けるイメージとは逆なので注意
+- `value != null`で以下に絞り込める
+  - `{[key: string]: unknown}` or
+  - `Record<string, unknown>`
+  - どんなプロパティ名でアクセスしても unknown 型になるの意
+  - JS の仕様上、null と undefined 以外の値はプロパティアクセスが可能
 
 ## 高度な型
 
@@ -54,17 +56,15 @@ type Human = {
 };
 ```
 
-許容されるパターン
-
-- 下記の 1
-  - プロパティが存在しない
-  - プロパティが number
-  - プロパティが undefined
-    - ただし exactOptionalPropertyTypes が有効ならこれはエラーになる
-- 下記の 2
-  - プロパティが number or undefined (プロパティがないことは認められない)
-
-使い分けは**省略を許すかどうか**で決めると良い
+- 許容されるパターン
+  - 1 の場合
+    - プロパティが存在しない
+    - プロパティが number
+    - プロパティが undefined
+      - ただし exactOptionalPropertyTypes が有効ならこれはエラーになる
+  - 2 の場合
+    - プロパティが number or undefined (プロパティがないことは認められない)
+- 使い分けは**省略を許すかどうか**で決めると良い
 
 ### リテラル型
 
