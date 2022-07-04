@@ -48,7 +48,7 @@ type PriceData = {
 #### 部分型とは
 
 - B が A の部分型であるということは
-  - B が A としても使えるということ
+  - **B は A としても使える**ということ
   - B が A の持っている全ての性質を持っているということ
   - B が A を「包含する」の方が直感的かも？
     - partial という言葉から受けるイメージとは逆なので注意
@@ -57,6 +57,105 @@ type PriceData = {
   - TypeScript はコレ
 - 名前的部分型 nominal subtyping
   - 明示的に宣言されたものだけが部分型とみなされる
+
+### 型引数を持つ型
+
+- ジェネリック型、型関数とも呼ばれる
+
+```ts
+type User<T> = {
+  namr: string;
+  child: T;
+};
+```
+
+- 「型引数を持つ型（ジェネリック型）」は：
+  - 型を作るためのもの
+  - それ自体は型ではない
+  - `<>`を用いて全ての型引数を指定することで、初めて型となる
+  - 構造にのみ言及する
+  - ある種の抽象化
+- 型引数に制約をかけるには`extends`を使う
+
+```ts
+type User<T extend HasName> = {}
+```
+
+- オプショナルな型引数を設定するには`= 型`を使う
+
+```ts
+type User<T = SomeType> = {};
+```
+
+### 配列
+
+- Iterable
+  - 配列、Map、文字列など
+  - `for-of`文で扱える
+- インデックスアクセスは避け`for-of`などを使え
+
+### 分割代入
+
+- デフォルト値の設定は undefined にのみ適用される点に注意
+
+```ts
+const a = { b: null };
+const { b = 123 } = a; // bはnullのままになる
+```
+
+### その他の組み込みオブジェクト
+
+#### Map
+
+- ただのオブジェクトよりも連想配列として優れている
+  - キーとしてオブジェクトを使える
+- メソッド
+  - set
+  - get
+  - has
+  - delete
+  - clear
+  - keys
+  - values
+  - entries
+
+#### Set
+
+- キーだけで値のない Map
+- メソッド
+  - add
+  - delete
+  - has
+
+#### WeakMap, WeakSet
+
+- キーとして使えるのはオブジェクトのみ
+- 列挙系のメソッド（keys,values,entries）がない
+  - Gabage Collection を可能にするため
+- Gabage Collection されるオブジェクトをキーにしたいときは使うと良い
+
+#### プリミティブなのにプロパティがあるように見える件
+
+- 実はプリミティブに対してプロパティーアクセスを行うたびに一時的にオブジェクトが作られる
+
+```ts
+const str = 'hello';
+console.log(str.length); // 5
+```
+
+- 実は`{}`型は中身が本当にオブジェクトであるかを確認しない
+
+```ts
+type HasLength = { length: number };
+const a: HasLength = 'asdf'; // ok
+```
+
+- 真にオブジェクトである値のみを扱いたいときは`object`型を使う
+
+```ts
+type HasLength = { length: number } & object;
+const a: HasLength = 'asdf'; // error
+```
 
 ## 高度な型
 
