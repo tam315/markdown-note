@@ -1,13 +1,5 @@
 # プロを目指す人のための TypeScript 入門
 
-## メモ
-
-- `value != null`で以下に絞り込める
-  - `{[key: string]: unknown}` or
-  - `Record<string, unknown>`
-  - どんなプロパティ名でアクセスしても unknown 型になるの意
-  - JS の仕様上、null と undefined 以外の値はプロパティアクセスが可能
-
 ## オブジェクトの基本とオブジェクトの型
 
 一部のみ
@@ -30,9 +22,13 @@
   - 「どんな名前のプロパティにもアクセスできる」という特性により型安全を破壊してしまうため
 
 ```ts
+// ブラケットを使った定義
 type PriceData = {
   [key: string]: number;
 };
+
+// Recordを使った定義
+type PriceData = Record<string, number>;
 ```
 
 #### 変数から型を作る
@@ -159,6 +155,13 @@ type HasLength = { length: number } & object;
 const a: HasLength = 'asdf'; // error
 ```
 
+### 雑学(プロパティアクセス可能かどうか)
+
+- `value != null`で以下に絞り込める
+  - `{[key: string]: unknown}` （同義 → `Record<string, unknown>`)
+- どんなプロパティ名でアクセスしても unknown 型になるの意
+- JS の仕様上、null と undefined 以外の値はプロパティアクセスが可能
+
 ## TypeScript の関数
 
 ### 関数の作り方
@@ -217,6 +220,73 @@ const sum = (...args) => {
 - higher-order function
 - コールバック関数を受け取る関数のこと
 - `map`や`filter`などは全て高階関数
+
+### 関数の型
+
+- 関数型という
+  - 引数部分はアロー関数と同じ記法が使える
+  - 引数名の情報はエディタ支援を充実させるために書くもの
+
+```ts
+type MyFunc = (num: number) => string;
+```
+
+- 返り値の型は推論される。
+- ただし、明示的に書くことで意図がコンパイラに正しく伝わるので、よりわかりやすいエラーメッセージを得られる。
+- Source of truth をどこにおくかで判断するとよい
+
+#### 引数の型注釈を省略する
+
+- 逆方向の型推論(Contextual Typing)が働く場合
+  - つまり、式の型が先にわかっている場合
+  - コールバック関数などでよく見かける
+
+#### コールシグネチャ
+
+- ほぼ使われないので雑学程度に
+- 「プロパティを持つ関数」を定義するために使う
+
+```ts
+type MyFunc = {
+  isUsed: boolean;
+  (arg: number): void;
+};
+```
+
+### 関数型の部分型
+
+- 関数の部分型が成立するための 3 条件
+  - 返り値
+    - 共変(covariant)の位置にあるので、
+    - 順方向(自然な方向)の部分型が成立していること
+  - 引数
+    - 反変(contravariant)の位置にあるので、
+    - 逆方向の部分型が成立していること
+  - 引数の数
+    - 引数の数が少ない関数型はより引数が多い関数型の部分型となる
+
+### ジェネリクス
+
+- 型引数を受け取る関数（ジェネリック関数）を作る機能
+- どの書き方をした場合でも、型引数リストが実引数リストの直前に置かれる
+
+```ts
+// 関数宣言
+function repeat<T>(element: T, length: number): T[] {}
+
+// 関数式
+const repeat = function <T>(element: T, length: number): T[] {};
+
+// アロー関数式
+const repeat = <T>(element: T, length: number): T[] => {};
+```
+
+- 下記の要件を満たすために使われることが多い
+  - 入力の値はなんでもいい
+  - 入力の型によって出力の方が決まる
+- `extends`やオプショナル型引数も使える
+- 使用時に型引数を省略した場合は、実引数の型から推論される
+  - つまり「好きな値で呼び出せばいい感じに型を推論してくれる」
 
 ## 高度な型
 
@@ -583,3 +653,48 @@ type FruitNumbers = {
   - Extract の逆
 - `NonNullable<T>`
   - T(ユニオン型)のうち null と undefined の可能性を除いた型
+
+## TypeScript のモジュールシステム
+
+一部のみ
+
+- default エクスポートはエディタのサポートが十分に効かないことがあるため使わない、という流派もある
+- CommonJS モジュールとは
+  - ES Modules の前から存在するシステム
+  - 必要となる場面
+    - コンパイル後の JS に目を通したい場合、
+    - ちょっとした設定ファイルを JS で書きたい場合、など
+  - `requre`は`import`と異なり動的なモジュール読み込みである
+    - 実行されて初めてそのモジュールの読み込みが行われる
+    - このため特定の条件のときだけモジュールを読み込む、といったことが可能
+    - ES modules でも似たことはできるが、ES の方は非同期的という点で依然異なる
+
+## TypeScript のコンパイラオプション
+
+### tsconfig.json
+
+- `tsc --init`で`tsconfig.json`を自動生成できる
+- `include`
+  - コンパイルの起点となるファイル群
+  - glob パターンが使える
+- `exclude`
+  - `include`で指定した起点から除くものを指定する
+  - glob パターンが使える
+  - あくまで「起点に含まない」という意味で、他の起点ファイル経由でインポートされていたらインポートされる
+- `files`
+  - 最近は使わない
+  - glob パターンが使えない
+
+### チェックの厳しさに関するオプション
+
+- `strict`が最も重要
+  - strict 系と呼ばれる設定群が有効になる
+  - 新たに strict 系の設定が追加された場合は自動で有効になる
+- おすすめ設定
+  - `strict`
+  - `noUncheckedIndexedAccess`
+  - `exactOptionalPropertyTypes`
+  - 以下はお好みで
+    - `noImplicitReturns`
+    - `noFallthroughCasesInSwitch`
+    - `noImplicitOverride`
