@@ -159,6 +159,65 @@ type HasLength = { length: number } & object;
 const a: HasLength = 'asdf'; // error
 ```
 
+## TypeScript の関数
+
+### 関数の作り方
+
+- 関数は、関数オブジェクトという**値**が変数に代入されたものである
+  - このことはどの方法で関数を作ったとしても共通する
+- 関数宣言で作る - function declaration
+
+```ts
+function myFunc(a: number): number {}
+
+// 返り値がない関数
+function myFunc(a: number): void {}
+```
+
+- 関数式で作る - function expression
+  - hoisting は行われない
+  - 使う機会はほぼない
+
+```ts
+const myFunc = function (a: number): number {};
+```
+
+- アロー関数式で作る - arrow function expression
+  - hoisting は行われない
+
+```ts
+const myFunc = (a: number): number => {};
+```
+
+- メソッド記法で作る
+  - 部分型の扱いで問題点があるため、原則使うな。通常の記法を使え。
+
+```ts
+const obj = {
+  // メソッド記法
+  myFunc(a: number): number {},
+
+  // 通常の記法
+  myFunc: (a: number): number => {},
+};
+```
+
+#### 可変長引数とスプレッド構文
+
+- この二つは組み合わせで使われることが多い
+
+```ts
+const sum = (...args) => {
+  return otherFunc(...args);
+};
+```
+
+#### 高階関数
+
+- higher-order function
+- コールバック関数を受け取る関数のこと
+- `map`や`filter`などは全て高階関数
+
 ## 高度な型
 
 ### ユニオン型とインターセクション型
