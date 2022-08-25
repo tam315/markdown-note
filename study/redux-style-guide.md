@@ -27,34 +27,48 @@
 
 ### Redux Toolkit を使え
 
+ベストプラクティスが詰まっている
+
 ### immer を使え
+
+rtk に含まれているよ
 
 ### フォルダ構成は Feature Folders か、少なくとも Ducks にせよ
 
 - ファイルの種類(reducers, actions, etc)でフォルダ分けするな
 - Feature Folders --- 特定の機能に関する全てのファイルを一つのフォルダにまとめる
-- Ducks --- 特定の機能のうち redux に関する部分のみを一つのファイルにまとめる
+- Ducks --- 特定の機能のうち redux に関する部分のみを一つのフォルダにまとめる
 
-### ロジックはなるべく reducers に記載せよ
+### なるべく多くのロジックを reducers に集約せよ
 
-- action の発出側(onClick など)ではなく、reducer 側に積極的にロジックを記載せよ
+- action の発出側(コンポーネント)ではなく、reducer 側に積極的にロジックを記載せよ
 - これによりテスト性やデバッグの容易さが高まるうえ、ミスも減る
-- id の採番など、場合によっては発出側でしか行えない処理もあるが、最小限におさえること
+- 発出側でしか行えない処理もあるが、最小限におさえること。
+  - e.g. **id の採番**など
 
 ### reducer で state の構造をしっかり管理せよ
 
 - Reducer の責務
   - 初期値を決定する
   - state を正しい形式に維持する(必要に応じて action.payload のバリデーションを行うなど)
-- blind spread`return {...state, ...action.payload}`や、blind return `return action.payload`は避けること。
+- **blind spread**`return {...state, ...action.payload}`や、**blind return** `return action.payload`は避けること。
   - これは state の形式を決定する責務が action 発出側に漏れ出している状態であるため
-  - フォーム内のデータを編集する際は使って良いかも。要素ごとに action creators を書くのは時間の無駄だからね。
+  - ただし、フォーム内のデータを編集する際は使って良いかも
+    - 要素ごとに action creators を書くのは時間の無駄だから
 - 利便性の観点から、単一の root reducer ではなく、複数の slice reducer で state を管理すると良い
 
 ### state の slice 名は格納するデータの名前にせよ
 
 - `{users: {}, posts: {}}`がよい
 - `{usersReducer: {}, postsReducer: {}}`はだめ
+
+### state は データの種類により分けろ（UI で分けない）
+
+- なぜなら、UI と、UI が必要とするデータは、必ずしも 1 対 1 で結びつかないので
+- e.g. `auth`, `posts`, `users`, `ui`
+  - 上記の`auth`等は複数の画面からアクセスされる
+  - UI ごとの state は`ui`配下に配置するとよい
+- (これは議論の余地がありそう)
 
 ### reducer を state machines として扱え
 
@@ -67,6 +81,15 @@
 - 簡単にルックアップできる
 - 更新が簡単
 - 良いパフォーマンス
+
+### state は最小限にせよ、必要なら派生データを作れ
+
+- e.g. filtered lists or summing up values
+- そうすれば
+  - state が読みやすくなる
+  - 派生データを作るためのロジックを減らせる
+  - 派生データを多くの箇所で使った時に、同期が容易になる
+  - オリジナル state やその参照を、変更せずに残すことができる
 
 ### action はイベントとして扱え。セッターとして使うな。
 
@@ -87,9 +110,17 @@
 
 ### 複数の action を順番に発出しない
 
-- A,B,C を順に発出すると、中間でおかしな state になる可能性がある
+- なぜダメか
+  - ハイコストな UI アップデートを引き起こす
+  - action と action の中間で、おかしな state になる可能性がある
 - なるべく一発の action で全てを更新せよ
-- どうしても必要な場合は`react-redux`の`batch()`を使え
+- どうしても必要な場合は`react-redux`の`batch()`を使え(React18 では不要)
+  ```typescript
+  batch(() => {
+    dispatch(increment());
+    dispatch(increment());
+  });
+  ```
 
 ### 値を store に保存すべきか常に考える
 
@@ -101,6 +132,10 @@
 - タイムトラベルデバッグが必要
 - キャッシュ機能が必要
 - Hot-reloading されたときに値を保持する必要がある
+
+### React-Redux Hooks API を使う
+
+- connect と比べるとパフォーマンス面で留意点はあるが、それでも hook を使え
 
 ### 積極的に多くのコンポーネントを store に接続する
 
