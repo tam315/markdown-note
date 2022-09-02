@@ -12,14 +12,12 @@
   - コードの動作を理解して、流れを追わないといけない状況になった時には、リファクタが必要
   - コードが正常に動作していて、今後も変更をする予定が全くないときは、リファクタは不要
 
-### リファクタリングの第一歩
+### Step1. テストの作成
 
-- まずはテスト群を作り上げることが必須
+- リファクタリングの第一歩は、まずテスト群を作り上げること。これは必須。
 - そうすれば、コードとテストの両方で失敗をしない限り、間違いはなくなる
 
-### statement 関数の分割
-
-まずは**名前づけと構造化**をしましょう
+### Step2. 名前づけと構造化
 
 - コードを関数に抽出していこう
   - 意味のあるコードの塊を関数にして、何をしているかを端的に示す名前をつけていく
@@ -50,9 +48,7 @@
   - 不定冠詞(「不特定の 1 つ」を表す冠詞、`a`や`an`など)をつける
   - 変数名、関数名などをより良いものに積極的・継続的に修正する
 
-### 計算とフォーマットにフェーズを分割
-
-次に**機能の変更**をしましょう
+Step3. 機能の変更
 
 - フェーズの分離をしよう
   - 一つのコードで異なる二つの処理を行なっている(or 行いたい)場合に、コードを段階ごとに分ける手法
@@ -73,9 +69,7 @@
   - 全てはバランス。リファクタのやりすぎも、やらなさすぎも、どちらもダメ。
   - ただし、最低でも「来た時よりも美しく」は守れ
 
-### 型による計算処理の再編成
-
-次に**機能の追加**をしましょう
+### Step4. 機能の追加
 
 - 方法
   - 「ポリモーフィズムによる条件記述の置き換え」の記載がある
@@ -85,40 +79,38 @@
 
 ```ts
 const performanceCalculatorFactory =
-  ({ contextData, amountCalculator, volumeDiscountCalculator }) =>
+  ({ contextData, calcAmount, calcVolumeDiscount }) =>
   () => ({
     getAmount: () => {
-      const amount = contextData.price * 100;
-      if (amountCalculator) {
-        return amountCalculator(amount);
+      const defaultAmount = contextData.price * 100;
+      if (calcAmount) {
+        return calcAmount(defaultAmount);
       }
-      return amount;
+      return defaultAmount;
     },
     getVolumeDiscount: () => {
-      const volumeDiscount = contextData.price * 200;
-      if (amountCalculator) {
-        return volumeDiscountCalculator(volumeDiscount);
+      const defaultVolumeDiscount = contextData.price * 200;
+      if (calcAmount) {
+        return calcVolumeDiscount(defaultVolumeDiscount);
       }
-      return volumeDiscount;
+      return defaultVolumeDiscount;
     },
   });
 
 const createCalculatorFor = (type, contextData) => {
   switch (type) {
     case 'tragedy': {
-      // 本当はここの処理は関数に切り出した方が良い
       return performanceCalculatorFactory({
         contextData,
-        amountCalculator: (defaultAmount) => defaultAmount * 1.1,
-        // ここでは`volumeDiscountCalculator`は上書きしていない
+        calcAmount: (defaultAmount) => defaultAmount * 1.1,
+        // ここでは`calcVolumeDiscount`は上書きしていない
       });
     }
     case 'comedy': {
-      // 本当はここの処理は関数に切り出した方が良い
       return performanceCalculatorFactory({
         contextData,
-        // ここでは`amountCalculator`は上書きしていない
-        volumeDiscountCalculator: (defaultAmount) => defaultAmount * 0.9,
+        calcVolumeDiscount: (defaultAmount) => defaultAmount * 0.9,
+        // ここでは`calcAmount`は上書きしていない
       });
     }
     default: {
