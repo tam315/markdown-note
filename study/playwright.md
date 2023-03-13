@@ -1,5 +1,7 @@
 # Playwright
 
+## --- Getting Started ---
+
 ## Installation
 
 - Playwright は E2E テストのためのツール
@@ -8,10 +10,21 @@
   - マルチ OS
   - マルチ環境(Local or CI)
   - ヘッドレス or ヘッドフル
-- 基本コマンド
-  - `yarn create playwright` 初める
-  - `npx playwright test` テストの実行
-  - `npx playwright show-report` HTML レポートの生成
+- チートシート
+  - `yarn create playwright`
+    - Playwright の導入時に一回だけ叩くコマンド
+  - `npx playwright test`
+    - テストの実行
+  - `npx playwright test --debug`
+    - デバッグモードでテストを実行
+    - ワーカーが 1 つだけになったうえ、Playwrite inspector を用いた 1 ステップごとの実行になる
+  - `npx playwright test --trace on`
+    - Trace を記録しつつテストを実行
+  - `npx playwright show-report`
+    - HTML レポートの生成
+  - `npx playwright codegen http://localhost:3000`
+    - テストコードの自動生成
+    - localhost の部分は任意のフロントエンドの URL に変更可能
 
 ## Writing Tests
 
@@ -89,18 +102,17 @@ npx playwright landing-page.ts --project=chromium
 
 ### Debugging
 
-- デバッグの方法
-  - console.log
-  - VSCode Extension
-  - Playwright Inspector
+- デバッグの方法はいくつかある
+  - `console.log`でデバッグする方法
+  - VSCode Extension を使って VSCode 上でデバッグする方法
+  - Playwright Inspector を使う方法
+    - `--debug`で起動できる
     - Playwright API コールのステップ実行、デバッグログの表示、ロケータの探索
 
 ```sh
-# デバッグする
+# Playwright Inspectorでデバッグする方法詳細
 npx playwright test --debug
 npx playwright test some.spec.ts --debug
-
-# 特定の行からデバッグする
 npx playwright test some.spec.ts:10 --debug
 ```
 
@@ -121,6 +133,9 @@ npx playwright test some.spec.ts:10 --debug
 ## Test Generator
 
 - Playwright にはテストを自動生成する機能が備わっている
+- ```sh
+  npx playwright codegen http://localhost:3000
+  ```
 - イメージ的には Excel の「マクロ記録」みたいなもの
 - 2 つのウィンドウを使いながらテストを書いていく
   - 1 つ目はブラウザウィンドウ
@@ -138,11 +153,11 @@ https://user-images.githubusercontent.com/13063165/197979804-c4fa3347-8fab-4526-
 
 ### Recording a Trace
 
-- Trace File は`trace.zip`という名前で保存される
-- デフォルトでは以下の設定になっている
-  - 任意のテストが失敗したのち、1 回目の再試行時に Trace が作成される(`on-first-retry`)、2 回目以降では作成されない
+- Trace (File) は`trace.zip`という名前で保存される
+- デフォルトでは Trace は「CI 上での 1 回目のリトライ時」にのみ生成される。より詳細な設定内容は以下のとおり。
+  - 任意のテストが失敗したのち、1 回目の再試行時に Trace が作成されるよう`on-first-retry`という設定になっている。2 回目以降では作成されない。
   - リトライは CI では 2 回、ローカルでは 0 回行う
-- Trace の作成は通常はデフォルトでは CI で行われるが、ローカルでも実行したい際には以下のようにする
+- ローカルで Trace を生成したい際には以下のようにする
   - ```sh
     npx playwright test --trace on
     ```
@@ -174,18 +189,57 @@ https://user-images.githubusercontent.com/13063165/197979804-c4fa3347-8fab-4526-
 
 ## VSCode
 
-VSCode に Playwright を使うための拡張機能を入れておくと色々と便利
+Playwright の機能は全て CLI から実行できるものの、VSCode に Playwright を使うための拡張機能を入れておくとさらに便利になる。
 
-### テストの実行
+### Running Tests
 
 - テストタブやテストファイルの左側に表示される三角ボタンから実行できる
 
-### デバッグ
+### Debugging Tests
 
-- エラー発生時には、期待と実際の差分と、コールスタックが表示される
+- エラー発生時には、期待と実際の差分と、コールスタックが VSCode 上に表示される
 - ライブデバッグ
   - `Show Browser`オプションを有効にした状態でテストを終えると、コード上のロケータをクリックした際に、ブラウザ上にそれがハイライト表示される
 - デバッグモード
   - 三角ボタンを右クリックして`Debug Test`を選択すると、デバッグモードでテストが実行される
   - ブレークポイントを使用して 1 ステップずつ画面を確認しながらテストを実行することができる
-- ライブデバッグとデバッグモードを組み合わせると最強
+- ライブデバッグとデバッグモードを組み合わせると、ステップごとに視覚的に確認ができるので最強
+- 異なる種類のブラウザを使ったテストを UI からポチッと実行できる
+
+### Generating tests
+
+- `Record new`(新規)または`Record at cursor`(既存テストへの追記)ボタンを押下してから操作するだけでテストを自動生成できる
+  - サクッとテストを書くのに便利
+  - [参考動画](https://user-images.githubusercontent.com/13063165/197721416-e525dd60-51a6-4740-ad8b-0f56f4d20045.mp4)
+  - frontend,backend のサーバは手動で立ち上げておく必要がある
+  - 初回の画面遷移も手動で行う必要がある
+  - Viewport のサイズは特定の値で固定されている
+  - Mock API を行いながらテスト生成を行うことはできないっぽい
+- `Pick locator`をクリックするとブラウザが開き、ホバーした要素の Locator が画面上に表示されるので便利。
+
+## ---Guide---
+
+## Mock APIs
+
+API をモックするには以下のようにする。この際、実際のエンドポイントにリクエストは送られない。
+
+```ts
+await page.route('https://dog.ceo/api/breeds/list/all', async (route) => {
+  const json = {
+    message: { test_breed: [] },
+  };
+  await route.fulfill({ json });
+});
+```
+
+リクエストは実際に実行しつつ、内容を少しだけ変更したい場合は以下のようにする
+
+```ts
+await page.route('https://dog.ceo/api/breeds/list/all', async (route) => {
+  const response = await route.fetch();
+  const json = await response.json();
+  json.message['big_red_dog'] = [];
+  // repoponseオブジェクトは実際のものを使いつつ、jsonだけを上書きする
+  await route.fulfill({ response, json });
+});
+```
