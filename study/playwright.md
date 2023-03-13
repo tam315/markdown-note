@@ -108,7 +108,7 @@ npx playwright test some.spec.ts:10 --debug
 
 - HTML レポートを生成することができる。レポートは以下の情報を含む。
   - テストの名前
-  - ファイル名
+  - テストファイルの名前
   - 行番号
   - ステップごとのテストの実行時間
   - ブラウザ名
@@ -156,3 +156,18 @@ https://user-images.githubusercontent.com/13063165/197979804-c4fa3347-8fab-4526-
   - コンソール出力
   - テストファイルのソースの該当行
   - 行われたネットワーク通信
+
+## CI
+
+### Github Actions の設定
+
+- [サンプルの CI ファイル](https://playwright.dev/docs/ci-intro#github-actions)が用意されている
+- テストを実行したのち`playwright-report` フォルダに出力されたログを、Artifact として残す設定になっている
+
+### CI で出力された HTML Report をローカルで見るには
+
+- Github Actions の Artifacts のセクションから`playwright-report`をダウンロードして任意の場所に解凍する。該当の Git のローカルリポジトリに置くのがおすすめ。
+- 以下のコマンドで HTML レポートを開く
+- ```sh
+  npx playwright show-report path/to/extracted-playwright-report
+  ```
